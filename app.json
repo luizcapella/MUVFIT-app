@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "MuvFit",
+    "slug": "muvfit-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "android": {
+      "package": "com.luizcapella.muvfit"
+    }
+  }
+}
