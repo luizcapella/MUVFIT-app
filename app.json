@@ -2,6 +2,7 @@
   "expo": {
     "name": "MuvFit",
     "slug": "muvfit-app",
+    "owner": "lfcapella",
     "version": "1.0.0",
     "orientation": "portrait",
     "android": {
