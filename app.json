@@ -7,6 +7,11 @@
     "orientation": "portrait",
     "android": {
       "package": "com.luizcapella.muvfit"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "5a1a6932-5517-40f6-9aaa-aa9f31c0c136"
+      }
     }
   }
 }
