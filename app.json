@@ -5,6 +5,9 @@
     "owner": "lfcapella",
     "version": "1.0.0",
     "orientation": "portrait",
+    "splash": {
+      "backgroundColor": "#ffffff"
+    },
     "android": {
       "package": "com.luizcapella.muvfit"
     },
