@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,8 @@ import {
   Image,
   Modal,
   Alert,
-  Share
+  Share,
+  Platform
 } from 'react-native';
 
 export default function App() {
@@ -39,6 +40,14 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('all');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // CONTROLADORES DE MODAIS SELETORAS
+  const [isHeaderSelectOpen, setIsHeaderSelectOpen] = useState(false);
+  const [isPerfScopeSelectOpen, setIsPerfScopeSelectOpen] = useState(false);
+  const [isManualAthleteSelectOpen, setIsManualAthleteSelectOpen] = useState(false);
+  const [isManualActivitySelectOpen, setIsManualActivitySelectOpen] = useState(false);
+  const [isEditingChallengeSelectOpen, setIsEditingChallengeSelectOpen] = useState(false);
+  const [isRuleTabSelectOpen, setIsRuleTabSelectOpen] = useState(false);
 
   // REGRAS E ESTRUTURA COMPLETA DAS LIGAS
   const [challenges, setChallenges] = useState([
@@ -108,7 +117,7 @@ export default function App() {
   const selectedChallenge = challenges.find(c => c.id === activeChallengeId) || challenges[0];
   const [editingChallengeId, setEditingChallengeId] = useState(selectedChallenge.id);
 
-  // CONVITES PENDENTES PARA NOVOS USUÁRIOS NO DASHBOARD
+  // CONVITES PENDENTES
   const [pendingInvites, setPendingInvites] = useState([
     {
       id: 'inv_1',
@@ -118,14 +127,12 @@ export default function App() {
     }
   ]);
 
-  // PARTICIPANTES VINCULADOS A CADA DESAFIO
+  // PARTICIPANTES VINCULADOS
   const [memberships, setMemberships] = useState([
     { challengeId: 'c1', userId: 'usr_capella', name: 'Luiz Capella', nickname: 'Poke', role: 'active', rankingPoints: 22000, bankPoints: 15400, totalSteps: 42350, avatar: 'https://picsum.photos/seed/poke/200/200', goldMedals: 3, silverMedals: 1, bronzeMedals: 0, age: 34, gender: 'Masculino', insigniaInquebravelCount: 3, insigniaDespertaCount: 1 },
     { challengeId: 'c1', userId: 'm_usr2', name: 'Rafael Souza', nickname: 'Rafa', role: 'active', rankingPoints: 14000, bankPoints: 2000, totalSteps: 31000, avatar: 'https://picsum.photos/seed/rafa/100/100', goldMedals: 2, silverMedals: 2, bronzeMedals: 1, age: 29, gender: 'Masculino', insigniaInquebravelCount: 1, insigniaDespertaCount: 0 },
     { challengeId: 'c1', userId: 'm_usr4', name: 'Carlos Eduardo', nickname: 'Cadu', role: 'active', rankingPoints: 8000, bankPoints: 0, totalSteps: 12000, avatar: 'https://picsum.photos/seed/cadu/100/100', goldMedals: 1, silverMedals: 0, bronzeMedals: 0, age: 31, gender: 'Masculino', insigniaInquebravelCount: 0, insigniaDespertaCount: 0 },
     { challengeId: 'c1', userId: 'm_usr3', name: 'Beatriz Lima', nickname: 'Bia', role: 'spectator', rankingPoints: 0, bankPoints: 0, totalSteps: 5000, avatar: 'https://picsum.photos/seed/bia/100/100', goldMedals: 0, silverMedals: 0, bronzeMedals: 0, age: 26, gender: 'Feminino', insigniaInquebravelCount: 0, insigniaDespertaCount: 0 },
-    
-    // DESAFIO C2
     { challengeId: 'c2', userId: 'usr_capella', name: 'Luiz Capella', nickname: 'Poke', role: 'active', rankingPoints: 18000, bankPoints: 0, totalSteps: 25000, avatar: 'https://picsum.photos/seed/poke/200/200', goldMedals: 3, silverMedals: 0, bronzeMedals: 0, age: 34, gender: 'Masculino', insigniaInquebravelCount: 1, insigniaDespertaCount: 1 },
     { challengeId: 'c2', userId: 'usr_rafa', name: 'Rafael Souza', nickname: 'Rafa', role: 'active', rankingPoints: 25000, bankPoints: 0, totalSteps: 38000, avatar: 'https://picsum.photos/seed/rafa/100/100', goldMedals: 2, silverMedals: 0, bronzeMedals: 0, age: 29, gender: 'Masculino', insigniaInquebravelCount: 2, insigniaDespertaCount: 2 }
   ]);
@@ -237,7 +244,7 @@ export default function App() {
   // ESTADO DO FILTRO DA CENTRAL DO ATLETA
   const [athletePerfScope, setAthletePerfScope] = useState('overall');
 
-  // ESTADOS DO LANÇAMENTO MANUAL DE PONTOS PELO ADMIN
+  // ESTADOS DO LANÇAMENTO MANUAL
   const [manualAthleteId, setManualAthleteId] = useState('');
   const [manualActivity, setManualActivity] = useState('musculacao');
   const [manualRankingPointsInput, setManualRankingPointsInput] = useState('');
@@ -275,31 +282,37 @@ export default function App() {
   const [selectedStory, setSelectedStory] = useState(null);
   const [storyProgress, setStoryProgress] = useState(0);
 
-  // BARRA DE PROGRESSO AUTOMÁTICA DE 30s PARA STORIES
+  // CORREÇÃO DO TIMER NATIVO (PREVINE TRAVAMENTO NO DISPOSITIVO FÍSICO)
   useEffect(() => {
-    let interval;
+    let timer = null;
     if (selectedStory) {
       setStoryProgress(0);
-      const step = 100 / 300;
-      interval = setInterval(() => {
+      const intervalTime = 100;
+      const totalDuration = 30000;
+      const stepIncrement = (intervalTime / totalDuration) * 100;
+
+      timer = setInterval(() => {
         setStoryProgress((prev) => {
           if (prev >= 100) {
-            clearInterval(interval);
+            clearInterval(timer);
             setSelectedStory(null);
             return 0;
           }
-          return prev + step;
+          return prev + stepIncrement;
         });
-      }, 100);
+      }, intervalTime);
+    } else {
+      setStoryProgress(0);
     }
-    return () => clearInterval(interval);
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
   }, [selectedStory]);
 
-  // VERIFICAÇÃO DE COMUNIDADE PARA NOVO CADASTRO
   const userMembershipsAll = memberships.filter(m => m.userId === currentUser.id);
   const hasUserAnyCommunity = userMembershipsAll.length > 0;
 
-  // LIGAS QUE O USUÁRIO É ADMINISTRADOR VS PARTICIPANTE
   const adminChallenges = challenges.filter(c => c.creator_id === currentUser.id);
   const participantChallenges = challenges.filter(c => {
     return memberships.some(m => m.challengeId === c.id && m.userId === currentUser.id) && c.creator_id !== currentUser.id;
@@ -329,19 +342,6 @@ export default function App() {
     setEditingChallengeId(challenge.id);
     setEditingRules(JSON.parse(JSON.stringify(challenge.rules || {})));
     setCurrentScreen('feed');
-  }
-
-  function handleFileRead(event, setPhotoState, setMediaType = null) {
-    const file = event.target.files && event.target.files[0];
-    if (file) {
-      if (setMediaType) {
-        if (file.type.startsWith('video/')) setMediaType('video');
-        else setMediaType('image');
-      }
-      const reader = new FileReader();
-      reader.onload = (e) => setPhotoState(e.target.result);
-      reader.readAsDataURL(file);
-    }
   }
 
   function handleOpenUserProfile(userId) {
@@ -425,19 +425,13 @@ export default function App() {
     setIsCreateChallengeOpen(false);
     setNewChallengeTitle('');
     setNewChallengeCode('');
-    Alert.alert('Sucesso', 'Novo desafio criado com sucesso! Você é o Administrador deste desafio.');
-  }
-
-  function handleOpenInviteModal(challenge) {
-    setInviteTargetChallenge(challenge);
-    setInputInviteCode('');
-    setIsInviteModalOpen(true);
+    Alert.alert('Sucesso', 'Novo desafio criado com sucesso!');
   }
 
   function handleAcceptInvite() {
     if (!inviteTargetChallenge) return;
     if (inputInviteCode.trim().toUpperCase() !== inviteTargetChallenge.invite_code) {
-      Alert.alert('Código Incorreto', 'O código de entrada digitado não corresponde a este desafio.');
+      Alert.alert('Código Incorreto', 'O código digitado não corresponde a este desafio.');
       return;
     }
 
@@ -454,10 +448,9 @@ export default function App() {
     ]);
 
     setPendingInvites(pendingInvites.filter(inv => inv.challengeId !== inviteTargetChallenge.id));
-
     setIsInviteModalOpen(false);
     selectChallengeContext(inviteTargetChallenge, false);
-    Alert.alert('🎉 Bem-vindo ao Desafio!', `Sua entrada na liga "${inviteTargetChallenge.title}" foi confirmada.`);
+    Alert.alert('🎉 Bem-vindo ao Desafio!', `Sua entrada foi confirmada.`);
   }
 
   function handleAcceptDashboardInvite(invite) {
@@ -487,20 +480,20 @@ export default function App() {
     const filtered = challenges.filter(c => c.id !== challengeId);
     setChallenges(filtered);
     selectChallengeContext(filtered[0], filtered[0].creator_id === currentUser.id);
-    Alert.alert('Desafio Excluído', 'A liga foi removida com sucesso do sistema.');
+    Alert.alert('Desafio Excluído', 'A liga foi removida com sucesso.');
   }
 
   function handleFinishChallenge(challengeId) {
     setChallenges(challenges.map(c => c.id === challengeId ? { ...c, is_finished: true, registrations_closed: true } : c));
-    Alert.alert('Desafio Encerrado', 'O pódio foi gerado e está visível no Feed de treinos!');
+    Alert.alert('Desafio Encerrado', 'O pódio foi gerado no Feed.');
   }
 
   function toggleChallengeRegistrations() {
     const updatedStatus = !selectedChallenge.registrations_closed;
     setChallenges(challenges.map(c => c.id === selectedChallenge.id ? { ...c, registrations_closed: updatedStatus } : c));
     Alert.alert(
-      'Status de Inscrições Atualizado',
-      updatedStatus ? 'Inscrições e candidaturas ENCERRADAS para esta liga.' : 'Inscrições ABERTAS para novos participantes.'
+      'Status Atualizado',
+      updatedStatus ? 'Inscrições ENCERRADAS.' : 'Inscrições ABERTAS.'
     );
   }
 
@@ -545,7 +538,7 @@ export default function App() {
       ...feedPosts
     ]);
 
-    Alert.alert('Treino Aprovado!', 'O treino foi aprovado e publicado no Feed de Treinos.');
+    Alert.alert('Treino Aprovado!', 'O treino foi publicado no Feed.');
   }
 
   function handleRejectWorkout(workoutId) {
@@ -564,7 +557,7 @@ export default function App() {
       ...memberships,
       { challengeId: activeChallengeId, userId: participant.id, name: participant.name, nickname: participant.nickname, role: targetRole, rankingPoints: 0, bankPoints: 0, totalSteps: 0, avatar: participant.avatar, goldMedals: 0, silverMedals: 0, bronzeMedals: 0, age: participant.age, gender: participant.gender, insigniaInquebravelCount: 0, insigniaDespertaCount: 0 }
     ]);
-    Alert.alert('Solicitação Aprovada', `Participante adicionado como ${targetRole === 'active' ? 'Atleta Ativo' : 'Torcedor'}.`);
+    Alert.alert('Solicitação Aprovada', `Participante adicionado.`);
   }
 
   function handleDemoteToSpectator(memberId) {
@@ -616,7 +609,7 @@ export default function App() {
     const targetKey = stepType === 'km' ? 'stepsKm' : 'steps';
     const currentSteps = editingRules[tabKey]?.[targetKey] || [];
     if (currentSteps.length <= 1) {
-      Alert.alert('Atenção', 'Você deve manter pelo menos 1 Step.');
+      Alert.alert('Atenção', 'Mantenha pelo menos 1 Step.');
       return;
     }
     const updatedSteps = currentSteps.filter((_, i) => i !== index);
@@ -665,12 +658,12 @@ export default function App() {
     }));
 
     setIsEditRulesOpen(false);
-    Alert.alert('Regras Salvas', 'As regras e critérios do desafio selecionado foram atualizados com sucesso!');
+    Alert.alert('Regras Salvas', 'As regras foram atualizadas!');
   }
 
   function handleAdminAddPointsManual() {
     if (!manualAthleteId) {
-      Alert.alert('Erro', 'Selecione um Atleta Ativo para creditar.');
+      Alert.alert('Erro', 'Selecione um Atleta Ativo.');
       return;
     }
 
@@ -679,7 +672,7 @@ export default function App() {
     const addedSteps = parseInt(manualStepsInput) || 0;
 
     if (addedRankingPts <= 0 && addedBankPts <= 0 && addedSteps <= 0 && !manualInquebravelCheck && !manualDespertaCheck) {
-      Alert.alert('Erro', 'Informe pelo menos uma quantidade de pontos, banco, passos ou selecione um bônus.');
+      Alert.alert('Erro', 'Informe pelo menos um valor ou bônus.');
       return;
     }
 
@@ -708,7 +701,7 @@ export default function App() {
     setManualStepsInput('');
     setManualInquebravelCheck(false);
     setManualDespertaCheck(false);
-    Alert.alert('Lançamento Concluído!', `Lançamento manual realizado com sucesso (Sem restrição de teto).`);
+    Alert.alert('Lançamento Concluído!', `Créditos aplicados ao atleta.`);
   }
 
   function calculatePoints(type, durStr) {
@@ -721,7 +714,7 @@ export default function App() {
   function handleSubmitWorkout() {
     const currentMemberRecord = memberships.find(m => m.challengeId === activeChallengeId && m.userId === currentUser.id);
     if (!currentMemberRecord || currentMemberRecord.role !== 'active') {
-      Alert.alert('Acesso Restrito', 'Apenas Atletas Ativos aprovados podem submeter treinos.');
+      Alert.alert('Acesso Restrito', 'Apenas Atletas Ativos podem submeter treinos.');
       return;
     }
 
@@ -732,15 +725,15 @@ export default function App() {
 
     if (alreadyDoneToday) {
       Alert.alert(
-        '🔒 Atividade Trava até 23:59:59',
-        `Você já registrou a modalidade ${selectedActivity.toUpperCase()} hoje neste desafio.`
+        '🔒 Trava Diária Excedida',
+        `Você já registrou ${selectedActivity.toUpperCase()} hoje.`
       );
       return;
     }
 
     const is3PhotosRequired = ['musculacao', 'crossfit', 'aerobico'].includes(selectedActivity);
     if (is3PhotosRequired && (!photoStart || !photoEnd || !photoEvidence)) {
-      Alert.alert('Comprovação Incompleta', 'Esta modalidade exige exatamente 3 fotos: Foto de Início, Foto de Fim e Evidência do Treino!');
+      Alert.alert('Comprovação Incompleta', 'Envie as 3 fotos requeridas para esta modalidade.');
       return;
     }
 
@@ -798,7 +791,7 @@ export default function App() {
 
     setIsWorkoutModalOpen(false);
     resetForm();
-    Alert.alert('Sucesso', 'Treino submetido! Aguardando aprovação do Administrador no painel de moderação para ir ao feed.');
+    Alert.alert('Sucesso', 'Treino submetido! Aguardando aprovação.');
   }
 
   function resetForm() {
@@ -814,7 +807,7 @@ export default function App() {
     setPhotoEvidence(null);
   }
 
-  // PESQUISA DINÂMICA
+  // PESQUISA
   const searchResultsAthletes = memberships.filter(m => {
     if (searchFilter === 'challenge') return false;
     const term = searchQuery.toLowerCase().trim();
@@ -833,38 +826,37 @@ export default function App() {
     return c.title.toLowerCase().includes(term) || c.invite_code.toLowerCase().includes(term);
   });
 
-  const MediaPickerField = ({ label, photoState, setPhotoState, inputId, acceptVideo = false, setMediaType = null }) => (
+  const MediaPickerField = ({ label, photoState, setPhotoState, acceptVideo = false, setMediaType = null }) => (
     <View style={styles.mediaFieldBox}>
       <Text style={styles.mediaLabel}>{label}</Text>
       <View style={styles.mediaButtonsRow}>
-        <label htmlFor={`${inputId}_camera`} style={styles.cameraBtn}>
-          <Text style={styles.mediaBtnText}>📷 Gravar / Foto</Text>
-        </label>
-        <input
-          id={`${inputId}_camera`}
-          type="file"
-          accept={acceptVideo ? "image/*,video/*" : "image/*"}
-          capture="environment"
-          onChange={(e) => handleFileRead(e, setPhotoState, setMediaType)}
-          style={{ display: 'none' }}
-        />
+        <TouchableOpacity 
+          style={styles.cameraBtn} 
+          onPress={() => {
+            const mockUri = 'https://picsum.photos/seed/' + Math.random() + '/400/300';
+            setPhotoState(mockUri);
+            if (setMediaType) setMediaType('image');
+          }}
+        >
+          <Text style={styles.mediaBtnText}>📷 Foto Exemplo</Text>
+        </TouchableOpacity>
 
-        <label htmlFor={`${inputId}_gallery`} style={styles.galleryBtn}>
-          <Text style={styles.mediaBtnText}>🖼️ Galeria</Text>
-        </label>
-        <input
-          id={`${inputId}_gallery`}
-          type="file"
-          accept={acceptVideo ? "image/*,video/*" : "image/*"}
-          onChange={(e) => handleFileRead(e, setPhotoState, setMediaType)}
-          style={{ display: 'none' }}
-        />
+        <TouchableOpacity 
+          style={styles.galleryBtn} 
+          onPress={() => {
+            const mockUri = 'https://picsum.photos/seed/' + Math.random() + '/400/300';
+            setPhotoState(mockUri);
+            if (setMediaType) setMediaType('image');
+          }}
+        >
+          <Text style={styles.mediaBtnText}>🖼️ Galeria Exemplo</Text>
+        </TouchableOpacity>
       </View>
 
       {photoState ? (
         <View style={styles.previewContainer}>
           {newStoryType === 'video' ? (
-            <Text style={{ fontSize: 18 }}>🎥 Vídeo Anexado</Text>
+            <Text style={{ fontSize: 14, color: '#ffffff' }}>🎥 Vídeo Anexado</Text>
           ) : (
             <Image source={{ uri: photoState }} style={styles.previewImage} />
           )}
@@ -932,14 +924,12 @@ export default function App() {
   }
 
   const currentMemberState = currentChallengeMembers.find(m => m.userId === currentUser.id);
-
-  // STORIES FILTRADOS POR ATLETA EM VISUALIZAÇÃO
   const userStories = stories.filter(st => st.userId === viewedUser.id);
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* CABEÇALHO SUPERIOR */}
-      <View style={[styles.topHeader, { zIndex: 9999, elevation: 10 }]}>
+      {/* CABEÇALHO */}
+      <View style={styles.topHeader}>
         <View style={styles.brandRow}>
           <Text style={styles.brandTitle}>MUVFIT</Text>
           <Text style={styles.brandSubtitle}>Mizan Soluções Técnicas</Text>
@@ -948,27 +938,18 @@ export default function App() {
         {hasUserAnyCommunity && (
           <View style={styles.activeChallengeSelectorBar}>
             <Text style={styles.activeChallengeSelectorLabel}>🎯 Desafio Selecionado:</Text>
-            <select
-              style={selectHeaderStyle}
-              value={activeChallengeId}
-              onChange={(e) => {
-                const targetId = e.target.value;
-                const ch = challenges.find(c => c.id === targetId);
-                if (ch) {
-                  selectChallengeContext(ch, ch.creator_id === currentUser.id);
-                }
-              }}
+            <TouchableOpacity 
+              style={styles.nativeSelectButton} 
+              onPress={() => setIsHeaderSelectOpen(true)}
             >
-              {challenges.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.title} ({c.creator_id === currentUser.id ? '🔑 Administrador' : '⚡ Atleta Ativo'})
-                </option>
-              ))}
-            </select>
+              <Text style={styles.nativeSelectButtonText}>
+                {selectedChallenge.title} ({selectedChallenge.creator_id === currentUser.id ? '🔑 Administrador' : '⚡ Atleta Ativo'}) ▼
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
 
-        <View style={{ position: 'relative', width: '100%', zIndex: 9999 }}>
+        <View style={{ width: '100%' }}>
           <TextInput
             style={styles.searchInput}
             placeholder="🔍 Pesquisar Atletas ou Ligas..."
@@ -1004,7 +985,7 @@ export default function App() {
                 </TouchableOpacity>
               </View>
 
-              <ScrollView style={{ maxHeight: 250 }} keyboardShouldPersistTaps="handled">
+              <ScrollView style={{ maxHeight: 200 }} keyboardShouldPersistTaps="handled">
                 {(searchFilter === 'all' || searchFilter === 'athlete') && (
                   <View style={{ marginBottom: 6 }}>
                     <Text style={styles.searchSectionHeader}>🏃 ATLETAS CADASTRADOS ({searchResultsAthletes.length})</Text>
@@ -1075,14 +1056,14 @@ export default function App() {
 
           <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'athlete_center' && styles.sidebarBtnActive]} onPress={() => { setViewedUser(currentUser); setCurrentScreen('athlete_center'); }}>
             <Text style={styles.sidebarIcon}>👤</Text>
-            <Text style={[styles.sidebarText, currentScreen === 'athlete_center' && styles.sidebarTextActive]}>Central do Atleta</Text>
+            <Text style={[styles.sidebarText, currentScreen === 'athlete_center' && styles.sidebarTextActive]}>Atleta</Text>
           </TouchableOpacity>
 
           {hasUserAnyCommunity && (
             <>
               <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'feed' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('feed')}>
                 <Text style={styles.sidebarIcon}>📷</Text>
-                <Text style={[styles.sidebarText, currentScreen === 'feed' && styles.sidebarTextActive]}>Feed & Treinos</Text>
+                <Text style={[styles.sidebarText, currentScreen === 'feed' && styles.sidebarTextActive]}>Feed</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'ranking' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('ranking')}>
@@ -1093,7 +1074,7 @@ export default function App() {
               {isAdminContext && (
                 <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'admin' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('admin')}>
                   <Text style={styles.sidebarIcon}>⚙️</Text>
-                  <Text style={[styles.sidebarText, currentScreen === 'admin' && styles.sidebarTextActive]}>Moderação Admin</Text>
+                  <Text style={[styles.sidebarText, currentScreen === 'admin' && styles.sidebarTextActive]}>Admin</Text>
                 </TouchableOpacity>
               )}
             </>
@@ -1108,14 +1089,14 @@ export default function App() {
                 <Text style={styles.pageTitle}>Painel Geral de Ligas</Text>
                 {currentUser.isAdmin && (
                   <TouchableOpacity style={styles.createChallengeBtnHeader} onPress={() => setIsCreateChallengeOpen(true)}>
-                    <Text style={styles.createChallengeBtnText}>+ CRIAR NOVO DESAFIO</Text>
+                    <Text style={styles.createChallengeBtnText}>+ NOVO DESAFIO</Text>
                   </TouchableOpacity>
                 )}
               </View>
 
               {pendingInvites.length > 0 && (
                 <View style={styles.inviteNoticeBox}>
-                  <Text style={styles.inviteNoticeTitle}>📩 Você possui convite(s) para entrar em uma liga!</Text>
+                  <Text style={styles.inviteNoticeTitle}>📩 Convites Pendentes</Text>
                   {pendingInvites.map((inv) => (
                     <View key={inv.id} style={styles.inviteItemCard}>
                       <View style={{ flex: 1 }}>
@@ -1145,7 +1126,7 @@ export default function App() {
 
               <Text style={styles.sectionHeaderTitle}>🔑 Ligas que Você Administra</Text>
               {adminChallenges.length === 0 ? (
-                <Text style={styles.emptyNoticeText}>Você ainda não criou nenhum desafio como Administrador.</Text>
+                <Text style={styles.emptyNoticeText}>Você ainda não criou nenhum desafio.</Text>
               ) : (
                 adminChallenges.map((c) => (
                   <View key={c.id} style={[styles.cardBox, { borderColor: '#f97316', borderWidth: 1.5 }]}>
@@ -1156,7 +1137,7 @@ export default function App() {
                       </Text>
                     </View>
                     <Text style={styles.cardBoxSub}>
-                      Código: {c.invite_code} | Vigência: {c.startDate} até {c.endDate}
+                      Código: {c.invite_code} | {c.startDate} até {c.endDate}
                     </Text>
 
                     <View style={{ flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
@@ -1183,7 +1164,7 @@ export default function App() {
 
               <Text style={[styles.sectionHeaderTitle, { marginTop: 16 }]}>⚡ Ligas em que Você é Participante</Text>
               {participantChallenges.length === 0 ? (
-                <Text style={styles.emptyNoticeText}>Você não está inscrito em outros desafios como participante.</Text>
+                <Text style={styles.emptyNoticeText}>Você não está inscrito em outros desafios.</Text>
               ) : (
                 participantChallenges.map((c) => (
                   <View key={c.id} style={styles.cardBox}>
@@ -1194,7 +1175,7 @@ export default function App() {
                       </Text>
                     </View>
                     <Text style={styles.cardBoxSub}>
-                      Código: {c.invite_code} | Vigência: {c.startDate} até {c.endDate}
+                      Código: {c.invite_code} | {c.startDate} até {c.endDate}
                     </Text>
 
                     <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
@@ -1218,7 +1199,7 @@ export default function App() {
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <Text style={styles.pageTitle}>Feed — {selectedChallenge.title}</Text>
                 <TouchableOpacity style={styles.inviteBtn} onPress={() => handleShareInvite(selectedChallenge)}>
-                  <Text style={styles.btnMiniText}>🔗 CONVIDAR ATLETAS</Text>
+                  <Text style={styles.btnMiniText}>🔗 CONVIDAR</Text>
                 </TouchableOpacity>
               </View>
 
@@ -1337,7 +1318,7 @@ export default function App() {
                   <Image source={{ uri: member.avatar }} style={styles.avatarMini} />
                   <View style={{ flex: 1, marginLeft: 8 }}>
                     <Text style={styles.rankingMemberName}>{member.name} ({member.nickname})</Text>
-                    <Text style={styles.rankingMemberSub}>{member.totalSteps.toLocaleString()} passos (Desempate)</Text>
+                    <Text style={styles.rankingMemberSub}>{member.totalSteps.toLocaleString()} passos</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text style={styles.rankingMemberPts}>{member.rankingPoints.toLocaleString()} pts</Text>
@@ -1357,7 +1338,7 @@ export default function App() {
                     <Image source={{ uri: spectator.avatar }} style={styles.avatarMini} />
                     <View style={{ flex: 1, marginLeft: 8 }}>
                       <Text style={styles.spectatorName}>{spectator.name} ({spectator.nickname})</Text>
-                      <Text style={styles.spectatorSub}>Torcedor / Espectador do Desafio</Text>
+                      <Text style={styles.spectatorSub}>Torcedor / Espectador</Text>
                     </View>
                     <Text style={styles.spectatorBadge}>👀 Torcedor</Text>
                   </TouchableOpacity>
@@ -1366,7 +1347,7 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* TELA 4: CENTRAL DO ATLETA COM STORIES CLICÁVEIS */}
+          {/* TELA 4: CENTRAL DO ATLETA */}
           {currentScreen === 'athlete_center' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.profileHeaderCard}>
@@ -1387,21 +1368,17 @@ export default function App() {
                 {hasUserAnyCommunity && (
                   <View style={styles.perfScopeBox}>
                     <Text style={styles.inputLabel}>Visualizar Desempenho Por:</Text>
-                    <select
-                      style={selectHtmlStyle}
-                      value={athletePerfScope}
-                      onChange={(e) => setAthletePerfScope(e.target.value)}
+                    <TouchableOpacity 
+                      style={styles.nativeSelectButton}
+                      onPress={() => setIsPerfScopeSelectOpen(true)}
                     >
-                      <option value="overall">🌐 Somatório Geral (Todos os Desafios)</option>
-                      {userMembershipsAll.map(m => {
-                        const ch = challenges.find(c => c.id === m.challengeId);
-                        return (
-                          <option key={m.challengeId} value={m.challengeId}>
-                            🎯 {ch ? ch.title : 'Desafio'}
-                          </option>
-                        );
-                      })}
-                    </select>
+                      <Text style={styles.nativeSelectButtonText}>
+                        {athletePerfScope === 'overall' 
+                          ? '🌐 Somatório Geral (Todos os Desafios)' 
+                          : `🎯 ${(challenges.find(c => c.id === athletePerfScope) || {}).title || 'Desafio'}`
+                        } ▼
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 )}
 
@@ -1422,7 +1399,7 @@ export default function App() {
                   </View>
                 </View>
 
-                {/* CARROSSEL DE STORIES DO ATLETA (CLICÁVEIS) */}
+                {/* CARROSSEL DE STORIES */}
                 <View style={styles.storiesBox}>
                   <Text style={styles.boxTitle}>Stories do Atleta (Clique para abrir)</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginTop: 6 }}>
@@ -1527,7 +1504,7 @@ export default function App() {
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.adminControlCard}>
                 <Text style={styles.adminCardTitle}>🎯 Gerenciando: {selectedChallenge.title}</Text>
-                <Text style={styles.adminCardSub}>Todas as alterações feitas nesta aba afetam exclusivamente esta liga.</Text>
+                <Text style={styles.adminCardSub}>Todas as alterações feitas afetam esta liga.</Text>
               </View>
 
               <View style={styles.adminControlCard}>
@@ -1540,7 +1517,7 @@ export default function App() {
                       <Image source={{ uri: w.photo_evidence }} style={styles.avatarMini} />
                       <View style={{ flex: 1, marginLeft: 8 }}>
                         <Text style={styles.participantName}>{w.user_name} ({w.activity_type})</Text>
-                        <Text style={styles.participantSub}>{w.caption} | Início: {w.startTime} - Fim: {w.endTime}</Text>
+                        <Text style={styles.participantSub}>{w.caption}</Text>
                         <Text style={styles.tagActiveText}>Recompensa: +{w.points_to_ranking} pts</Text>
                       </View>
                       <View style={{ flexDirection: 'row', gap: 4 }}>
@@ -1557,46 +1534,40 @@ export default function App() {
               </View>
 
               <View style={styles.adminControlCard}>
-                <Text style={styles.adminCardTitle}>🔒 Controle de Candidaturas & Inscrições</Text>
-                <Text style={styles.adminCardSub}>Status Atual: {selectedChallenge.registrations_closed ? 'ENCERRADAS' : 'ABERTAS'}</Text>
+                <Text style={styles.adminCardTitle}>🔒 Controle de Inscrições</Text>
+                <Text style={styles.adminCardSub}>Status: {selectedChallenge.registrations_closed ? 'ENCERRADAS' : 'ABERTAS'}</Text>
                 <TouchableOpacity style={styles.toggleRegBtn} onPress={toggleChallengeRegistrations}>
                   <Text style={styles.toggleRegBtnText}>
-                    {selectedChallenge.registrations_closed ? '🔓 REABRIR CANDIDATURAS DA LIGA' : '🔒 ENCERRAR CANDIDATURA DO DESAFIO'}
+                    {selectedChallenge.registrations_closed ? '🔓 REABRIR CANDIDATURAS' : '🔒 ENCERRAR CANDIDATURA'}
                   </Text>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.adminControlCard}>
-                <Text style={styles.adminCardTitle}>➕ Lançamento Manual de Pontos, Banco & Passos</Text>
-                <Text style={styles.adminCardSub}>Adicione valores livremente sem limite de teto para atletas deste desafio:</Text>
+                <Text style={styles.adminCardTitle}>➕ Lançamento Manual de Pontos & Passos</Text>
 
                 <Text style={styles.inputLabel}>Selecione o Atleta Ativo:</Text>
-                <select
-                  style={selectHtmlStyle}
-                  value={manualAthleteId}
-                  onChange={(e) => setManualAthleteId(e.target.value)}
+                <TouchableOpacity 
+                  style={styles.nativeSelectButton}
+                  onPress={() => setIsManualAthleteSelectOpen(true)}
                 >
-                  <option value="">-- Escolha o Atleta Ativo --</option>
-                  {activeMembersInChallenge.map(m => (
-                    <option key={m.userId} value={m.userId}>{m.name} ({m.nickname})</option>
-                  ))}
-                </select>
+                  <Text style={styles.nativeSelectButtonText}>
+                    {manualAthleteId 
+                      ? (activeMembersInChallenge.find(m => m.userId === manualAthleteId) || {}).name || 'Atleta Selecionado'
+                      : '-- Escolha o Atleta Ativo --'
+                    } ▼
+                  </Text>
+                </TouchableOpacity>
 
                 <Text style={styles.inputLabel}>Modalidade Realizada:</Text>
-                <select
-                  style={selectHtmlStyle}
-                  value={manualActivity}
-                  onChange={(e) => setManualActivity(e.target.value)}
+                <TouchableOpacity 
+                  style={styles.nativeSelectButton}
+                  onPress={() => setIsManualActivitySelectOpen(true)}
                 >
-                  <option value="musculacao">Musculação</option>
-                  <option value="crossfit">CrossFit / Funcional</option>
-                  <option value="corrida">Corrida</option>
-                  <option value="caminhada">Caminhada</option>
-                  <option value="bike">Bike</option>
-                  <option value="esporte_coletivo">Esporte Coletivo</option>
-                  <option value="esporte_individual">Esporte Individual</option>
-                  <option value="aerobico">Aeróbico / Aulas Coletivas</option>
-                </select>
+                  <Text style={styles.nativeSelectButtonText}>
+                    {manualActivity.toUpperCase()} ▼
+                  </Text>
+                </TouchableOpacity>
 
                 <View style={{ flexDirection: 'row', gap: 6, marginVertical: 4 }}>
                   <View style={{ flex: 1 }}>
@@ -1633,7 +1604,7 @@ export default function App() {
                   </View>
                 </View>
 
-                <Text style={styles.inputLabel}>Conceder Bônus nesta Atividade (Opcional):</Text>
+                <Text style={styles.inputLabel}>Conceder Bônus (Opcional):</Text>
                 {selectedChallenge.bonuses?.inquebravel?.active && (
                   <TouchableOpacity
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 4 }}
@@ -1641,7 +1612,7 @@ export default function App() {
                   >
                     <Text style={{ fontSize: 16 }}>{manualInquebravelCheck ? '☑️' : '⬜'}</Text>
                     <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#c2410c' }}>
-                      🪨 Atribuir Bônus "O Inquebrável" (+{selectedChallenge.bonuses.inquebravel.points} pts)
+                      🪨 Bônus "O Inquebrável" (+{selectedChallenge.bonuses.inquebravel.points} pts)
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -1653,7 +1624,7 @@ export default function App() {
                   >
                     <Text style={{ fontSize: 16 }}>{manualDespertaCheck ? '☑️' : '⬜'}</Text>
                     <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>
-                      ⏰ Atribuir Bônus "O Desperta" (+{selectedChallenge.bonuses.desperta.points} pts)
+                      ⏰ Bônus "O Desperta" (+{selectedChallenge.bonuses.desperta.points} pts)
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -1675,7 +1646,7 @@ export default function App() {
                       </View>
                       <View style={{ flexDirection: 'row', gap: 4 }}>
                         <TouchableOpacity style={styles.approveBtn} onPress={() => handleApprovePending(p, 'active')}>
-                          <Text style={styles.btnMiniText}>⚡ ATLETA ATIVO</Text>
+                          <Text style={styles.btnMiniText}>⚡ ATLETA</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.demoteBtn} onPress={() => handleApprovePending(p, 'spectator')}>
                           <Text style={styles.btnMiniText}>👀 TORCEDOR</Text>
@@ -1687,7 +1658,7 @@ export default function App() {
               )}
 
               <View style={styles.adminControlCard}>
-                <Text style={styles.adminCardTitle}>👥 Gerenciamento de Membros (Atleta Ativo, Atleta Pendente, Torcedor)</Text>
+                <Text style={styles.adminCardTitle}>👥 Gerenciamento de Membros</Text>
                 {currentChallengeMembers.map((m) => (
                   <View key={m.userId} style={styles.participantRow}>
                     <Image source={{ uri: m.avatar }} style={styles.avatarMini} />
@@ -1700,7 +1671,7 @@ export default function App() {
                     <View style={styles.actionButtonsRow}>
                       {m.role === 'spectator' ? (
                         <TouchableOpacity style={styles.approveBtn} onPress={() => handlePromoteToActive(m.userId)}>
-                          <Text style={styles.btnMiniText}>⚡ ATLETA ATIVO</Text>
+                          <Text style={styles.btnMiniText}>⚡ ATLETA</Text>
                         </TouchableOpacity>
                       ) : (
                         <TouchableOpacity style={styles.demoteBtn} onPress={() => handleDemoteToSpectator(m.userId)}>
@@ -1716,9 +1687,9 @@ export default function App() {
               </View>
 
               <View style={styles.adminControlCard}>
-                <Text style={styles.adminCardTitle}>✏️ Configuração Avançada de Pontos & Desempate</Text>
+                <Text style={styles.adminCardTitle}>✏️ Configuração Avançada de Pontos</Text>
                 <TouchableOpacity style={styles.primaryBtn} onPress={() => setIsEditRulesOpen(true)}>
-                  <Text style={styles.primaryBtnText}>EDITAR REGRAS DETALHADAS E STEPS DA LIGA</Text>
+                  <Text style={styles.primaryBtnText}>EDITAR REGRAS DETALHADAS DA LIGA</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -1726,7 +1697,7 @@ export default function App() {
         </View>
       </View>
 
-      {/* MODAL PLAYER DE STORY EM TELA CHEIA (FOTOS E VÍDEOS DE 30 SECS) */}
+      {/* MODAIS DA APLICAÇÃO */}
       <Modal visible={!!selectedStory} animationType="fade" transparent>
         <View style={styles.storyViewerOverlay}>
           <View style={styles.storyViewerHeader}>
@@ -1746,30 +1717,19 @@ export default function App() {
           </View>
 
           <View style={styles.storyMediaContainer}>
-            {selectedStory?.type === 'video' ? (
-              <video
-                src={selectedStory.uri}
-                autoPlay
-                playsInline
-                style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain' }}
-              />
-            ) : (
-              <Image source={{ uri: selectedStory?.uri }} style={styles.storyFullImg} resizeMode="contain" />
-            )}
+            <Image source={{ uri: selectedStory?.uri }} style={styles.storyFullImg} resizeMode="contain" />
           </View>
         </View>
       </Modal>
 
-      {/* MODAL PUBLICAR NOVO STORY (VÍDEO DE ATÉ 30s OU FOTO) */}
       <Modal visible={isAddStoryOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Postar Story no MuvFit (Vídeo 30s ou Foto)</Text>
+            <Text style={styles.modalTitle}>Postar Story no MuvFit</Text>
             <MediaPickerField 
               label="Selecione Foto ou Vídeo Curto (30s):" 
               photoState={newStoryMedia} 
               setPhotoState={setNewStoryMedia} 
-              inputId="storyMedia"
               acceptVideo={true}
               setMediaType={setNewStoryType}
             />
@@ -1782,7 +1742,7 @@ export default function App() {
                 ]);
                 setNewStoryMedia(null);
                 setIsAddStoryOpen(false);
-                Alert.alert('Story Publicado!', 'Seu vídeo/foto de story já está visível para os atletas.');
+                Alert.alert('Story Publicado!', 'Seu story está visível para os atletas.');
               }
             }}>
               <Text style={styles.primaryBtnText}>PUBLICAR STORY</Text>
@@ -1794,7 +1754,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL CONVITE */}
       <Modal visible={isInviteModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -1802,13 +1761,10 @@ export default function App() {
             <Text style={{ fontSize: 12, color: '#1e3a8a', fontWeight: 'bold', textAlign: 'center', marginBottom: 4 }}>
               {inviteTargetChallenge?.title}
             </Text>
-            <Text style={{ fontSize: 9, color: '#64748b', textAlign: 'center', marginBottom: 10 }}>
-              Link de Convite Individual: https://muvfit.vercel.app/convite?codigo={inviteTargetChallenge?.invite_code}
-            </Text>
 
             <View style={styles.inviteBoxHighlight}>
               <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#0f172a' }}>📱 Novo Cadastro no MuvFit?</Text>
-              <Text style={{ fontSize: 8, color: '#475569', marginBottom: 6 }}>1. Baixe o app MuvFit na Store {"\n"}2. Crie seu cadastro rápido {"\n"}3. Digite o código de acesso abaixo para se juntar ao desafio!</Text>
+              <Text style={{ fontSize: 8, color: '#475569', marginBottom: 6 }}>1. Baixe o app MuvFit na Store {"\n"}2. Crie seu cadastro {"\n"}3. Digite o código abaixo para entrar no desafio!</Text>
             </View>
 
             <Text style={styles.inputLabel}>Digite o Código de Acesso do Desafio:</Text>
@@ -1830,7 +1786,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL CRIAR DESAFIO */}
       <Modal visible={isCreateChallengeOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -1866,52 +1821,34 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL REGRAS */}
       <Modal visible={isEditRulesOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={styles.modalContent}>
             <Text style={styles.modalTitle}>Configuração Avançada de Pontuação</Text>
             
             <Text style={styles.inputLabel}>Selecione o Desafio para Configurar:</Text>
-            <select
-              style={selectHtmlStyle}
-              value={editingChallengeId}
-              onChange={(e) => {
-                const targetId = e.target.value;
-                setEditingChallengeId(targetId);
-                const found = challenges.find(c => c.id === targetId);
-                if (found) {
-                  setEditingRules(JSON.parse(JSON.stringify(found.rules || {})));
-                  setTiebreakerEnabled(found.tiebreakerEnabled ?? true);
-                  if (found.tiebreakersConfig) setTiebreakersConfig(found.tiebreakersConfig);
-                }
-              }}
+            <TouchableOpacity 
+              style={styles.nativeSelectButton}
+              onPress={() => setIsEditingChallengeSelectOpen(true)}
             >
-              {adminChallenges.map(c => (
-                <option key={c.id} value={c.id}>{c.title} ({c.invite_code})</option>
-              ))}
-            </select>
+              <Text style={styles.nativeSelectButtonText}>
+                {(challenges.find(c => c.id === editingChallengeId) || {}).title || 'Desafio'} ▼
+              </Text>
+            </TouchableOpacity>
 
             <Text style={{ fontSize: 9, color: '#f97316', fontWeight: 'bold', textAlign: 'center', marginVertical: 6 }}>
               ⚠️ Escolha 1 ÚNICO MODO DE PONTUAÇÃO por modalidade habilitada.
             </Text>
 
             <Text style={styles.inputLabel}>Selecione a Modalidade para Configurar:</Text>
-            <select
-              style={selectRuleTabStyle}
-              value={selectedRuleTab}
-              onChange={(e) => setSelectedRuleTab(e.target.value)}
+            <TouchableOpacity 
+              style={styles.nativeSelectButton}
+              onPress={() => setIsRuleTabSelectOpen(true)}
             >
-              <option value="musculacao">💪 MUSCULAÇÃO</option>
-              <option value="crossfit">🏋️ CROSSFIT / FUNCIONAL</option>
-              <option value="aerobico">🧘 AERÓBICO / AULAS COLETIVAS</option>
-              <option value="corrida">🏃 CORRIDA</option>
-              <option value="caminhada">🚶 CAMINHADA</option>
-              <option value="bike">🚴 BIKE</option>
-              <option value="esporte_coletivo">⚽ ESPORTE COLETIVO</option>
-              <option value="esporte_individual">🎾 ESPORTE INDIVIDUAL</option>
-              <option value="bonuses_desempate">🏆 BÔNUS & CRITÉRIOS DE DESEMPATE</option>
-            </select>
+              <Text style={styles.nativeSelectButtonText}>
+                {selectedRuleTab.toUpperCase()} ▼
+              </Text>
+            </TouchableOpacity>
 
             {selectedRuleTab !== 'bonuses_desempate' && (
               <TouchableOpacity
@@ -1920,7 +1857,7 @@ export default function App() {
               >
                 <Text style={{ fontSize: 16 }}>{currentTabRule.enabled ? '☑️' : '⬜'}</Text>
                 <Text style={styles.toggleModalidadeText}>
-                  {currentTabRule.enabled ? 'Modalidade Habilitada neste Desafio' : 'Modalidade Desabilitada (Não Pontua neste Desafio)'}
+                  {currentTabRule.enabled ? 'Modalidade Habilitada neste Desafio' : 'Modalidade Desabilitada'}
                 </Text>
               </TouchableOpacity>
             )}
@@ -1966,7 +1903,7 @@ export default function App() {
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <Text style={{ fontSize: 14 }}>{currentTabRule.mode === 'km' ? '🔘' : '⚪'}</Text>
-                      <Text style={styles.modeCardTitle}>2ª Opção: Pontuação por Quilometragem Mínima (KM)</Text>
+                      <Text style={styles.modeCardTitle}>2ª Opção: Pontuação por KM Mínimo</Text>
                     </View>
                     {currentTabRule.mode === 'km' ? (
                       <View style={{ marginTop: 8 }}>
@@ -1998,14 +1935,14 @@ export default function App() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Text style={{ fontSize: 14 }}>{currentTabRule.mode === 'steps' ? '🔘' : '⚪'}</Text>
                     <Text style={styles.modeCardTitle}>
-                      {['corrida', 'caminhada', 'bike'].includes(selectedRuleTab) ? '3ª Opção: Steps Progressivos (Janelas Separadas de Tempo e KM)' : '2ª Opção: Steps Progressivos (Tempo)'}
+                      {['corrida', 'caminhada', 'bike'].includes(selectedRuleTab) ? '3ª Opção: Steps Progressivos' : '2ª Opção: Steps Progressivos'}
                     </Text>
                   </View>
                   
                   {currentTabRule.mode === 'steps' ? (
                     <View style={{ marginTop: 8 }}>
                       <Text style={{ fontSize: 10, color: '#1e3a8a', fontWeight: 'bold', marginBottom: 4 }}>
-                        ⏱️ Cadastre os Steps por TEMPO (minutos):
+                        ⏱️ Steps por TEMPO (minutos):
                       </Text>
 
                       {(currentTabRule.steps || []).map((step, idx) => (
@@ -2022,21 +1959,21 @@ export default function App() {
                           <View style={{ flexDirection: 'row', gap: 4 }}>
                             <TextInput
                               style={[styles.input, { flex: 1 }]}
-                              placeholder="Mín min (ex: 30)"
+                              placeholder="Mín min"
                               keyboardType="numeric"
                               value={step.min}
                               onChangeText={(txt) => handleUpdateStepField(selectedRuleTab, idx, 'min', txt, 'time')}
                             />
                             <TextInput
                               style={[styles.input, { flex: 1 }]}
-                              placeholder="Máx min (ex: 59)"
+                              placeholder="Máx min"
                               keyboardType="numeric"
                               value={step.max}
                               onChangeText={(txt) => handleUpdateStepField(selectedRuleTab, idx, 'max', txt, 'time')}
                             />
                             <TextInput
                               style={[styles.input, { flex: 1 }]}
-                              placeholder="Pontos (ex: 5000)"
+                              placeholder="Pontos"
                               keyboardType="numeric"
                               value={step.pts}
                               onChangeText={(txt) => handleUpdateStepField(selectedRuleTab, idx, 'pts', txt, 'time')}
@@ -2052,7 +1989,7 @@ export default function App() {
                       {['corrida', 'caminhada', 'bike'].includes(selectedRuleTab) && (
                         <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#fed7aa' }}>
                           <Text style={{ fontSize: 10, color: '#c2410c', fontWeight: 'bold', marginBottom: 4 }}>
-                            🏃 Cadastre os Steps por QUILOMETRAGEM (KM):
+                            🏃 Steps por QUILOMETRAGEM (KM):
                           </Text>
 
                           {(currentTabRule.stepsKm || []).map((step, idx) => (
@@ -2069,21 +2006,21 @@ export default function App() {
                               <View style={{ flexDirection: 'row', gap: 4 }}>
                                 <TextInput
                                   style={[styles.input, { flex: 1 }]}
-                                  placeholder="Mín km (ex: 3)"
+                                  placeholder="Mín km"
                                   keyboardType="numeric"
                                   value={step.min}
                                   onChangeText={(txt) => handleUpdateStepField(selectedRuleTab, idx, 'min', txt, 'km')}
                                 />
                                 <TextInput
                                   style={[styles.input, { flex: 1 }]}
-                                  placeholder="Máx km (ex: 6)"
+                                  placeholder="Máx km"
                                   keyboardType="numeric"
                                   value={step.max}
                                   onChangeText={(txt) => handleUpdateStepField(selectedRuleTab, idx, 'max', txt, 'km')}
                                 />
                                 <TextInput
                                   style={[styles.input, { flex: 1 }]}
-                                  placeholder="Pontos (ex: 5000)"
+                                  placeholder="Pontos"
                                   keyboardType="numeric"
                                   value={step.pts}
                                   onChangeText={(txt) => handleUpdateStepField(selectedRuleTab, idx, 'pts', txt, 'km')}
@@ -2107,18 +2044,18 @@ export default function App() {
 
             {selectedRuleTab === 'bonuses_desempate' && (
               <View style={styles.ruleSectionBox}>
-                <Text style={styles.ruleSectionTitle}>Bônus Individuais (Ativáveis & Parametrizáveis)</Text>
+                <Text style={styles.ruleSectionTitle}>Bônus Individuais</Text>
 
                 <View style={styles.bonusConfigCard}>
                   <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }} onPress={() => setBonusInquebravelActive(!bonusInquebravelActive)}>
                     <Text style={{ fontSize: 16 }}>{bonusInquebravelActive ? '☑️' : '⬜'}</Text>
-                    <Text style={styles.bonusTitleText}>🪨 Bônus "O Inquebrável" (Dias Seguidos)</Text>
+                    <Text style={styles.bonusTitleText}>🪨 Bônus "O Inquebrável"</Text>
                   </TouchableOpacity>
-                  <Text style={styles.bonusDescText}>Premia o atleta ao atingir X dias consecutivos de atividades registradas.</Text>
+                  <Text style={styles.bonusDescText}>Premia X dias consecutivos de atividade.</Text>
                   {bonusInquebravelActive && (
                     <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
-                      <TextInput style={[styles.input, { flex: 1 }]} placeholder="Qtd de Dias (Ex: 7)" keyboardType="numeric" value={bonusInquebravelDays} onChangeText={setBonusInquebravelDays} />
-                      <TextInput style={[styles.input, { flex: 1 }]} placeholder="Pontos (Ex: 5000)" keyboardType="numeric" value={bonusInquebravelPoints} onChangeText={setBonusInquebravelPoints} />
+                      <TextInput style={[styles.input, { flex: 1 }]} placeholder="Qtd Dias" keyboardType="numeric" value={bonusInquebravelDays} onChangeText={setBonusInquebravelDays} />
+                      <TextInput style={[styles.input, { flex: 1 }]} placeholder="Pontos" keyboardType="numeric" value={bonusInquebravelPoints} onChangeText={setBonusInquebravelPoints} />
                     </View>
                   )}
                 </View>
@@ -2126,13 +2063,13 @@ export default function App() {
                 <View style={styles.bonusConfigCard}>
                   <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }} onPress={() => setBonusDespertaActive(!bonusDespertaActive)}>
                     <Text style={{ fontSize: 16 }}>{bonusDespertaActive ? '☑️' : '⬜'}</Text>
-                    <Text style={styles.bonusTitleText}>⏰ Bônus "O Desperta" (Acordar Cedo)</Text>
+                    <Text style={styles.bonusTitleText}>⏰ Bônus "O Desperta"</Text>
                   </TouchableOpacity>
-                  <Text style={styles.bonusDescText}>Premia o atleta ao enviar o comprovante de treino até o horário limite estipulado.</Text>
+                  <Text style={styles.bonusDescText}>Premia comprovante enviado até horário limite.</Text>
                   {bonusDespertaActive && (
                     <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
-                      <TextInput style={[styles.input, { flex: 1 }]} placeholder="Hora Limite (Ex: 07:00)" value={bonusDespertaTime} onChangeText={setBonusDespertaTime} />
-                      <TextInput style={[styles.input, { flex: 1 }]} placeholder="Pontos (Ex: 3000)" keyboardType="numeric" value={bonusDespertaPoints} onChangeText={setBonusDespertaPoints} />
+                      <TextInput style={[styles.input, { flex: 1 }]} placeholder="Hora Limite" value={bonusDespertaTime} onChangeText={setBonusDespertaTime} />
+                      <TextInput style={[styles.input, { flex: 1 }]} placeholder="Pontos" keyboardType="numeric" value={bonusDespertaPoints} onChangeText={setBonusDespertaPoints} />
                     </View>
                   )}
                 </View>
@@ -2143,13 +2080,13 @@ export default function App() {
                 >
                   <Text style={{ fontSize: 16 }}>{tiebreakerEnabled ? '☑️' : '⬜'}</Text>
                   <Text style={styles.toggleModalidadeText}>
-                    {tiebreakerEnabled ? 'Habilitar Critérios de Desempate neste Desafio' : 'Desabilitar Critérios de Desempate'}
+                    {tiebreakerEnabled ? 'Habilitar Critérios de Desempate' : 'Desabilitar Critérios de Desempate'}
                   </Text>
                 </TouchableOpacity>
 
                 {tiebreakerEnabled && (
                   <View style={{ marginTop: 6 }}>
-                    <Text style={styles.ruleSectionTitle}>Selecione os Critérios que serão utilizados:</Text>
+                    <Text style={styles.ruleSectionTitle}>Critérios de Desempate Ativos:</Text>
                     {tiebreakersConfig.map((tb, idx) => (
                       <TouchableOpacity
                         key={tb.id}
@@ -2169,7 +2106,7 @@ export default function App() {
             )}
 
             <TouchableOpacity style={styles.primaryBtn} onPress={handleSaveRules}>
-              <Text style={styles.primaryBtnText}>SALVAR REGRAS DO DESAFIO SELECIONADO</Text>
+              <Text style={styles.primaryBtnText}>SALVAR REGRAS DO DESAFIO</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsEditRulesOpen(false)}>
               <Text style={styles.cancelBtnText}>CANCELAR</Text>
@@ -2178,21 +2115,16 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL SUBMETER TREINO */}
       <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={styles.modalContent}>
             <Text style={styles.modalTitle}>Registrar Treino ({selectedChallenge?.title || 'Desafio'})</Text>
 
             <View style={styles.rulesInfoBox}>
-              <Text style={styles.rulesInfoTitle}>📜 Tabela de Regras da Liga Atual:</Text>
+              <Text style={styles.rulesInfoTitle}>📜 Regras Ativas:</Text>
               <Text style={styles.rulesInfoText}>• Musculação: 30m ({selectedChallenge?.rules?.musculacao?.minPoints || 5000}pts) | 1h+ (10000pts)</Text>
-              <Text style={styles.rulesInfoText}>• CrossFit / Funcional: Mín {selectedChallenge?.rules?.crossfit?.minMinutes || 40}m</Text>
-              <Text style={styles.rulesInfoText}>• Aeróbico: Mín {selectedChallenge?.rules?.aerobico?.minMinutes || 45}m</Text>
               <Text style={styles.rulesInfoText}>• Corrida: Mín {selectedChallenge?.rules?.corrida?.minKm || 3}km</Text>
-              <Text style={styles.rulesInfoText}>• Caminhada: Mín {selectedChallenge?.rules?.caminhada?.minKm || 3}km</Text>
-              <Text style={styles.rulesInfoText}>• Bike: Mín {selectedChallenge?.rules?.bike?.minKm || 10}km</Text>
-              <Text style={styles.rulesInfoText}>• Trava: Máximo 1 submissão por modalidade ao dia (Libera às 23:59:59)</Text>
+              <Text style={styles.rulesInfoText}>• Trava: Máximo 1 envio por modalidade ao dia</Text>
             </View>
 
             <Text style={styles.inputLabel}>Selecione a Modalidade:</Text>
@@ -2205,7 +2137,7 @@ export default function App() {
                 { id: 'bike', label: 'Bike' },
                 { id: 'esporte_coletivo', label: 'Esporte Coletivo' },
                 { id: 'esporte_individual', label: 'Esporte Individual' },
-                { id: 'aerobico', label: 'Aeróbico / Aulas Coletivas' },
+                { id: 'aerobico', label: 'Aeróbico' },
                 { id: 'passos_diarios', label: '🚶 Passos Diários' },
               ].filter(opt => opt.id === 'passos_diarios' || selectedChallenge?.rules?.[opt.id]?.enabled !== false).map((opt) => (
                 <TouchableOpacity
@@ -2235,27 +2167,27 @@ export default function App() {
 
             <View style={{ flexDirection: 'row', gap: 6 }}>
               <TextInput style={[styles.input, { flex: 1 }]} placeholder="Data (DD/MM)" value={workoutDate} onChangeText={setWorkoutDate} />
-              <TextInput style={[styles.input, { flex: 1 }]} placeholder="Hora Início (08:00)" value={startTime} onChangeText={setStartTime} />
-              <TextInput style={[styles.input, { flex: 1 }]} placeholder="Hora Fim (09:00)" value={endTime} onChangeText={setEndTime} />
+              <TextInput style={[styles.input, { flex: 1 }]} placeholder="Início (08:00)" value={startTime} onChangeText={setStartTime} />
+              <TextInput style={[styles.input, { flex: 1 }]} placeholder="Fim (09:00)" value={endTime} onChangeText={setEndTime} />
             </View>
 
             <Text style={styles.inputLabel}>
               {['musculacao', 'crossfit', 'aerobico'].includes(selectedActivity)
                 ? '3 Fotos Obrigatórias (Início, Fim e Evidência):'
-                : '1 Foto/Print Obrigatório de Comprovação:'}
+                : 'Comprovante da Atividade:'}
             </Text>
 
             {['musculacao', 'crossfit', 'aerobico'].includes(selectedActivity) ? (
               <>
-                <MediaPickerField label="1. Foto do Horário Inicial:" photoState={photoStart} setPhotoState={setPhotoStart} inputId="start" />
-                <MediaPickerField label="2. Foto do Horário Final:" photoState={photoEnd} setPhotoState={setPhotoEnd} inputId="end" />
-                <MediaPickerField label="3. Foto de Evidência da Atividade:" photoState={photoEvidence} setPhotoState={setPhotoEvidence} inputId="ev" />
+                <MediaPickerField label="1. Foto Horário Inicial:" photoState={photoStart} setPhotoState={setPhotoStart} />
+                <MediaPickerField label="2. Foto Horário Final:" photoState={photoEnd} setPhotoState={setPhotoEnd} />
+                <MediaPickerField label="3. Foto Evidência do Treino:" photoState={photoEvidence} setPhotoState={setPhotoEvidence} />
               </>
             ) : (
-              <MediaPickerField label="Comprovante (Print / Foto no Local):" photoState={photoEvidence} setPhotoState={setPhotoEvidence} inputId="single" />
+              <MediaPickerField label="Comprovante (Print / Foto):" photoState={photoEvidence} setPhotoState={setPhotoEvidence} />
             )}
 
-            <TextInput style={styles.inputArea} placeholder="Descrição / Legenda (Opcional)..." multiline value={workoutCaption} onChangeText={setWorkoutCaption} />
+            <TextInput style={styles.inputArea} placeholder="Legenda / Comentário (Opcional)..." multiline value={workoutCaption} onChangeText={setWorkoutCaption} />
 
             <TouchableOpacity style={styles.primaryBtn} onPress={handleSubmitWorkout}>
               <Text style={styles.primaryBtnText}>SUBMETER TREINO</Text>
@@ -2267,12 +2199,11 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL EDITAR PERFIL */}
       <Modal visible={isEditProfileOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Editar Perfil do Atleta</Text>
-            <MediaPickerField label="Foto de Perfil (Avatar):" photoState={editAvatar} setPhotoState={setEditAvatar} inputId="avatar" />
+            <MediaPickerField label="Foto de Perfil (Avatar):" photoState={editAvatar} setPhotoState={setEditAvatar} />
             <TextInput style={styles.input} placeholder="Nome Completo" value={editName} onChangeText={setEditName} />
             <TextInput style={styles.input} placeholder="Idade" keyboardType="numeric" value={editAge} onChangeText={setEditAge} />
             <TextInput style={styles.input} placeholder="Sexo" value={editGender} onChangeText={setEditGender} />
@@ -2291,7 +2222,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL OBJETIVOS */}
       <Modal visible={isAddGoalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -2312,48 +2242,145 @@ export default function App() {
           </View>
         </View>
       </Modal>
+
+      {/* MODAIS NATIVAS DE SELEÇÃO */}
+      <Modal visible={isHeaderSelectOpen} transparent animationType="fade">
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsHeaderSelectOpen(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Selecione o Desafio Ativo</Text>
+            {challenges.map(c => (
+              <TouchableOpacity 
+                key={c.id} 
+                style={styles.selectOptionRow}
+                onPress={() => {
+                  selectChallengeContext(c, c.creator_id === currentUser.id);
+                  setIsHeaderSelectOpen(false);
+                }}
+              >
+                <Text style={styles.selectOptionText}>{c.title} ({c.creator_id === currentUser.id ? '🔑 Admin' : '⚡ Atleta'})</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={isPerfScopeSelectOpen} transparent animationType="fade">
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsPerfScopeSelectOpen(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Visualizar Desempenho Por:</Text>
+            <TouchableOpacity 
+              style={styles.selectOptionRow}
+              onPress={() => { setAthletePerfScope('overall'); setIsPerfScopeSelectOpen(false); }}
+            >
+              <Text style={styles.selectOptionText}>🌐 Somatório Geral (Todos os Desafios)</Text>
+            </TouchableOpacity>
+            {userMembershipsAll.map(m => {
+              const ch = challenges.find(c => c.id === m.challengeId);
+              return (
+                <TouchableOpacity 
+                  key={m.challengeId} 
+                  style={styles.selectOptionRow}
+                  onPress={() => { setAthletePerfScope(m.challengeId); setIsPerfScopeSelectOpen(false); }}
+                >
+                  <Text style={styles.selectOptionText}>🎯 {ch ? ch.title : 'Desafio'}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={isManualAthleteSelectOpen} transparent animationType="fade">
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsManualAthleteSelectOpen(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Escolha o Atleta Ativo</Text>
+            {activeMembersInChallenge.map(m => (
+              <TouchableOpacity 
+                key={m.userId} 
+                style={styles.selectOptionRow}
+                onPress={() => { setManualAthleteId(m.userId); setIsManualAthleteSelectOpen(false); }}
+              >
+                <Text style={styles.selectOptionText}>{m.name} ({m.nickname})</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={isManualActivitySelectOpen} transparent animationType="fade">
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsManualActivitySelectOpen(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Selecione a Modalidade</Text>
+            {['musculacao', 'crossfit', 'corrida', 'caminhada', 'bike', 'esporte_coletivo', 'esporte_individual', 'aerobico'].map(act => (
+              <TouchableOpacity 
+                key={act} 
+                style={styles.selectOptionRow}
+                onPress={() => { setManualActivity(act); setIsManualActivitySelectOpen(false); }}
+              >
+                <Text style={styles.selectOptionText}>{act.toUpperCase()}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={isEditingChallengeSelectOpen} transparent animationType="fade">
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsEditingChallengeSelectOpen(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Selecione o Desafio para Configurar</Text>
+            {adminChallenges.map(c => (
+              <TouchableOpacity 
+                key={c.id} 
+                style={styles.selectOptionRow}
+                onPress={() => {
+                  setEditingChallengeId(c.id);
+                  setEditingRules(JSON.parse(JSON.stringify(c.rules || {})));
+                  setTiebreakerEnabled(c.tiebreakerEnabled ?? true);
+                  if (c.tiebreakersConfig) setTiebreakersConfig(c.tiebreakersConfig);
+                  setIsEditingChallengeSelectOpen(false);
+                }}
+              >
+                <Text style={styles.selectOptionText}>{c.title} ({c.invite_code})</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={isRuleTabSelectOpen} transparent animationType="fade">
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsRuleTabSelectOpen(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Selecione a Modalidade</Text>
+            {[
+              { id: 'musculacao', label: '💪 MUSCULAÇÃO' },
+              { id: 'crossfit', label: '🏋️ CROSSFIT / FUNCIONAL' },
+              { id: 'aerobico', label: '🧘 AERÓBICO' },
+              { id: 'corrida', label: '🏃 CORRIDA' },
+              { id: 'caminhada', label: '🚶 CAMINHADA' },
+              { id: 'bike', label: '🚴 BIKE' },
+              { id: 'esporte_coletivo', label: '⚽ ESPORTE COLETIVO' },
+              { id: 'esporte_individual', label: '🎾 ESPORTE INDIVIDUAL' },
+              { id: 'bonuses_desempate', label: '🏆 BÔNUS & DESEMPATE' },
+            ].map(tab => (
+              <TouchableOpacity 
+                key={tab.id} 
+                style={styles.selectOptionRow}
+                onPress={() => { setSelectedRuleTab(tab.id); setIsRuleTabSelectOpen(false); }}
+              >
+                <Text style={styles.selectOptionText}>{tab.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
     </SafeAreaView>
   );
 }
 
-// ESTILOS DE TAG NATIVA
-const selectHeaderStyle = {
-  width: '100%',
-  padding: '4px',
-  borderRadius: '4px',
-  borderColor: '#cbd5e1',
-  fontSize: '10px',
-  backgroundColor: '#ffffff',
-  fontWeight: 'bold'
-};
-
-const selectHtmlStyle = {
-  width: '100%',
-  padding: '6px',
-  borderRadius: '6px',
-  borderColor: '#cbd5e1',
-  fontSize: '11px',
-  backgroundColor: '#ffffff',
-  marginBottom: '6px'
-};
-
-const selectRuleTabStyle = {
-  width: '100%',
-  padding: '6px',
-  borderRadius: '6px',
-  borderColor: '#f97316',
-  borderWidth: '1.5px',
-  borderStyle: 'solid',
-  fontSize: '11px',
-  backgroundColor: '#eff6ff',
-  fontWeight: 'bold',
-  color: '#1e3a8a',
-  marginBottom: '6px'
-};
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff' },
-  topHeader: { padding: 12, backgroundColor: '#1e3a8a' },
+  topHeader: { padding: 12, backgroundColor: '#1e3a8a', position: 'relative' },
   brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   brandTitle: { fontSize: 20, fontWeight: '900', color: '#f97316' },
   brandSubtitle: { fontSize: 10, fontWeight: 'bold', color: '#ffffff' },
@@ -2361,9 +2388,15 @@ const styles = StyleSheet.create({
   activeChallengeSelectorBar: { backgroundColor: '#172554', padding: 6, borderRadius: 6, marginBottom: 6 },
   activeChallengeSelectorLabel: { fontSize: 9, color: '#f97316', fontWeight: 'bold', marginBottom: 2 },
 
-  searchInput: { backgroundColor: '#ffffff', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 8, fontSize: 11, color: '#0f172a', borderWidth: 1, borderColor: '#cbd5e1' },
+  nativeSelectButton: { backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 6 },
+  nativeSelectButtonText: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
+  selectOptionRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  selectOptionText: { fontSize: 12, fontWeight: 'bold', color: '#0f172a' },
+
+  searchInput: { backgroundColor: '#ffffff', borderRadius: 6, paddingHorizontal: 10, paddingVertical: Platform.OS === 'ios' ? 8 : 4, fontSize: 11, color: '#0f172a', borderWidth: 1, borderColor: '#cbd5e1' },
   
-  searchResultsDropdown: { position: 'absolute', top: 40, left: 0, right: 0, backgroundColor: '#ffffff', borderRadius: 8, padding: 10, borderWidth: 2, borderColor: '#f97316', shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10, elevation: 20, zIndex: 99999 },
+  // Z-INDEX CORRIGIDO PARA NATIVO
+  searchResultsDropdown: { position: 'absolute', top: 40, left: 0, right: 0, backgroundColor: '#ffffff', borderRadius: 8, padding: 10, borderWidth: 2, borderColor: '#f97316', elevation: 5 },
   searchHeaderTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, borderBottomWidth: 1, borderBottomColor: '#e2e8f0', paddingBottom: 4 },
   searchHeaderTitle: { fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' },
   closeSearchBtn: { backgroundColor: '#fef2f2', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
@@ -2384,14 +2417,14 @@ const styles = StyleSheet.create({
   topWinnersBannerTitle: { fontSize: 10, fontWeight: '900', color: '#b45309', marginBottom: 2 },
   topWinnersBannerList: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
 
-  sidebar: { width: 140, backgroundColor: '#f8fafc', borderRightWidth: 1, borderRightColor: '#cbd5e1', paddingVertical: 10 },
-  sidebarBtn: { paddingVertical: 12, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  sidebar: { width: 110, backgroundColor: '#f8fafc', borderRightWidth: 1, borderRightColor: '#cbd5e1', paddingVertical: 10 },
+  sidebarBtn: { paddingVertical: 12, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 4 },
   sidebarBtnActive: { backgroundColor: '#ffffff', borderLeftWidth: 4, borderLeftColor: '#f97316' },
-  sidebarIcon: { fontSize: 14 },
-  sidebarText: { fontSize: 10, fontWeight: 'bold', color: '#64748b' },
+  sidebarIcon: { fontSize: 12 },
+  sidebarText: { fontSize: 9, fontWeight: 'bold', color: '#64748b' },
   sidebarTextActive: { color: '#f97316' },
 
-  mainContent: { padding: 14 },
+  mainContent: { padding: 12 },
   pageTitle: { fontSize: 14, fontWeight: 'bold', color: '#1e3a8a', marginVertical: 8 },
   sectionHeaderTitle: { fontSize: 12, fontWeight: 'bold', color: '#f97316', marginVertical: 6 },
   emptyNoticeText: { fontSize: 10, color: '#94a3b8', fontStyle: 'italic', marginBottom: 8 },
@@ -2472,7 +2505,7 @@ const styles = StyleSheet.create({
   declineInviteBtn: { backgroundColor: '#dc2626', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
 
   postCard: { backgroundColor: '#ffffff', borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 12, overflow: 'hidden' },
-  postHeader: { flexDirection: 'row', alignItems: 'center', padding: 8, backgroundColor: '#f8fafc', cursor: 'pointer' },
+  postHeader: { flexDirection: 'row', alignItems: 'center', padding: 8, backgroundColor: '#f8fafc' },
   avatarMini: { width: 32, height: 32, borderRadius: 16 },
   postAuthor: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
   postTime: { fontSize: 9, color: '#64748b' },
@@ -2481,7 +2514,7 @@ const styles = StyleSheet.create({
   badgePts: { backgroundColor: '#fff7ed', color: '#c2410c', fontSize: 9, fontWeight: 'bold', padding: 4, borderRadius: 4, alignSelf: 'flex-start' },
 
   socialBar: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 8, marginTop: 8 },
-  socialBtn: { cursor: 'pointer' },
+  socialBtn: {},
   socialBtnText: { fontSize: 10, fontWeight: 'bold', color: '#64748b' },
   commentsListContainer: { backgroundColor: '#f8fafc', borderRadius: 6, padding: 6, marginTop: 6 },
   commentItemText: { fontSize: 9, color: '#334155', marginBottom: 2 },
@@ -2515,7 +2548,7 @@ const styles = StyleSheet.create({
 
   // PLAYER STORIES
   storyViewerOverlay: { flex: 1, backgroundColor: '#000000', justifyContent: 'space-between', paddingVertical: 20 },
-  storyViewerHeader: { paddingHorizontal: 16, zIndex: 10 },
+  storyViewerHeader: { paddingHorizontal: 16 },
   storyProgressBarBg: { width: '100%', height: 3, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 2, overflow: 'hidden' },
   storyProgressBarFill: { height: '100%', backgroundColor: '#ffffff' },
   storyMediaContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -2555,7 +2588,7 @@ const styles = StyleSheet.create({
   toggleModalidadeBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#eff6ff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#1e3a8a', marginBottom: 10 },
   toggleModalidadeText: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
 
-  modeCardOption: { backgroundColor: '#ffffff', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 8, cursor: 'pointer' },
+  modeCardOption: { backgroundColor: '#ffffff', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 8 },
   modeCardOptionActive: { borderColor: '#f97316', borderWidth: 2, backgroundColor: '#fff7ed' },
   modeCardTitle: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
   modeCardDisabledText: { fontSize: 9, color: '#94a3b8', fontStyle: 'italic', marginTop: 4 },
@@ -2578,8 +2611,8 @@ const styles = StyleSheet.create({
   mediaFieldBox: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, padding: 8, marginBottom: 8 },
   mediaLabel: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 6 },
   mediaButtonsRow: { flexDirection: 'row', gap: 8 },
-  cameraBtn: { flex: 1, backgroundColor: '#f97316', paddingVertical: 8, borderRadius: 6, alignItems: 'center', cursor: 'pointer' },
-  galleryBtn: { flex: 1, backgroundColor: '#1e3a8a', paddingVertical: 8, borderRadius: 6, alignItems: 'center', cursor: 'pointer' },
+  cameraBtn: { flex: 1, backgroundColor: '#f97316', paddingVertical: 8, borderRadius: 6, alignItems: 'center' },
+  galleryBtn: { flex: 1, backgroundColor: '#1e3a8a', paddingVertical: 8, borderRadius: 6, alignItems: 'center' },
   mediaBtnText: { color: '#ffffff', fontSize: 10, fontWeight: 'bold' },
   previewContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
   previewImage: { width: 36, height: 36, borderRadius: 6, borderWidth: 1, borderColor: '#16a34a' },
@@ -2590,7 +2623,6 @@ const styles = StyleSheet.create({
   modalContent: { backgroundColor: '#ffffff', borderRadius: 12, padding: 14, maxHeight: '90%' },
   modalTitle: { fontSize: 14, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 10, textAlign: 'center' },
   inputLabel: { fontSize: 10, fontWeight: 'bold', color: '#475569', marginVertical: 4 },
-  photoTitle: { fontSize: 9, fontWeight: 'bold', color: '#1e3a8a', marginVertical: 4 },
   input: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 6, fontSize: 11, marginBottom: 6 },
   inputArea: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 6, fontSize: 11, height: 50, textAlignVertical: 'top', marginBottom: 8 },
 
