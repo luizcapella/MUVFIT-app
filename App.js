@@ -11,93 +11,53 @@ import {
   Image,
   Modal,
   Alert,
-  Share,
   Platform,
   ActivityIndicator
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function App() {
-  // GERENCIAMENTO DE SESSÃO REAL DO SUPABASE
   const [session, setSession] = useState(null);
   const [loadingSession, setLoadingSession] = useState(true);
 
-  // ESTADOS DE AUTENTICAÇÃO
+  // AUTH
   const [authMode, setAuthMode] = useState('login');
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
   const [authNickname, setAuthNickname] = useState('');
-  const [authSubmitting, setAuthSubmitting] = useState(false);
 
-  // ATLETA CONECTADO
+  // USUÁRIO
   const [currentUser, setCurrentUser] = useState(null);
   const [viewedUser, setViewedUser] = useState(null);
-  const [currentScreen, setCurrentScreen] = useState('dashboard');
-  
-  // PESQUISA FUNCIONAL COM OVERLAY CORRIGIDO (Z-INDEX 9999)
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchFilter, setSearchFilter] = useState('all');
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [currentScreen, setCurrentScreen] = useState('athlete_center');
 
-  // MODAIS SELETORAS NATIVAS
-  const [isHeaderSelectOpen, setIsHeaderSelectOpen] = useState(false);
-  const [isPerfScopeSelectOpen, setIsPerfScopeSelectOpen] = useState(false);
-  const [isManualAthleteSelectOpen, setIsManualAthleteSelectOpen] = useState(false);
-  const [isManualActivitySelectOpen, setIsManualActivitySelectOpen] = useState(false);
-  const [isEditingChallengeSelectOpen, setIsEditingChallengeSelectOpen] = useState(false);
-  const [isRuleTabSelectOpen, setIsRuleTabSelectOpen] = useState(false);
-
-  // SELETORES DE HORÁRIO NATIVOS
-  const [isStartHourSelectOpen, setIsStartHourSelectOpen] = useState(false);
-  const [isStartMinSelectOpen, setIsStartMinSelectOpen] = useState(false);
-  const [isEndHourSelectOpen, setIsEndHourSelectOpen] = useState(false);
-  const [isEndMinSelectOpen, setIsEndMinSelectOpen] = useState(false);
-
-  // SELETOR DE DURAÇÃO
-  const [isDurationSelectOpen, setIsDurationSelectOpen] = useState(false);
-  const [newChallengeDuration, setNewChallengeDuration] = useState('Mensal');
-
-  // LIGAS E ESTRUTURA
+  // LIGAS
   const [challenges, setChallenges] = useState([
-    {
-      id: 'c1',
-      title: 'Liga Anti-Inércia 2026',
-      invite_code: 'ANTI2026',
-      creator_id: 'usr_capella',
-      duration_type: 'Mensal',
-      season_number: 1,
-      has_daily_cap: true,
-      daily_cap: 22000,
-      registrations_closed: false,
-      is_finished: false,
-      season_ended_pending: false,
-      startDate: '01/09/2026',
-      endDate: '30/09/2026',
-      hallOfFame: [],
-      rules: {
-        musculacao: { enabled: true, mode: 'steps', minMinutes: 30, minPoints: 5000 },
-        corrida: { enabled: true, mode: 'km', minKm: 3, minKmPoints: 5000 }
-      }
-    }
+    { id: 'c1', title: 'Liga Anti-Inércia 2026', invite_code: 'ANTI2026', creator_id: 'usr_capella' }
   ]);
-
   const [activeChallengeId, setActiveChallengeId] = useState('c1');
-  const [isAdminContext, setIsAdminContext] = useState(true);
-
-  const selectedChallenge = challenges.find(c => c.id === activeChallengeId) || challenges[0];
-
-  // PARTICIPANTES (FORMATADOS EM LINHA HORIZONTAL LIMPA)
   const [memberships, setMemberships] = useState([
-    { challengeId: 'c1', userId: 'usr_capella', name: 'Luiz Capella', nickname: 'Poke', role: 'active', rankingPoints: 22000, bankPoints: 15400, totalSteps: 42350, avatar: 'https://picsum.photos/seed/poke/200/200', goldMedals: 3, silverMedals: 1, bronzeMedals: 0, age: 34, gender: 'Masculino' },
-    { challengeId: 'c1', userId: 'm_usr2', name: 'Rafael Souza', nickname: 'Rafa', role: 'active', rankingPoints: 14000, bankPoints: 2000, totalSteps: 31000, avatar: 'https://picsum.photos/seed/rafa/100/100', goldMedals: 2, silverMedals: 2, bronzeMedals: 1, age: 29, gender: 'Masculino' }
+    { challengeId: 'c1', userId: 'usr_capella', name: 'Luiz Capella', nickname: 'Poke', role: 'active', rankingPoints: 22000, bankPoints: 15400, totalSteps: 42350, avatar: 'https://picsum.photos/seed/poke/200/200' }
   ]);
 
-  const [pendingParticipants, setPendingParticipants] = useState([
-    { challengeId: 'c1', id: 'p_usr3', name: 'Lucas Mendes', nickname: 'Luquinhas', avatar: 'https://picsum.photos/seed/lucas/100/100', age: 25, gender: 'Masculino' }
+  // OBJETIVOS PESSOAIS (INICIA ZERADO E COM X VERMELHO)
+  const [userGoals, setUserGoals] = useState([]);
+  const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
+  const [newGoalTitle, setNewGoalTitle] = useState('');
+
+  // PESO EDITÁVEL E HISTÓRICO DE DADOS CLICÁVEIS (ETAPA 6)
+  const [currentWeight, setCurrentWeight] = useState('79');
+  const [newWeightInput, setNewWeightInput] = useState('');
+  const [isEditWeightOpen, setIsEditWeightOpen] = useState(false);
+  const [weightHistory, setWeightHistory] = useState([
+    { date: '01/09/2026', weight: '82.0 kg' },
+    { date: '15/09/2026', weight: '79.0 kg' }
   ]);
 
-  // CHECAGEM DE SESSÃO DO SUPABASE
+  // MODAIS DE HISTÓRICO E GRÁFICOS
+  const [selectedMetricModal, setSelectedMetricModal] = useState(null); // 'peso', 'km', 'tempo', 'atividades'
+
   useEffect(() => {
     (async () => {
       if (Platform.OS !== 'web') {
@@ -108,22 +68,14 @@ export default function App() {
 
     supabase.auth.getSession().then(({ data: { session: activeSession } }) => {
       setSession(activeSession);
-      if (activeSession) {
-        loadUserProfile(activeSession.user);
-      } else {
-        setLoadingSession(false);
-      }
+      if (activeSession) loadUserProfile(activeSession.user);
+      else setLoadingSession(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, activeSession) => {
       setSession(activeSession);
-      if (activeSession) {
-        loadUserProfile(activeSession.user);
-      } else {
-        setCurrentUser(null);
-        setViewedUser(null);
-        setLoadingSession(false);
-      }
+      if (activeSession) loadUserProfile(activeSession.user);
+      else setLoadingSession(false);
     });
 
     return () => subscription.unsubscribe();
@@ -138,37 +90,54 @@ export default function App() {
         nickname: user.user_metadata?.nickname || 'Atleta',
         age: 34,
         gender: 'Masculino',
-        avatar: user.user_metadata?.avatar || 'https://picsum.photos/seed/' + user.id + '/200/200',
-        isAdmin: true
+        avatar: user.user_metadata?.avatar || 'https://picsum.photos/seed/' + user.id + '/200/200'
       };
       setCurrentUser(userObj);
       setViewedUser(userObj);
     } catch (err) {
-      console.log('Erro ao carregar perfil:', err);
+      console.log(err);
     } finally {
       setLoadingSession(false);
     }
   }
 
-  function handleApprovePending(participant, targetRole) {
-    setPendingParticipants(pendingParticipants.filter(p => p.id !== participant.id));
-    setMemberships([
-      ...memberships,
-      { challengeId: activeChallengeId, userId: participant.id, name: participant.name, nickname: participant.nickname, role: targetRole, rankingPoints: 0, bankPoints: 0, totalSteps: 0, avatar: participant.avatar }
+  // OBJETIVOS: ADICIONAR E REMOVER COM X VERMELHO
+  function handleAddGoal() {
+    if (!newGoalTitle.trim()) return;
+    setUserGoals([...userGoals, { id: `g_${Date.now()}`, title: newGoalTitle.trim(), completed: false }]);
+    setNewGoalTitle('');
+    setIsAddGoalOpen(false);
+  }
+
+  function handleDeleteGoal(goalId) {
+    setUserGoals(userGoals.filter(g => g.id !== goalId));
+  }
+
+  // SAIR DO DESAFIO
+  function handleLeaveChallenge(challengeId) {
+    Alert.alert('Sair do Desafio', 'Deseja realmente remover seu vínculo com este desafio?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Sair do Desafio',
+        style: 'destructive',
+        onPress: () => {
+          setMemberships(memberships.filter(m => !(m.challengeId === challengeId && m.userId === currentUser.id)));
+          Alert.alert('Sucesso', 'Você saiu do desafio.');
+        }
+      }
     ]);
-    Alert.alert('Aprovado!', `${participant.name} adicionado como ${targetRole === 'active' ? 'Atleta Ativo' : 'Torcedor'}.`);
   }
 
-  function handleDemoteToSpectator(memberId) {
-    setMemberships(memberships.map(m => (m.challengeId === activeChallengeId && m.userId === memberId) ? { ...m, role: 'spectator' } : m));
-  }
-
-  function handlePromoteToActive(memberId) {
-    setMemberships(memberships.map(m => (m.challengeId === activeChallengeId && m.userId === memberId) ? { ...m, role: 'active' } : m));
-  }
-
-  function handleRemoveFromChallenge(memberId) {
-    setMemberships(memberships.filter(m => !(m.challengeId === activeChallengeId && m.userId === memberId)));
+  // SALVAR NOVO PESO
+  function handleSaveWeight() {
+    if (!newWeightInput.trim()) return;
+    const todayStr = new Date().toLocaleDateString();
+    const newEntry = { date: todayStr, weight: `${newWeightInput.trim()} kg` };
+    setCurrentWeight(newWeightInput.trim());
+    setWeightHistory([newEntry, ...weightHistory]);
+    setNewWeightInput('');
+    setIsEditWeightOpen(false);
+    Alert.alert('Peso Atualizado!', 'Novo registro adicionado ao seu histórico.');
   }
 
   if (loadingSession) {
@@ -188,64 +157,22 @@ export default function App() {
           <Text style={styles.authBrandSubtitle}>Mizan Soluções Técnicas</Text>
           <View style={styles.authCard}>
             <Text style={styles.authTitle}>🔑 Entrar no Aplicativo</Text>
-            <Text style={styles.inputLabel}>E-mail:</Text>
-            <TextInput style={styles.input} placeholder="seuemail@exemplo.com" value={authEmail} onChangeText={setAuthEmail} />
-            <Text style={styles.inputLabel}>Senha:</Text>
-            <TextInput style={styles.input} placeholder="••••••••" secureTextEntry value={authPassword} onChangeText={setAuthPassword} />
-            <TouchableOpacity style={styles.primaryBtn} onPress={() => {}}>
-              <Text style={styles.primaryBtnText}>ENTRAR</Text>
-            </TouchableOpacity>
+            <TextInput style={styles.input} placeholder="E-mail" value={authEmail} onChangeText={setAuthEmail} />
+            <TextInput style={styles.input} placeholder="Senha" secureTextEntry value={authPassword} onChangeText={setAuthPassword} />
+            <TouchableOpacity style={styles.primaryBtn} onPress={() => {}}><Text style={styles.primaryBtnText}>ENTRAR</Text></TouchableOpacity>
           </View>
         </ScrollView>
       </SafeAreaView>
     );
   }
 
-  const currentChallengeMembers = memberships.filter(m => m.challengeId === activeChallengeId);
-  const currentPendingParticipants = pendingParticipants.filter(p => p.challengeId === activeChallengeId);
-
   return (
     <SafeAreaView style={styles.container}>
-      {/* HEADER E OVERLAY DE BUSCA Z-INDEX 9999 */}
+      {/* HEADER */}
       <View style={styles.topHeader}>
         <View style={styles.brandRow}>
           <Text style={styles.brandTitle}>MUVFIT</Text>
           <Text style={styles.brandSubtitle}>Mizan Soluções Técnicas</Text>
-        </View>
-
-        <View style={{ width: '100%', zIndex: 9999 }}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="🔍 Pesquisar Atletas ou Ligas..."
-            placeholderTextColor="#94a3b8"
-            value={searchQuery}
-            onFocus={() => setIsSearchOpen(true)}
-            onChangeText={(txt) => {
-              setSearchQuery(txt);
-              if (!isSearchOpen) setIsSearchOpen(true);
-            }}
-          />
-
-          {isSearchOpen && (
-            <View style={styles.searchResultsDropdown}>
-              <View style={styles.searchHeaderTop}>
-                <Text style={styles.searchHeaderTitle}>🔎 Pesquisa Geral no MUVFIT</Text>
-                <TouchableOpacity onPress={() => setIsSearchOpen(false)} style={styles.closeSearchBtn}>
-                  <Text style={styles.closeSearchText}>✕ FECHAR</Text>
-                </TouchableOpacity>
-              </View>
-              <ScrollView style={{ maxHeight: 200 }}>
-                {memberships.map((m) => (
-                  <TouchableOpacity key={m.userId} style={styles.searchResultItem} onPress={() => setIsSearchOpen(false)}>
-                    <Image source={{ uri: m.avatar }} style={styles.avatarMini} />
-                    <View style={{ marginLeft: 8, flex: 1 }}>
-                      <Text style={styles.searchResultTitle}>{m.name} ({m.nickname})</Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
         </View>
       </View>
 
@@ -256,77 +183,175 @@ export default function App() {
             <Text style={styles.sidebarIcon}>🏠</Text>
             <Text style={[styles.sidebarText, currentScreen === 'dashboard' && styles.sidebarTextActive]}>Dashboard</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'admin' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('admin')}>
-            <Text style={styles.sidebarIcon}>⚙️</Text>
-            <Text style={[styles.sidebarText, currentScreen === 'admin' && styles.sidebarTextActive]}>Admin</Text>
+          <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'athlete_center' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('athlete_center')}>
+            <Text style={styles.sidebarIcon}>👤</Text>
+            <Text style={[styles.sidebarText, currentScreen === 'athlete_center' && styles.sidebarTextActive]}>Atleta</Text>
           </TouchableOpacity>
         </View>
 
         <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
-          {/* PAINEL ADMIN COM CORREÇÃO VISUAL EM LINHA HORIZONTAL DOS INTEGRANTES */}
-          {currentScreen === 'admin' && (
+          {/* DASHBOARD COM SAIR DO DESAFIO */}
+          {currentScreen === 'dashboard' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
-              <Text style={styles.pageTitle}>⚙️ Administração de Membros</Text>
-
-              {/* CARDS DE ATLETAS PENDENTES EM LINHA HORIZONTAL */}
-              {currentPendingParticipants.length > 0 && (
-                <View style={styles.adminControlCard}>
-                  <Text style={styles.adminCardTitle}>📩 Atletas Pendentes ({currentPendingParticipants.length})</Text>
-                  {currentPendingParticipants.map((p) => (
-                    <View key={p.id} style={styles.participantRow}>
-                      <Image source={{ uri: p.avatar }} style={styles.avatarMini} />
-                      <View style={styles.participantInfoBox}>
-                        <Text style={styles.participantName} numberOfLines={1}>{p.name}</Text>
-                        <Text style={styles.participantSub}>({p.nickname}) • Aguardando</Text>
-                      </View>
-                      <View style={styles.actionButtonsRow}>
-                        <TouchableOpacity style={styles.approveBtn} onPress={() => handleApprovePending(p, 'active')}>
-                          <Text style={styles.btnMiniText}>⚡ ATLETA</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.demoteBtn} onPress={() => handleApprovePending(p, 'spectator')}>
-                          <Text style={styles.btnMiniText}>👀 TORCEDOR</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  ))}
+              <Text style={styles.pageTitle}>Meus Desafios Participando</Text>
+              {challenges.map(c => (
+                <View key={c.id} style={styles.cardBox}>
+                  <Text style={styles.cardBoxTitle}>{c.title}</Text>
+                  <TouchableOpacity style={styles.leaveChallengeBtn} onPress={() => handleLeaveChallenge(c.id)}>
+                    <Text style={styles.btnMiniText}>🚪 SAIR DO DESAFIO</Text>
+                  </TouchableOpacity>
                 </View>
-              )}
+              ))}
+            </ScrollView>
+          )}
 
-              {/* CARDS DE GERENCIAMENTO DE MEMBROS CORRIGIDOS NA HORIZONTAL */}
-              <View style={styles.adminControlCard}>
-                <Text style={styles.adminCardTitle}>👥 Gerenciamento de Membros</Text>
-                {currentChallengeMembers.map((m) => (
-                  <View key={m.userId} style={styles.participantRow}>
-                    <Image source={{ uri: m.avatar }} style={styles.avatarMini} />
-                    <View style={styles.participantInfoBox}>
-                      <Text style={styles.participantName} numberOfLines={1}>{m.name} ({m.nickname})</Text>
-                      <Text style={m.role === 'active' ? styles.tagActiveText : styles.tagSpectatorText}>
-                        {m.role === 'active' ? '⚡ Atleta Ativo' : '👀 Torcedor'}
-                      </Text>
-                    </View>
-
-                    <View style={styles.actionButtonsRow}>
-                      {m.role === 'spectator' ? (
-                        <TouchableOpacity style={styles.approveBtn} onPress={() => handlePromoteToActive(m.userId)}>
-                          <Text style={styles.btnMiniText}>⚡ ATLETA</Text>
-                        </TouchableOpacity>
-                      ) : (
-                        <TouchableOpacity style={styles.demoteBtn} onPress={() => handleDemoteToSpectator(m.userId)}>
-                          <Text style={styles.btnMiniText}>👀 TORCEDOR</Text>
-                        </TouchableOpacity>
-                      )}
-                      <TouchableOpacity style={styles.banBtn} onPress={() => handleRemoveFromChallenge(m.userId)}>
-                        <Text style={styles.btnMiniText}>❌ REMOVER</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ))}
+          {/* CENTRAL DO ATLETA CLICÁVEL COM GRÁFICOS */}
+          {currentScreen === 'athlete_center' && (
+            <ScrollView contentContainerStyle={styles.mainContent}>
+              <View style={styles.profileHeaderCard}>
+                <Image source={{ uri: viewedUser?.avatar }} style={styles.avatarLarge} />
+                <Text style={styles.profileName}>{viewedUser?.name}</Text>
+                <Text style={styles.profileMeta}>{viewedUser?.age} anos | {viewedUser?.gender}</Text>
               </View>
+
+              <Text style={styles.pageTitle}>Evolução & Estatísticas (Clique para ver gráficos)</Text>
+              
+              <View style={styles.chartsGrid}>
+                {/* CARD PESO */}
+                <TouchableOpacity style={styles.chartCard} onPress={() => setSelectedMetricModal('peso')}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={styles.chartTitle}>📊 Evolução de Peso ({currentWeight} kg)</Text>
+                    {viewedUser?.id === currentUser?.id && (
+                      <TouchableOpacity style={styles.editBtnMini} onPress={() => setIsEditWeightOpen(true)}>
+                        <Text style={styles.editBtnMiniText}>✏️ Atualizar</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <Text style={styles.chartSubText}>Toque para ver a tabela completa e o gráfico ➔</Text>
+                </TouchableOpacity>
+
+                {/* CARD ATIVIDADES */}
+                <TouchableOpacity style={styles.chartCard} onPress={() => setSelectedMetricModal('atividades')}>
+                  <Text style={styles.chartTitle}>📊 Atividades Mais Praticadas</Text>
+                  <Text style={styles.chartSubText}>Musculação (45%) | Corrida (35%) | Bike (20%) ➔</Text>
+                </TouchableOpacity>
+
+                {/* CARD KM */}
+                <TouchableOpacity style={styles.chartCard} onPress={() => setSelectedMetricModal('km')}>
+                  <Text style={styles.chartTitle}>🏃 KM Percorrido Acumulado</Text>
+                  <Text style={styles.chartSubText}>128,5 km totais acumulados ➔</Text>
+                </TouchableOpacity>
+
+                {/* CARD TEMPO */}
+                <TouchableOpacity style={styles.chartCard} onPress={() => setSelectedMetricModal('tempo')}>
+                  <Text style={styles.chartTitle}>⏱️ Tempo Total em Atividade</Text>
+                  <Text style={styles.chartSubText}>42 horas registradas ➔</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* OBJETIVOS COM BOTAO X VERMELHO */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                <Text style={styles.pageTitle}>Checklist de Objetivos Pessoais</Text>
+                <TouchableOpacity style={styles.smallAddBtn} onPress={() => setIsAddGoalOpen(true)}>
+                  <Text style={styles.smallAddBtnText}>+ OBJETIVO</Text>
+                </TouchableOpacity>
+              </View>
+
+              {userGoals.length === 0 ? (
+                <Text style={styles.emptyNoticeText}>Nenhum objetivo cadastrado. Clique no botão acima para adicionar.</Text>
+              ) : (
+                userGoals.map((g) => (
+                  <View key={g.id} style={styles.goalItem}>
+                    <TouchableOpacity style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }} onPress={() => setUserGoals(userGoals.map(i => i.id === g.id ? { ...i, completed: !i.completed } : i))}>
+                      <Text style={{ fontSize: 16 }}>{g.completed ? '✅' : '⬜'}</Text>
+                      <Text style={[styles.goalText, g.completed && styles.goalDone]}>{g.title}</Text>
+                    </TouchableOpacity>
+
+                    {/* BOTÃO X VERMELHO DE EXCLUSÃO */}
+                    <TouchableOpacity style={styles.deleteGoalBtn} onPress={() => handleDeleteGoal(g.id)}>
+                      <Text style={styles.deleteGoalBtnText}>✖</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
             </ScrollView>
           )}
         </View>
       </View>
+
+      {/* MODAL EDITAR PESO */}
+      <Modal visible={isEditWeightOpen} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Atualizar Peso Atual (kg)</Text>
+            <TextInput style={styles.input} placeholder="Ex: 78.5" keyboardType="numeric" value={newWeightInput} onChangeText={setNewWeightInput} />
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleSaveWeight}><Text style={styles.primaryBtnText}>SALVAR PESO</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsEditWeightOpen(false)}><Text style={styles.cancelBtnText}>CANCELAR</Text></TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL ADICIONAR OBJETIVO */}
+      <Modal visible={isAddGoalOpen} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Novo Objetivo Pessoal</Text>
+            <TextInput style={styles.input} placeholder="Ex: Correr 10 km sem parar" value={newGoalTitle} onChangeText={setNewGoalTitle} />
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleAddGoal}><Text style={styles.primaryBtnText}>SALVAR OBJETIVO</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsAddGoalOpen(false)}><Text style={styles.cancelBtnText}>CANCELAR</Text></TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL DE HISTÓRICO E GRÁFICOS DAS MÉTRICAS (ETAPA 6) */}
+      <Modal visible={!!selectedMetricModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <Text style={styles.modalTitle}>
+                {selectedMetricModal === 'peso' && '📊 Histórico de Peso'}
+                {selectedMetricModal === 'atividades' && '📊 Estatísticas de Modalidades'}
+                {selectedMetricModal === 'km' && '🏃 Evolução de Quilometragem'}
+                {selectedMetricModal === 'tempo' && '⏱️ Horas em Atividade'}
+              </Text>
+              <TouchableOpacity onPress={() => setSelectedMetricModal(null)}>
+                <Text style={{ fontSize: 16, fontWeight: 'bold' }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* GRÁFICO VISUAL MOCK NATIVO */}
+            <View style={styles.graphContainer}>
+              <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center', marginBottom: 4 }}>📈 Gráfico de Evolução Acumulada</Text>
+              <View style={styles.graphBarRow}>
+                <View style={[styles.graphBar, { height: '50%' }]} />
+                <View style={[styles.graphBar, { height: '70%' }]} />
+                <View style={[styles.graphBar, { height: '100%' }]} />
+              </View>
+            </View>
+
+            {/* TABELA DE HISTÓRICO */}
+            <Text style={styles.inputLabel}>Tabela de Registros:</Text>
+            <ScrollView style={{ maxHeight: 150 }}>
+              {selectedMetricModal === 'peso' && weightHistory.map((item, idx) => (
+                <View key={idx} style={styles.tableRow}>
+                  <Text style={styles.tableCellDate}>{item.date}</Text>
+                  <Text style={styles.tableCellValue}>{item.weight}</Text>
+                </View>
+              ))}
+              {selectedMetricModal !== 'peso' && (
+                <View style={styles.tableRow}>
+                  <Text style={styles.tableCellDate}>Setembro/2026</Text>
+                  <Text style={styles.tableCellValue}>Dados gravados com sucesso</Text>
+                </View>
+              )}
+            </ScrollView>
+
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => setSelectedMetricModal(null)}>
+              <Text style={styles.cancelBtnText}>FECHAR</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -343,19 +368,10 @@ const styles = StyleSheet.create({
   authCard: { backgroundColor: '#ffffff', borderRadius: 12, padding: 18 },
   authTitle: { fontSize: 16, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 14, textAlign: 'center' },
 
-  topHeader: { padding: 12, backgroundColor: '#1e3a8a', zIndex: 9999, elevation: 10 },
-  brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  topHeader: { padding: 12, backgroundColor: '#1e3a8a' },
+  brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   brandTitle: { fontSize: 20, fontWeight: '900', color: '#f97316' },
   brandSubtitle: { fontSize: 10, fontWeight: 'bold', color: '#ffffff' },
-
-  searchInput: { backgroundColor: '#ffffff', borderRadius: 6, paddingHorizontal: 10, paddingVertical: Platform.OS === 'ios' ? 8 : 4, fontSize: 11, color: '#0f172a', borderWidth: 1, borderColor: '#cbd5e1' },
-  searchResultsDropdown: { position: 'absolute', top: 40, left: 0, right: 0, backgroundColor: '#ffffff', borderRadius: 8, padding: 10, borderWidth: 2, borderColor: '#f97316', elevation: 10, zIndex: 9999 },
-  searchHeaderTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, borderBottomWidth: 1, borderBottomColor: '#e2e8f0', paddingBottom: 4 },
-  searchHeaderTitle: { fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' },
-  closeSearchBtn: { backgroundColor: '#fef2f2', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  closeSearchText: { fontSize: 8, color: '#dc2626', fontWeight: 'bold' },
-  searchResultItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 6, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  searchResultTitle: { fontSize: 10, fontWeight: 'bold', color: '#0f172a' },
 
   sidebar: { width: 110, backgroundColor: '#f8fafc', borderRightWidth: 1, borderRightColor: '#cbd5e1', paddingVertical: 10 },
   sidebarBtn: { paddingVertical: 12, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -366,27 +382,50 @@ const styles = StyleSheet.create({
 
   mainContent: { padding: 12 },
   pageTitle: { fontSize: 14, fontWeight: 'bold', color: '#1e3a8a', marginVertical: 8 },
+  emptyNoticeText: { fontSize: 9, color: '#94a3b8', fontStyle: 'italic', marginVertical: 4 },
 
-  adminControlCard: { backgroundColor: '#fff7ed', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#f97316', marginBottom: 12 },
-  adminCardTitle: { fontSize: 12, fontWeight: 'bold', color: '#c2410c', marginBottom: 6 },
-
-  // ESTRUTURA HORIZONTAL DOS MEMBROS (CORRIGE TEXTO VERTICAL)
-  participantRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#fed7aa', marginTop: 6 },
-  avatarMini: { width: 34, height: 34, borderRadius: 17 },
-  participantInfoBox: { flex: 1, marginLeft: 8, paddingRight: 4 },
-  participantName: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
-  participantSub: { fontSize: 9, color: '#64748b' },
-  tagActiveText: { fontSize: 9, color: '#16a34a', fontWeight: 'bold' },
-  tagSpectatorText: { fontSize: 9, color: '#1e3a8a', fontWeight: 'bold' },
-
-  actionButtonsRow: { flexDirection: 'row', gap: 4, alignItems: 'center' },
-  approveBtn: { backgroundColor: '#16a34a', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 4 },
-  demoteBtn: { backgroundColor: '#d97706', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 4 },
-  banBtn: { backgroundColor: '#dc2626', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 4 },
+  cardBox: { backgroundColor: '#ffffff', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 10 },
+  cardBoxTitle: { fontSize: 13, fontWeight: 'bold', color: '#0f172a' },
+  leaveChallengeBtn: { backgroundColor: '#dc2626', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, alignSelf: 'flex-start', marginTop: 6 },
   btnMiniText: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
+
+  profileHeaderCard: { backgroundColor: '#f8fafc', borderRadius: 10, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 10 },
+  avatarLarge: { width: 70, height: 70, borderRadius: 35, marginBottom: 6, borderWidth: 2, borderColor: '#f97316' },
+  profileName: { fontSize: 15, fontWeight: 'bold', color: '#0f172a' },
+  profileMeta: { fontSize: 10, color: '#64748b' },
+
+  chartsGrid: { gap: 6, marginBottom: 10 },
+  chartCard: { backgroundColor: '#f8fafc', borderRadius: 6, padding: 8, borderWidth: 1, borderColor: '#e2e8f0' },
+  chartTitle: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
+  chartSubText: { fontSize: 9, color: '#475569', marginTop: 2 },
+  editBtnMini: { backgroundColor: '#eff6ff', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  editBtnMiniText: { fontSize: 8, color: '#1e3a8a', fontWeight: 'bold' },
+
+  smallAddBtn: { backgroundColor: '#f97316', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 },
+  smallAddBtnText: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
+
+  goalItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 4 },
+  goalText: { fontSize: 10, color: '#0f172a', fontWeight: 'bold' },
+  goalDone: { textDecorationLine: 'line-through', color: '#94a3b8' },
+  deleteGoalBtn: { backgroundColor: '#fef2f2', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 4, borderWidth: 1, borderColor: '#fca5a5' },
+  deleteGoalBtnText: { color: '#dc2626', fontSize: 10, fontWeight: 'bold' },
+
+  graphContainer: { backgroundColor: '#eff6ff', borderRadius: 6, padding: 10, marginVertical: 8, height: 90 },
+  graphBarRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'flex-end', height: 60 },
+  graphBar: { width: 20, backgroundColor: '#f97316', borderRadius: 4 },
+
+  tableRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  tableCellDate: { fontSize: 9, color: '#64748b' },
+  tableCellValue: { fontSize: 9, fontWeight: 'bold', color: '#0f172a' },
+
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 14 },
+  modalContent: { backgroundColor: '#ffffff', borderRadius: 12, padding: 14 },
+  modalTitle: { fontSize: 13, fontWeight: 'bold', color: '#1e3a8a' },
+  inputLabel: { fontSize: 10, fontWeight: 'bold', color: '#475569', marginVertical: 4 },
+  input: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 8, fontSize: 11, marginBottom: 8 },
 
   primaryBtn: { backgroundColor: '#f97316', paddingVertical: 10, borderRadius: 6, alignItems: 'center', marginTop: 6 },
   primaryBtnText: { color: '#ffffff', fontSize: 11, fontWeight: 'bold' },
-  inputLabel: { fontSize: 10, fontWeight: 'bold', color: '#475569', marginVertical: 4 },
-  input: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 8, fontSize: 11, marginBottom: 8 }
+  cancelBtn: { marginTop: 6, paddingVertical: 4, alignItems: 'center' },
+  cancelBtnText: { color: '#64748b', fontSize: 10, fontWeight: 'bold' }
 });
