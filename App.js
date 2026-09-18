@@ -18,11 +18,10 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 
 export default function App() {
-  // GERENCIAMENTO DE SESSÃO REAL DO SUPABASE (ETAPA 1)
+  // 1. AUTENTICAÇÃO E SESSÃO REAL DO SUPABASE
   const [session, setSession] = useState(null);
   const [loadingSession, setLoadingSession] = useState(true);
 
-  // ESTADOS DE AUTENTICAÇÃO
   const [authMode, setAuthMode] = useState('login'); // 'login' ou 'signup'
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
@@ -35,12 +34,12 @@ export default function App() {
   const [viewedUser, setViewedUser] = useState(null);
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   
-  // BARRA DE PESQUISA (Z-INDEX 9999 - ETAPA 5)
+  // 4. PESQUISA FUNCIONAL COM OVERLAY CORRIGIDO (Z-INDEX 9999)
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('all');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  // CONTROLADORES DE MODAIS SELETORAS
+  // CONTROLADORES DE MODAIS SELETORAS NATIVAS
   const [isHeaderSelectOpen, setIsHeaderSelectOpen] = useState(false);
   const [isPerfScopeSelectOpen, setIsPerfScopeSelectOpen] = useState(false);
   const [isManualAthleteSelectOpen, setIsManualAthleteSelectOpen] = useState(false);
@@ -48,17 +47,17 @@ export default function App() {
   const [isEditingChallengeSelectOpen, setIsEditingChallengeSelectOpen] = useState(false);
   const [isRuleTabSelectOpen, setIsRuleTabSelectOpen] = useState(false);
 
-  // SELETORES DE HORÁRIO NATIVOS (ETAPA 3)
+  // 3. SELETORES DE HORÁRIO NATIVOS (00-23h e 00-59m)
   const [isStartHourSelectOpen, setIsStartHourSelectOpen] = useState(false);
   const [isStartMinSelectOpen, setIsStartMinSelectOpen] = useState(false);
   const [isEndHourSelectOpen, setIsEndHourSelectOpen] = useState(false);
   const [isEndMinSelectOpen, setIsEndMinSelectOpen] = useState(false);
 
-  // DURAÇÃO DO DESAFIO (ETAPA 4)
+  // DURAÇÃO DO DESAFIO (SEMANAL, MENSAL, SEMESTRAL, ANUAL)
   const [isDurationSelectOpen, setIsDurationSelectOpen] = useState(false);
   const [newChallengeDuration, setNewChallengeDuration] = useState('Mensal');
 
-  // ESTRUTURA COMPLETA DAS LIGAS E TEMPORADAS
+  // REGRAS E ESTRUTURA COMPLETA DAS LIGAS
   const [challenges, setChallenges] = useState([
     {
       id: 'c1',
@@ -143,12 +142,13 @@ export default function App() {
     }
   ]);
 
-  // PARTICIPANTES
+  // PARTICIPANTES VINCULADOS
   const [memberships, setMemberships] = useState([
     { challengeId: 'c1', userId: 'usr_capella', name: 'Luiz Capella', nickname: 'Poke', role: 'active', rankingPoints: 22000, bankPoints: 15400, totalSteps: 42350, avatar: 'https://picsum.photos/seed/poke/200/200', goldMedals: 3, silverMedals: 1, bronzeMedals: 0, age: 34, gender: 'Masculino', insigniaInquebravelCount: 3, insigniaDespertaCount: 1 },
     { challengeId: 'c1', userId: 'm_usr2', name: 'Rafael Souza', nickname: 'Rafa', role: 'active', rankingPoints: 14000, bankPoints: 2000, totalSteps: 31000, avatar: 'https://picsum.photos/seed/rafa/100/100', goldMedals: 2, silverMedals: 2, bronzeMedals: 1, age: 29, gender: 'Masculino', insigniaInquebravelCount: 1, insigniaDespertaCount: 0 },
     { challengeId: 'c1', userId: 'm_usr4', name: 'Carlos Eduardo', nickname: 'Cadu', role: 'active', rankingPoints: 8000, bankPoints: 0, totalSteps: 12000, avatar: 'https://picsum.photos/seed/cadu/100/100', goldMedals: 1, silverMedals: 0, bronzeMedals: 0, age: 31, gender: 'Masculino', insigniaInquebravelCount: 0, insigniaDespertaCount: 0 },
-    { challengeId: 'c1', userId: 'm_usr3', name: 'Beatriz Lima', nickname: 'Bia', role: 'spectator', rankingPoints: 0, bankPoints: 0, totalSteps: 5000, avatar: 'https://picsum.photos/seed/bia/100/100', goldMedals: 0, silverMedals: 0, bronzeMedals: 0, age: 26, gender: 'Feminino', insigniaInquebravelCount: 0, insigniaDespertaCount: 0 }
+    { challengeId: 'c1', userId: 'm_usr3', name: 'Beatriz Lima', nickname: 'Bia', role: 'spectator', rankingPoints: 0, bankPoints: 0, totalSteps: 5000, avatar: 'https://picsum.photos/seed/bia/100/100', goldMedals: 0, silverMedals: 0, bronzeMedals: 0, age: 26, gender: 'Feminino', insigniaInquebravelCount: 0, insigniaDespertaCount: 0 },
+    { challengeId: 'c2', userId: 'usr_capella', name: 'Luiz Capella', nickname: 'Poke', role: 'active', rankingPoints: 18000, bankPoints: 0, totalSteps: 25000, avatar: 'https://picsum.photos/seed/poke/200/200', goldMedals: 3, silverMedals: 0, bronzeMedals: 0, age: 34, gender: 'Masculino', insigniaInquebravelCount: 1, insigniaDespertaCount: 1 }
   ]);
 
   const [pendingParticipants, setPendingParticipants] = useState([
@@ -156,6 +156,8 @@ export default function App() {
   ]);
 
   const [dailySubmissions, setDailySubmissions] = useState([]);
+  
+  // FEED
   const [feedPosts, setFeedPosts] = useState([
     {
       id: 'p1',
@@ -165,7 +167,7 @@ export default function App() {
       user_nickname: 'Poke',
       user_avatar: 'https://picsum.photos/seed/poke/200/200',
       activity_type: 'MUSCULAÇÃO',
-      caption: 'Treino de perna concluído na Liga Anti-Inércia! 🦵',
+      caption: 'Treino de perna finalizado na Liga Anti-Inércia! 🦵',
       photo_evidence: 'https://picsum.photos/seed/w1/400/300',
       points_to_ranking: 10000,
       points_to_bank: 0,
@@ -177,6 +179,7 @@ export default function App() {
     }
   ]);
 
+  // SOLICITAÇÕES PENDENTES
   const [pendingWorkouts, setPendingWorkouts] = useState([
     {
       id: 'pw_1',
@@ -186,7 +189,7 @@ export default function App() {
       user_nickname: 'Rafa',
       user_avatar: 'https://picsum.photos/seed/rafa/100/100',
       activity_type: 'MUSCULAÇÃO',
-      caption: 'Treino de superiores finalizado!',
+      caption: 'Treino de superiores concluído!',
       dateStr: '18/09/2026',
       startTime: '08:00',
       endTime: '09:00',
@@ -205,7 +208,7 @@ export default function App() {
     { id: 'e2', title: 'Corrida 8km', date: '15/09/2026', image: 'https://picsum.photos/seed/ev2/200/200' }
   ]);
 
-  // FORMULÁRIO DE TREINO (ETAPA 3)
+  // 3. FORMULÁRIO DE TREINOS COM DATA AUTOMÁTICA HOJE E SELECTS DE HORÁRIO
   const getTodayFormatted = () => {
     const d = new Date();
     const yyyy = d.getFullYear();
@@ -226,7 +229,7 @@ export default function App() {
   const [endMin, setEndMin] = useState('00');
   const [workoutCaption, setWorkoutCaption] = useState('');
 
-  // FOTOS DO TREINO COM APAGAR/TROCAR PRE-ENVIO (ETAPA 2)
+  // 2. COMPROVAÇÃO DE MÍDIA COM APAGAR/TROCAR PRE-ENVIO
   const [photoStart, setPhotoStart] = useState(null);
   const [photoEnd, setPhotoEnd] = useState(null);
   const [photoEvidence, setPhotoEvidence] = useState(null);
@@ -271,18 +274,19 @@ export default function App() {
   const [manualInquebravelCheck, setManualInquebravelCheck] = useState(false);
   const [manualDespertaCheck, setManualDespertaCheck] = useState(false);
 
-  // PERFIL E OBJETIVOS COM X VERMELHO (ETAPA 6)
+  // PERFIL E OBJETIVOS
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editName, setEditName] = useState('');
   const [editAge, setEditAge] = useState('');
   const [editGender, setEditGender] = useState('');
   const [editAvatar, setEditAvatar] = useState('');
 
+  // 6. OBJETIVOS (INICIA ZERADO E COM BOTÃO X VERMELHO DE EXCLUSÃO)
   const [userGoals, setUserGoals] = useState([]);
   const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
   const [newGoalTitle, setNewGoalTitle] = useState('');
 
-  // HISTÓRICO DE PESO E MÉTRICAS CLICÁVEIS (ETAPA 6)
+  // 6. PESO EDITÁVEL E GRÁFICOS HISTÓRICOS CLICÁVEIS
   const [currentWeight, setCurrentWeight] = useState('79');
   const [newWeightInput, setNewWeightInput] = useState('');
   const [isEditWeightOpen, setIsEditWeightOpen] = useState(false);
@@ -292,7 +296,7 @@ export default function App() {
   ]);
   const [selectedMetricModal, setSelectedMetricModal] = useState(null);
 
-  // STORIES (ETAPA 2)
+  // 2. STORIES (FOTO E VÍDEO 30S COM AUTO-EXCLUSÃO EM 24H)
   const [stories, setStories] = useState([]);
   const [isAddStoryOpen, setIsAddStoryOpen] = useState(false);
   const [newStoryMedia, setNewStoryMedia] = useState(null);
@@ -300,7 +304,7 @@ export default function App() {
   const [selectedStory, setSelectedStory] = useState(null);
   const [storyProgress, setStoryProgress] = useState(0);
 
-  // CHECAGEM DE SESSÃO DO SUPABASE AO ABRIR O APP (ETAPA 1)
+  // 1. CHECAGEM DE SESSÃO AUTOMÁTICA NO BOOT DO APP
   useEffect(() => {
     (async () => {
       if (Platform.OS !== 'web') {
@@ -363,7 +367,7 @@ export default function App() {
     }
   }
 
-  // AUTENTICAÇÃO REAL (ETAPA 1)
+  // 1. AUTENTICAÇÃO REAL (SUPABASE AUTH)
   async function handleAuthSubmit() {
     if (!authEmail.trim() || !authPassword.trim()) {
       Alert.alert('Atenção', 'Informe e-mail e senha.');
@@ -404,8 +408,9 @@ export default function App() {
     }
   }
 
+  // 1. LOGOUT DA SESSÃO
   async function handleLogout() {
-    Alert.alert('Sair da Conta', 'Deseja encerrar sua sessão?', [
+    Alert.alert('Sair da Conta', 'Deseja encerrar sua sessão no MUVFIT?', [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Sair',
@@ -420,7 +425,7 @@ export default function App() {
     ]);
   }
 
-  // CÂMERA E GALERIA NATIVAS (ETAPA 2)
+  // 2. MÍDIAS NATIVAS (EXPO IMAGE PICKER - CÂMERA E GALERIA REAL)
   async function pickImageFromGallery(setPhotoState, setMediaType = null) {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -456,7 +461,7 @@ export default function App() {
     }
   }
 
-  // REINICIAR TEMPORADA E HALL DA FAMA (ETAPA 4)
+  // REINICIAR TEMPORADA E HALL DA FAMA
   function handleStartNewSeason(challengeId) {
     const targetChallenge = challenges.find(c => c.id === challengeId);
     if (!targetChallenge) return;
@@ -493,7 +498,7 @@ export default function App() {
     );
   }
 
-  // COMPUTAÇÃO DE PONTOS
+  // COMPUTAÇÃO E REGRAS DE TREINO
   function calculatePoints(type, durStr) {
     if (type === 'passos_diarios') return 0;
     const dur = parseInt(durStr) || 0;
@@ -618,7 +623,7 @@ export default function App() {
     Alert.alert('Treino Rejeitado', 'O registro foi removido.');
   }
 
-  // OBJETIVOS: ADICIONAR E DELETAR COM X VERMELHO (ETAPA 6)
+  // 6. OBJETIVOS: ADICIONAR E DELETAR COM X VERMELHO
   function handleAddGoal() {
     if (!newGoalTitle.trim()) return;
     setUserGoals([...userGoals, { id: `g_${Date.now()}`, title: newGoalTitle.trim(), completed: false }]);
@@ -630,7 +635,7 @@ export default function App() {
     setUserGoals(userGoals.filter(g => g.id !== goalId));
   }
 
-  // SAIR DO DESAFIO (ETAPA 6)
+  // 6. SAIR DO DESAFIO
   function handleLeaveChallenge(challengeId) {
     Alert.alert('Sair do Desafio', 'Deseja remover seu vínculo com esta liga?', [
       { text: 'Cancelar', style: 'cancel' },
@@ -645,7 +650,7 @@ export default function App() {
     ]);
   }
 
-  // PESO EDITÁVEL (ETAPA 6)
+  // 6. PESO EDITÁVEL E HISTÓRICO
   function handleSaveWeight() {
     if (!newWeightInput.trim()) return;
     const todayStr = new Date().toLocaleDateString();
@@ -657,7 +662,7 @@ export default function App() {
     Alert.alert('Peso Atualizado!', 'Registro salvo com sucesso.');
   }
 
-  // COMPONENTE DE MÍDIA COM APAGAR/TROCAR PRE-ENVIO (ETAPA 2)
+  // 2. COMPONENTE DE MÍDIA COM APAGAR/TROCAR PRE-ENVIO
   const MediaPickerField = ({ label, photoState, setPhotoState, setMediaType = null }) => (
     <View style={styles.mediaFieldBox}>
       <Text style={styles.mediaLabel}>{label}</Text>
@@ -698,7 +703,7 @@ export default function App() {
     );
   }
 
-  // TELA DE LOGIN / CADASTRO SE NÃO HOUVER SESSÃO
+  // 1. TELA DE LOGIN / CADASTRO SE NÃO HOUVER SESSÃO
   if (!session || !currentUser) {
     return (
       <SafeAreaView style={styles.authContainer}>
@@ -748,7 +753,7 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* HEADER E BARRA DE BUSCA Z-INDEX 9999 (ETAPA 5) */}
+      {/* 4. HEADER E BARRA DE BUSCA Z-INDEX 9999 */}
       <View style={styles.topHeader}>
         <View style={styles.brandRow}>
           <Text style={styles.brandTitle}>MUVFIT</Text>
@@ -1015,7 +1020,7 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* TELA 5: PAINEL ADMIN (MODERAÇÃO COM FOTOS REAIS + REGRAS AVANÇADAS) */}
+          {/* TELA 5: PAINEL ADMIN (MODERAÇÃO COM FOTOS REAIS + REGRAS AVANÇADAS + ALINHAMENTO HORIZONTAL) */}
           {currentScreen === 'admin' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <Text style={styles.pageTitle}>⚙️ Administração — {selectedChallenge.title}</Text>
@@ -1049,6 +1054,7 @@ export default function App() {
                 ))}
               </View>
 
+              {/* 4. ALINHAMENTO HORIZONTAL DOS MEMBROS (FIM DO TEXTO VERTICAL) */}
               <View style={styles.adminControlCard}>
                 <Text style={styles.adminCardTitle}>👥 Membros Cadastrados</Text>
                 {currentChallengeMembers.map((m) => (
@@ -1252,6 +1258,8 @@ const styles = StyleSheet.create({
 
   adminControlCard: { backgroundColor: '#fff7ed', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#f97316', marginBottom: 12 },
   adminCardTitle: { fontSize: 12, fontWeight: 'bold', color: '#c2410c', marginBottom: 6 },
+  
+  // 4. ALINHAMENTO HORIZONTAL DOS MEMBROS (FIM DOS TEXTOS NA VERTICAL)
   participantRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#fed7aa', marginTop: 6 },
   avatarMini: { width: 34, height: 34, borderRadius: 17 },
   participantInfoBox: { flex: 1, marginLeft: 8, paddingRight: 4 },
