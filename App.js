@@ -48,40 +48,38 @@ export default function App() {
   const [isEditingChallengeSelectOpen, setIsEditingChallengeSelectOpen] = useState(false);
   const [isRuleTabSelectOpen, setIsRuleTabSelectOpen] = useState(false);
 
-  // SELETORES DE HORÁRIO NATIVOS (ETAPA 3)
+  // SELETORES DE HORÁRIO NATIVOS
   const [isStartHourSelectOpen, setIsStartHourSelectOpen] = useState(false);
   const [isStartMinSelectOpen, setIsStartMinSelectOpen] = useState(false);
   const [isEndHourSelectOpen, setIsEndHourSelectOpen] = useState(false);
   const [isEndMinSelectOpen, setIsEndMinSelectOpen] = useState(false);
 
-  // REGRAS E ESTRUTURA COMPLETA DAS LIGAS
+  // SELETOR DE DURAÇÃO DO DESAFIO (ETAPA 4)
+  const [isDurationSelectOpen, setIsDurationSelectOpen] = useState(false);
+  const [newChallengeDuration, setNewChallengeDuration] = useState('Mensal');
+
+  // REGRAS E ESTRUTURA COMPLETA DAS LIGAS COM DURAÇÃO E TEMPORADAS (ETAPA 4)
   const [challenges, setChallenges] = useState([
     {
       id: 'c1',
       title: 'Liga Anti-Inércia 2026',
       invite_code: 'ANTI2026',
       creator_id: 'usr_capella',
+      duration_type: 'Mensal', // Semanal, Mensal, Semestral, Anual
+      season_number: 1,
       has_daily_cap: true,
       daily_cap: 22000,
       registrations_closed: false,
       is_finished: false,
+      season_ended_pending: true, // Notificação para o Admin se a temporada venceu
       startDate: '01/09/2026',
       endDate: '30/09/2026',
-      tiebreakerEnabled: true,
-      tiebreakersConfig: [
-        { id: 'tb1', name: 'Passos Diários', enabled: true },
-        { id: 'tb2', name: 'Banco de Pontos', enabled: true },
-        { id: 'tb3', name: 'KM Total Percorrido', enabled: false },
-        { id: 'tb4', name: 'Dias em Atividade', enabled: false }
+      hallOfFame: [
+        { season: 'Temporada 0 (Piloto)', champions: ['Luiz Capella (1º)', 'Rafael Souza (2º)', 'Carlos Eduardo (3º)'] }
       ],
-      bonuses: {
-        inquebravel: { active: true, days: 7, points: 5000 },
-        desperta: { active: true, limitTime: '07:00', points: 3000 }
-      },
       rules: {
-        musculacao: { enabled: true, mode: 'steps', minMinutes: 30, minPoints: 5000, steps: [{ min: '30', max: '59', pts: '5000' }, { min: '60', max: '120', pts: '10000' }] },
-        crossfit: { enabled: true, mode: 'tempo', minMinutes: 40, minPoints: 12000 },
-        corrida: { enabled: true, mode: 'steps', minKm: 3, minKmPoints: 5000, stepsKm: [{ min: '3', max: '6', pts: '5000' }] }
+        musculacao: { enabled: true, mode: 'steps', minMinutes: 30, minPoints: 5000 },
+        corrida: { enabled: true, mode: 'km', minKm: 3, minKmPoints: 5000 }
       }
     }
   ]);
@@ -90,21 +88,15 @@ export default function App() {
   const [isAdminContext, setIsAdminContext] = useState(true);
 
   const selectedChallenge = challenges.find(c => c.id === activeChallengeId) || challenges[0];
-  const [editingChallengeId, setEditingChallengeId] = useState(selectedChallenge ? selectedChallenge.id : 'c1');
 
-  // CONVITES E PARTICIPANTES
-  const [pendingInvites, setPendingInvites] = useState([]);
+  // PARTICIPANTES E DADOS
   const [memberships, setMemberships] = useState([
     { challengeId: 'c1', userId: 'usr_capella', name: 'Luiz Capella', nickname: 'Poke', role: 'active', rankingPoints: 22000, bankPoints: 15400, totalSteps: 42350, avatar: 'https://picsum.photos/seed/poke/200/200', goldMedals: 3, silverMedals: 1, bronzeMedals: 0, age: 34, gender: 'Masculino', insigniaInquebravelCount: 3, insigniaDespertaCount: 1 }
   ]);
-  const [pendingParticipants, setPendingParticipants] = useState([]);
-  const [dailySubmissions, setDailySubmissions] = useState([]);
   const [feedPosts, setFeedPosts] = useState([]);
   const [pendingWorkouts, setPendingWorkouts] = useState([]);
-  const [commentInputs, setCommentInputs] = useState({});
-  const [evidences, setEvidences] = useState([]);
 
-  // FORMULÁRIO DE TREINO (COM DATA HOJE AUTOMÁTICA E SELECTS DE HORA)
+  // FORMULÁRIO DE TREINO
   const getTodayFormatted = () => {
     const d = new Date();
     const yyyy = d.getFullYear();
@@ -115,46 +107,26 @@ export default function App() {
 
   const [isWorkoutModalOpen, setIsWorkoutModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState('musculacao');
-  const [durationInput, setDurationInput] = useState('');
-  const [distanceInput, setDistanceInput] = useState('');
-  const [stepsInput, setStepsInput] = useState('');
   const [workoutDate, setWorkoutDate] = useState(getTodayFormatted());
   const [startHour, setStartHour] = useState('08');
   const [startMin, setStartMin] = useState('00');
   const [endHour, setEndHour] = useState('09');
   const [endMin, setEndMin] = useState('00');
   const [workoutCaption, setWorkoutCaption] = useState('');
-
-  // FOTOS DO TREINO
-  const [photoStart, setPhotoStart] = useState(null);
-  const [photoEnd, setPhotoEnd] = useState(null);
   const [photoEvidence, setPhotoEvidence] = useState(null);
 
-  // MODAIS DE REGRAS E DESAFIO
+  // CRIAR NOVO DESAFIO
   const [isCreateChallengeOpen, setIsCreateChallengeOpen] = useState(false);
   const [newChallengeTitle, setNewChallengeTitle] = useState('');
   const [newChallengeCode, setNewChallengeCode] = useState('');
   const [hasCapToggle, setHasCapToggle] = useState(false);
   const [newChallengeCap, setNewChallengeCap] = useState('22000');
 
-  const [isEditRulesOpen, setIsEditRulesOpen] = useState(false);
-  const [selectedRuleTab, setSelectedRuleTab] = useState('musculacao');
-  const [editingRules, setEditingRules] = useState(selectedChallenge ? selectedChallenge.rules : {});
-
-  // PERFIL E STORIES
-  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
-  const [editName, setEditName] = useState('');
-  const [editAge, setEditAge] = useState('');
-  const [editGender, setEditGender] = useState('');
-  const [editAvatar, setEditAvatar] = useState('');
-
+  // STORIES
   const [stories, setStories] = useState([]);
   const [isAddStoryOpen, setIsAddStoryOpen] = useState(false);
-  const [newStoryMedia, setNewStoryMedia] = useState(null);
-  const [newStoryType, setNewStoryType] = useState('image');
-  const [selectedStory, setSelectedStory] = useState(null);
 
-  // GERENCIAMENTO DE SESSÃO
+  // CHECAGEM DE SESSÃO
   useEffect(() => {
     (async () => {
       if (Platform.OS !== 'web') {
@@ -197,19 +169,12 @@ export default function App() {
         gender: 'Masculino',
         avatar: user.user_metadata?.avatar || 'https://picsum.photos/seed/' + user.id + '/200/200',
         isAdmin: true,
-        member_status: 'active',
-        goldMedals: 0,
-        silverMedals: 0,
-        bronzeMedals: 0,
-        insigniaInquebravelCount: 0,
-        insigniaDespertaCount: 0
+        goldMedals: 3,
+        silverMedals: 1,
+        bronzeMedals: 0
       };
       setCurrentUser(userObj);
       setViewedUser(userObj);
-      setEditName(userObj.name);
-      setEditAge(String(userObj.age));
-      setEditGender(userObj.gender);
-      setEditAvatar(userObj.avatar);
     } catch (err) {
       console.log('Erro ao carregar perfil:', err);
     } finally {
@@ -217,51 +182,96 @@ export default function App() {
     }
   }
 
+  // FUNÇÃO DE REINICIAR TEMPORADA (ETAPA 4)
+  function handleStartNewSeason(challengeId) {
+    const targetChallenge = challenges.find(c => c.id === challengeId);
+    if (!targetChallenge) return;
+
+    Alert.alert(
+      '🏆 Iniciar Nova Temporada',
+      `Deseja encerrar a Temporada ${targetChallenge.season_number || 1} e zerar a pontuação para a nova temporada?\n\n(Os campeões atuais serão registrados no Hall da Fama e as estatísticas acumuladas dos atletas permanecerão salvas).`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sim, Iniciar Nova Temporada',
+          onPress: () => {
+            // 1. Salvar Top 3 Campeões no Hall da Fama
+            const currentMembers = memberships.filter(m => m.challengeId === challengeId);
+            const top3 = [...currentMembers].sort((a,b) => b.rankingPoints - a.rankingPoints).slice(0, 3);
+            const championNames = top3.map((m, idx) => `${m.name} (${idx + 1}º lugar)`);
+
+            const newHallEntry = {
+              season: `Temporada ${targetChallenge.season_number || 1}`,
+              champions: championNames.length > 0 ? championNames : ['Sem participantes']
+            };
+
+            // 2. Atualizar o Desafio (Incrementar Temporada e Limpar Notificação)
+            setChallenges(challenges.map(c => {
+              if (c.id === challengeId) {
+                return {
+                  ...c,
+                  season_number: (c.season_number || 1) + 1,
+                  season_ended_pending: false,
+                  hallOfFame: [newHallEntry, ...(c.hallOfFame || [])]
+                };
+              }
+              return c;
+            }));
+
+            // 3. Zerar apenas a pontuação do ranking e banco da liga atual para a nova temporada
+            setMemberships(memberships.map(m => {
+              if (m.challengeId === challengeId) {
+                return {
+                  ...m,
+                  rankingPoints: 0,
+                  bankPoints: 0
+                };
+              }
+              return m;
+            }));
+
+            Alert.alert('🚀 Nova Temporada Iniciada!', `A Temporada ${(targetChallenge.season_number || 1) + 1} começou. A pontuação foi zerada e o histórico foi arquivado.`);
+          }
+        }
+      ]
+    );
+  }
+
   // CÂMERA E GALERIA
-  async function pickImageFromGallery(setPhotoState, setMediaType = null) {
+  async function pickImageFromGallery(setPhotoState) {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.All,
         allowsEditing: true,
         quality: 0.8,
       });
-
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        setPhotoState(asset.uri);
-        if (setMediaType) setMediaType(asset.type === 'video' ? 'video' : 'image');
+        setPhotoState(result.assets[0].uri);
       }
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível acessar a galeria.');
     }
   }
 
-  async function takePhotoWithCamera(setPhotoState, setMediaType = null) {
+  async function takePhotoWithCamera(setPhotoState) {
     try {
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        quality: 0.8,
-      });
-
+      const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.8 });
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        setPhotoState(asset.uri);
-        if (setMediaType) setMediaType('image');
+        setPhotoState(result.assets[0].uri);
       }
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível abrir a câmera.');
     }
   }
 
-  // COMPONENTE DE SELEÇÃO DE MÍDIA COM PREVIEW E BOTÃO APAGAR
-  const MediaPickerField = ({ label, photoState, setPhotoState, setMediaType = null }) => (
+  const MediaPickerField = ({ label, photoState, setPhotoState }) => (
     <View style={styles.mediaFieldBox}>
       <Text style={styles.mediaLabel}>{label}</Text>
       <View style={styles.mediaButtonsRow}>
-        <TouchableOpacity style={styles.cameraBtn} onPress={() => takePhotoWithCamera(setPhotoState, setMediaType)}>
+        <TouchableOpacity style={styles.cameraBtn} onPress={() => takePhotoWithCamera(setPhotoState)}>
           <Text style={styles.mediaBtnText}>📷 TIRAR FOTO</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.galleryBtn} onPress={() => pickImageFromGallery(setPhotoState, setMediaType)}>
+        <TouchableOpacity style={styles.galleryBtn} onPress={() => pickImageFromGallery(setPhotoState)}>
           <Text style={styles.mediaBtnText}>🖼️ GALERIA</Text>
         </TouchableOpacity>
       </View>
@@ -322,7 +332,7 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* TOP HEADER */}
+      {/* HEADER */}
       <View style={styles.topHeader}>
         <View style={styles.brandRow}>
           <Text style={styles.brandTitle}>MUVFIT</Text>
@@ -343,143 +353,117 @@ export default function App() {
             <Text style={[styles.sidebarText, currentScreen === 'athlete_center' && styles.sidebarTextActive]}>Atleta</Text>
           </TouchableOpacity>
 
-          {hasUserAnyCommunity && (
-            <>
-              <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'feed' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('feed')}>
-                <Text style={styles.sidebarIcon}>📷</Text>
-                <Text style={[styles.sidebarText, currentScreen === 'feed' && styles.sidebarTextActive]}>Feed</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'ranking' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('ranking')}>
-                <Text style={styles.sidebarIcon}>🏆</Text>
-                <Text style={[styles.sidebarText, currentScreen === 'ranking' && styles.sidebarTextActive]}>Ranking</Text>
-              </TouchableOpacity>
-            </>
+          {isAdminContext && (
+            <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'admin' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('admin')}>
+              <Text style={styles.sidebarIcon}>⚙️</Text>
+              <Text style={[styles.sidebarText, currentScreen === 'admin' && styles.sidebarTextActive]}>Admin</Text>
+            </TouchableOpacity>
           )}
         </View>
 
         <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
           {currentScreen === 'dashboard' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
-              <Text style={styles.pageTitle}>Painel Geral de Ligas</Text>
-              <TouchableOpacity style={styles.actionBtn} onPress={() => setIsWorkoutModalOpen(true)}>
-                <Text style={styles.actionBtnText}>+ REGISTRAR TREINO / PASSOS</Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <Text style={styles.pageTitle}>Painel Geral de Ligas</Text>
+                <TouchableOpacity style={styles.createChallengeBtnHeader} onPress={() => setIsCreateChallengeOpen(true)}>
+                  <Text style={styles.createChallengeBtnText}>+ NOVO DESAFIO</Text>
+                </TouchableOpacity>
+              </View>
+
+              {challenges.map(c => (
+                <View key={c.id} style={styles.cardBox}>
+                  <Text style={styles.cardBoxTitle}>{c.title} (Temporada {c.season_number || 1})</Text>
+                  <Text style={styles.cardBoxSub}>Duração: {c.duration_type || 'Mensal'} | Código: {c.invite_code}</Text>
+                  
+                  {c.hallOfFame && c.hallOfFame.length > 0 && (
+                    <View style={styles.hallOfFameBox}>
+                      <Text style={styles.hallOfFameTitle}>🏛️ HALL DA FAMA (Campeões Anteriores):</Text>
+                      {c.hallOfFame.map((hf, idx) => (
+                        <Text key={idx} style={styles.hallOfFameText}>• {hf.season}: {hf.champions.join(', ')}</Text>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
+          {/* TELA ADMIN COM NOTIFICAÇÃO DE NOVA TEMPORADA (ETAPA 4) */}
+          {currentScreen === 'admin' && selectedChallenge && (
+            <ScrollView contentContainerStyle={styles.mainContent}>
+              <Text style={styles.pageTitle}>⚙️ Painel de Administração — {selectedChallenge.title}</Text>
+
+              {/* PAINEL DESTACADO DE NOVA TEMPORADA */}
+              <View style={styles.seasonNoticeBox}>
+                <Text style={styles.seasonNoticeTitle}>🏆 Fim de Temporada / Ciclo da Liga</Text>
+                <Text style={styles.seasonNoticeSub}>
+                  Temporada Atual: {selectedChallenge.season_number || 1} ({selectedChallenge.duration_type || 'Mensal'})
+                </Text>
+                <TouchableOpacity 
+                  style={styles.startSeasonBtn} 
+                  onPress={() => handleStartNewSeason(selectedChallenge.id)}
+                >
+                  <Text style={styles.startSeasonBtnText}>🚀 INICIAR NOVA TEMPORADA (RESETA PONTOS & ARQUIVA PÓDIO)</Text>
+                </TouchableOpacity>
+              </View>
             </ScrollView>
           )}
         </View>
       </View>
 
-      {/* MODAL DE TREINO COM ROLAGEM, DATA DINÂMICA E SELECTS DE HORA (ETAPA 3) */}
-      <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
+      {/* MODAL CRIAR DESAFIO COM SELETOR DE DURAÇÃO (ETAPA 4) */}
+      <Modal visible={isCreateChallengeOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <ScrollView contentContainerStyle={styles.modalContent} showsVerticalScrollIndicator={true}>
-            <Text style={styles.modalTitle}>Registrar Treino ({selectedChallenge?.title || 'Desafio'})</Text>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Criar Novo Desafio / Liga</Text>
+            <TextInput style={styles.input} placeholder="Nome do Desafio" value={newChallengeTitle} onChangeText={setNewChallengeTitle} />
+            <TextInput style={styles.input} placeholder="Código (Ex: OUT2026)" value={newChallengeCode} onChangeText={setNewChallengeCode} />
 
-            <Text style={styles.inputLabel}>Selecione a Data da Atividade:</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="AAAA-MM-DD"
-              value={workoutDate}
-              onChangeText={setWorkoutDate}
-            />
-
-            <Text style={styles.inputLabel}>Horário de Início (Hora / Minuto):</Text>
-            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8 }}>
-              <TouchableOpacity style={[styles.nativeSelectButton, { flex: 1 }]} onPress={() => setIsStartHourSelectOpen(true)}>
-                <Text style={styles.nativeSelectButtonText}>Hora: {startHour}h ▼</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={[styles.nativeSelectButton, { flex: 1 }]} onPress={() => setIsStartMinSelectOpen(true)}>
-                <Text style={styles.nativeSelectButtonText}>Min: {startMin}m ▼</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.inputLabel}>Horário de Fim (Hora / Minuto):</Text>
-            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8 }}>
-              <TouchableOpacity style={[styles.nativeSelectButton, { flex: 1 }]} onPress={() => setIsEndHourSelectOpen(true)}>
-                <Text style={styles.nativeSelectButtonText}>Hora: {endHour}h ▼</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={[styles.nativeSelectButton, { flex: 1 }]} onPress={() => setIsEndMinSelectOpen(true)}>
-                <Text style={styles.nativeSelectButtonText}>Min: {endMin}m ▼</Text>
-              </TouchableOpacity>
-            </View>
-
-            <MediaPickerField label="Foto do Comprovante do Treino:" photoState={photoEvidence} setPhotoState={setPhotoEvidence} />
-
-            <TextInput style={styles.inputArea} placeholder="Legenda ou Comentários (opcional)..." multiline value={workoutCaption} onChangeText={setWorkoutCaption} />
+            <Text style={styles.inputLabel}>Selecione a Duração do Desafio:</Text>
+            <TouchableOpacity style={styles.nativeSelectButton} onPress={() => setIsDurationSelectOpen(true)}>
+              <Text style={styles.nativeSelectButtonText}>Duração: {newChallengeDuration} ▼</Text>
+            </TouchableOpacity>
 
             <TouchableOpacity style={styles.primaryBtn} onPress={() => {
-              Alert.alert('Treino Registrado!', `Atividade gravada para ${workoutDate} de ${startHour}:${startMin} até ${endHour}:${endMin}`);
-              setIsWorkoutModalOpen(false);
+              if (newChallengeTitle && newChallengeCode) {
+                const newId = `c_${Date.now()}`;
+                setChallenges([...challenges, {
+                  id: newId,
+                  title: newChallengeTitle,
+                  invite_code: newChallengeCode.toUpperCase(),
+                  creator_id: currentUser.id,
+                  duration_type: newChallengeDuration,
+                  season_number: 1,
+                  has_daily_cap: false,
+                  hallOfFame: []
+                }]);
+                setIsCreateChallengeOpen(false);
+                setNewChallengeTitle('');
+                setNewChallengeCode('');
+                Alert.alert('Sucesso', 'Novo desafio criado com sucesso!');
+              }
             }}>
-              <Text style={styles.primaryBtnText}>SUBMETER TREINO</Text>
+              <Text style={styles.primaryBtnText}>CRIAR DESAFIO</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsWorkoutModalOpen(false)}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsCreateChallengeOpen(false)}>
               <Text style={styles.cancelBtnText}>CANCELAR</Text>
             </TouchableOpacity>
-          </ScrollView>
+          </View>
         </View>
       </Modal>
 
-      {/* MODAIS NATIVOS DE SELEÇÃO DE HORAS E MINUTOS */}
-      <Modal visible={isStartHourSelectOpen} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsStartHourSelectOpen(false)}>
+      {/* MODAL NATIVO SELETOR DE DURAÇÃO */}
+      <Modal visible={isDurationSelectOpen} transparent animationType="fade">
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsDurationSelectOpen(false)}>
           <View style={styles.modalContentSelect}>
-            <Text style={styles.modalTitle}>Hora de Início</Text>
-            <ScrollView style={{ maxHeight: 200 }}>
-              {hoursList.map(h => (
-                <TouchableOpacity key={h} style={styles.selectOptionRow} onPress={() => { setStartHour(h); setIsStartHourSelectOpen(false); }}>
-                  <Text style={styles.selectOptionText}>{h} horas</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      <Modal visible={isStartMinSelectOpen} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsStartMinSelectOpen(false)}>
-          <View style={styles.modalContentSelect}>
-            <Text style={styles.modalTitle}>Minuto de Início</Text>
-            <ScrollView style={{ maxHeight: 200 }}>
-              {minsList.map(m => (
-                <TouchableOpacity key={m} style={styles.selectOptionRow} onPress={() => { setStartMin(m); setIsStartMinSelectOpen(false); }}>
-                  <Text style={styles.selectOptionText}>{m} minutos</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      <Modal visible={isEndHourSelectOpen} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsEndHourSelectOpen(false)}>
-          <View style={styles.modalContentSelect}>
-            <Text style={styles.modalTitle}>Hora de Termínio</Text>
-            <ScrollView style={{ maxHeight: 200 }}>
-              {hoursList.map(h => (
-                <TouchableOpacity key={h} style={styles.selectOptionRow} onPress={() => { setEndHour(h); setIsEndHourSelectOpen(false); }}>
-                  <Text style={styles.selectOptionText}>{h} horas</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      <Modal visible={isEndMinSelectOpen} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsEndMinSelectOpen(false)}>
-          <View style={styles.modalContentSelect}>
-            <Text style={styles.modalTitle}>Minuto de Termínio</Text>
-            <ScrollView style={{ maxHeight: 200 }}>
-              {minsList.map(m => (
-                <TouchableOpacity key={m} style={styles.selectOptionRow} onPress={() => { setEndMin(m); setIsEndMinSelectOpen(false); }}>
-                  <Text style={styles.selectOptionText}>{m} minutos</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <Text style={styles.modalTitle}>Escolha a Duração do Desafio</Text>
+            {['Semanal', 'Mensal', 'Semestral', 'Anual'].map(dur => (
+              <TouchableOpacity key={dur} style={styles.selectOptionRow} onPress={() => { setNewChallengeDuration(dur); setIsDurationSelectOpen(false); }}>
+                <Text style={styles.selectOptionText}>📆 Desafio {dur}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </TouchableOpacity>
       </Modal>
@@ -515,7 +499,24 @@ const styles = StyleSheet.create({
   mainContent: { padding: 12 },
   pageTitle: { fontSize: 14, fontWeight: 'bold', color: '#1e3a8a', marginVertical: 8 },
 
-  nativeSelectButton: { backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1' },
+  createChallengeBtnHeader: { backgroundColor: '#16a34a', paddingHorizontal: 8, paddingVertical: 5, borderRadius: 6 },
+  createChallengeBtnText: { color: '#ffffff', fontSize: 9, fontWeight: 'bold' },
+
+  cardBox: { backgroundColor: '#ffffff', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 10 },
+  cardBoxTitle: { fontSize: 13, fontWeight: 'bold', color: '#0f172a' },
+  cardBoxSub: { fontSize: 10, color: '#64748b', marginVertical: 2 },
+
+  hallOfFameBox: { backgroundColor: '#fef3c7', borderRadius: 6, padding: 8, marginTop: 6, borderWidth: 1, borderColor: '#f59e0b' },
+  hallOfFameTitle: { fontSize: 10, fontWeight: 'bold', color: '#92400e', marginBottom: 2 },
+  hallOfFameText: { fontSize: 9, color: '#78350f' },
+
+  seasonNoticeBox: { backgroundColor: '#fff7ed', borderRadius: 10, padding: 12, borderWidth: 2, borderColor: '#f97316', marginBottom: 12 },
+  seasonNoticeTitle: { fontSize: 13, fontWeight: 'bold', color: '#c2410c' },
+  seasonNoticeSub: { fontSize: 10, color: '#475569', marginVertical: 4 },
+  startSeasonBtn: { backgroundColor: '#16a34a', paddingVertical: 10, borderRadius: 6, alignItems: 'center', marginTop: 6 },
+  startSeasonBtnText: { color: '#ffffff', fontSize: 10, fontWeight: 'bold' },
+
+  nativeSelectButton: { backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 8 },
   nativeSelectButtonText: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
   selectOptionRow: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   selectOptionText: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
@@ -539,12 +540,9 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 14, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 10, textAlign: 'center' },
   inputLabel: { fontSize: 10, fontWeight: 'bold', color: '#475569', marginVertical: 4 },
   input: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 8, fontSize: 11, marginBottom: 8 },
-  inputArea: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 6, fontSize: 11, height: 50, textAlignVertical: 'top', marginBottom: 8 },
 
   primaryBtn: { backgroundColor: '#f97316', paddingVertical: 10, borderRadius: 6, alignItems: 'center', marginTop: 6 },
   primaryBtnText: { color: '#ffffff', fontSize: 11, fontWeight: 'bold' },
-  actionBtn: { backgroundColor: '#1e3a8a', paddingVertical: 10, borderRadius: 6, alignItems: 'center', marginBottom: 12 },
-  actionBtnText: { color: '#ffffff', fontSize: 11, fontWeight: 'bold' },
   cancelBtn: { marginTop: 6, paddingVertical: 4, alignItems: 'center' },
   cancelBtnText: { color: '#64748b', fontSize: 10, fontWeight: 'bold' }
 });
