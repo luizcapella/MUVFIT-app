@@ -834,6 +834,42 @@ export default function App() {
           {/* TELA 1: DASHBOARD */}
           {currentScreen === 'dashboard' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
+              
+              {/* BANNER INTELIGENTE DE DOWNLOAD / ACESSO */}
+              {(() => {
+                const isAndroid = Platform.OS === 'android' || (typeof window !== 'undefined' && /android/i.test(navigator.userAgent));
+                
+                const handleAction = () => {
+                  if (isAndroid) {
+                    // Cole aqui o link direto do seu APK quando o gerar no EAS Build
+                    Alert.alert('Download', 'Iniciando o download do APK do MuvFit!');
+                  } else {
+                    Alert.alert('Acesso iOS / Web', 'Você está no navegador/iPhone. Use o menu de compartilhar para adicionar à Tela de Início!');
+                  }
+                };
+
+                return (
+                  <View style={{ backgroundColor: '#1e3a8a', padding: 14, borderRadius: 10, marginBottom: 14, borderWidth: 2, borderColor: '#f97316' }}>
+                    <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#ffffff', textAlign: 'center', marginBottom: 4 }}>
+                      {isAndroid ? '📱 Baixar Aplicativo Android (.APK)' : '⚡ Acessar MuvFit Web / iPhone'}
+                    </Text>
+                    <Text style={{ fontSize: 10, color: '#cbd5e1', textAlign: 'center', marginBottom: 10 }}>
+                      {isAndroid 
+                        ? 'Toque abaixo para descarregar a versão oficial em APK.' 
+                        : 'Adicione este site à Tela de Início do seu iPhone para usar como app.'}
+                    </Text>
+                    <TouchableOpacity 
+                      style={{ backgroundColor: isAndroid ? '#16a34a' : '#f97316', padding: 10, borderRadius: 6, alignItems: 'center' }}
+                      onPress={handleAction}
+                    >
+                      <Text style={{ color: '#ffffff', fontSize: 11, fontWeight: 'bold' }}>
+                        {isAndroid ? '⬇️ BAIXAR APK DO ANDROID' : '🚀 USAR NO IPHONE / NAVEGADOR'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })()}
+
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <Text style={styles.pageTitle}>Painel Geral de Ligas (Nuvem)</Text>
                 {currentUser.isAdmin && (
