@@ -35,7 +35,7 @@ export default function App() {
   const [viewedUser, setViewedUser] = useState(null);
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   
-  // PESQUISA FUNCIONAL
+  // PESQUISA FUNCIONAL COM OVERLAY CORRIGIDO (Z-INDEX 9999)
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('all');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -54,29 +54,27 @@ export default function App() {
   const [isEndHourSelectOpen, setIsEndHourSelectOpen] = useState(false);
   const [isEndMinSelectOpen, setIsEndMinSelectOpen] = useState(false);
 
-  // SELETOR DE DURAÇÃO DO DESAFIO (ETAPA 4)
+  // SELETOR DE DURAÇÃO
   const [isDurationSelectOpen, setIsDurationSelectOpen] = useState(false);
   const [newChallengeDuration, setNewChallengeDuration] = useState('Mensal');
 
-  // REGRAS E ESTRUTURA COMPLETA DAS LIGAS COM DURAÇÃO E TEMPORADAS (ETAPA 4)
+  // LIGAS E ESTRUTURA
   const [challenges, setChallenges] = useState([
     {
       id: 'c1',
       title: 'Liga Anti-Inércia 2026',
       invite_code: 'ANTI2026',
       creator_id: 'usr_capella',
-      duration_type: 'Mensal', // Semanal, Mensal, Semestral, Anual
+      duration_type: 'Mensal',
       season_number: 1,
       has_daily_cap: true,
       daily_cap: 22000,
       registrations_closed: false,
       is_finished: false,
-      season_ended_pending: true, // Notificação para o Admin se a temporada venceu
+      season_ended_pending: false,
       startDate: '01/09/2026',
       endDate: '30/09/2026',
-      hallOfFame: [
-        { season: 'Temporada 0 (Piloto)', champions: ['Luiz Capella (1º)', 'Rafael Souza (2º)', 'Carlos Eduardo (3º)'] }
-      ],
+      hallOfFame: [],
       rules: {
         musculacao: { enabled: true, mode: 'steps', minMinutes: 30, minPoints: 5000 },
         corrida: { enabled: true, mode: 'km', minKm: 3, minKmPoints: 5000 }
@@ -89,44 +87,17 @@ export default function App() {
 
   const selectedChallenge = challenges.find(c => c.id === activeChallengeId) || challenges[0];
 
-  // PARTICIPANTES E DADOS
+  // PARTICIPANTES (FORMATADOS EM LINHA HORIZONTAL LIMPA)
   const [memberships, setMemberships] = useState([
-    { challengeId: 'c1', userId: 'usr_capella', name: 'Luiz Capella', nickname: 'Poke', role: 'active', rankingPoints: 22000, bankPoints: 15400, totalSteps: 42350, avatar: 'https://picsum.photos/seed/poke/200/200', goldMedals: 3, silverMedals: 1, bronzeMedals: 0, age: 34, gender: 'Masculino', insigniaInquebravelCount: 3, insigniaDespertaCount: 1 }
+    { challengeId: 'c1', userId: 'usr_capella', name: 'Luiz Capella', nickname: 'Poke', role: 'active', rankingPoints: 22000, bankPoints: 15400, totalSteps: 42350, avatar: 'https://picsum.photos/seed/poke/200/200', goldMedals: 3, silverMedals: 1, bronzeMedals: 0, age: 34, gender: 'Masculino' },
+    { challengeId: 'c1', userId: 'm_usr2', name: 'Rafael Souza', nickname: 'Rafa', role: 'active', rankingPoints: 14000, bankPoints: 2000, totalSteps: 31000, avatar: 'https://picsum.photos/seed/rafa/100/100', goldMedals: 2, silverMedals: 2, bronzeMedals: 1, age: 29, gender: 'Masculino' }
   ]);
-  const [feedPosts, setFeedPosts] = useState([]);
-  const [pendingWorkouts, setPendingWorkouts] = useState([]);
 
-  // FORMULÁRIO DE TREINO
-  const getTodayFormatted = () => {
-    const d = new Date();
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  };
+  const [pendingParticipants, setPendingParticipants] = useState([
+    { challengeId: 'c1', id: 'p_usr3', name: 'Lucas Mendes', nickname: 'Luquinhas', avatar: 'https://picsum.photos/seed/lucas/100/100', age: 25, gender: 'Masculino' }
+  ]);
 
-  const [isWorkoutModalOpen, setIsWorkoutModalOpen] = useState(false);
-  const [selectedActivity, setSelectedActivity] = useState('musculacao');
-  const [workoutDate, setWorkoutDate] = useState(getTodayFormatted());
-  const [startHour, setStartHour] = useState('08');
-  const [startMin, setStartMin] = useState('00');
-  const [endHour, setEndHour] = useState('09');
-  const [endMin, setEndMin] = useState('00');
-  const [workoutCaption, setWorkoutCaption] = useState('');
-  const [photoEvidence, setPhotoEvidence] = useState(null);
-
-  // CRIAR NOVO DESAFIO
-  const [isCreateChallengeOpen, setIsCreateChallengeOpen] = useState(false);
-  const [newChallengeTitle, setNewChallengeTitle] = useState('');
-  const [newChallengeCode, setNewChallengeCode] = useState('');
-  const [hasCapToggle, setHasCapToggle] = useState(false);
-  const [newChallengeCap, setNewChallengeCap] = useState('22000');
-
-  // STORIES
-  const [stories, setStories] = useState([]);
-  const [isAddStoryOpen, setIsAddStoryOpen] = useState(false);
-
-  // CHECAGEM DE SESSÃO
+  // CHECAGEM DE SESSÃO DO SUPABASE
   useEffect(() => {
     (async () => {
       if (Platform.OS !== 'web') {
@@ -168,10 +139,7 @@ export default function App() {
         age: 34,
         gender: 'Masculino',
         avatar: user.user_metadata?.avatar || 'https://picsum.photos/seed/' + user.id + '/200/200',
-        isAdmin: true,
-        goldMedals: 3,
-        silverMedals: 1,
-        bronzeMedals: 0
+        isAdmin: true
       };
       setCurrentUser(userObj);
       setViewedUser(userObj);
@@ -182,118 +150,26 @@ export default function App() {
     }
   }
 
-  // FUNÇÃO DE REINICIAR TEMPORADA (ETAPA 4)
-  function handleStartNewSeason(challengeId) {
-    const targetChallenge = challenges.find(c => c.id === challengeId);
-    if (!targetChallenge) return;
-
-    Alert.alert(
-      '🏆 Iniciar Nova Temporada',
-      `Deseja encerrar a Temporada ${targetChallenge.season_number || 1} e zerar a pontuação para a nova temporada?\n\n(Os campeões atuais serão registrados no Hall da Fama e as estatísticas acumuladas dos atletas permanecerão salvas).`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Sim, Iniciar Nova Temporada',
-          onPress: () => {
-            // 1. Salvar Top 3 Campeões no Hall da Fama
-            const currentMembers = memberships.filter(m => m.challengeId === challengeId);
-            const top3 = [...currentMembers].sort((a,b) => b.rankingPoints - a.rankingPoints).slice(0, 3);
-            const championNames = top3.map((m, idx) => `${m.name} (${idx + 1}º lugar)`);
-
-            const newHallEntry = {
-              season: `Temporada ${targetChallenge.season_number || 1}`,
-              champions: championNames.length > 0 ? championNames : ['Sem participantes']
-            };
-
-            // 2. Atualizar o Desafio (Incrementar Temporada e Limpar Notificação)
-            setChallenges(challenges.map(c => {
-              if (c.id === challengeId) {
-                return {
-                  ...c,
-                  season_number: (c.season_number || 1) + 1,
-                  season_ended_pending: false,
-                  hallOfFame: [newHallEntry, ...(c.hallOfFame || [])]
-                };
-              }
-              return c;
-            }));
-
-            // 3. Zerar apenas a pontuação do ranking e banco da liga atual para a nova temporada
-            setMemberships(memberships.map(m => {
-              if (m.challengeId === challengeId) {
-                return {
-                  ...m,
-                  rankingPoints: 0,
-                  bankPoints: 0
-                };
-              }
-              return m;
-            }));
-
-            Alert.alert('🚀 Nova Temporada Iniciada!', `A Temporada ${(targetChallenge.season_number || 1) + 1} começou. A pontuação foi zerada e o histórico foi arquivado.`);
-          }
-        }
-      ]
-    );
+  function handleApprovePending(participant, targetRole) {
+    setPendingParticipants(pendingParticipants.filter(p => p.id !== participant.id));
+    setMemberships([
+      ...memberships,
+      { challengeId: activeChallengeId, userId: participant.id, name: participant.name, nickname: participant.nickname, role: targetRole, rankingPoints: 0, bankPoints: 0, totalSteps: 0, avatar: participant.avatar }
+    ]);
+    Alert.alert('Aprovado!', `${participant.name} adicionado como ${targetRole === 'active' ? 'Atleta Ativo' : 'Torcedor'}.`);
   }
 
-  // CÂMERA E GALERIA
-  async function pickImageFromGallery(setPhotoState) {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,
-        allowsEditing: true,
-        quality: 0.8,
-      });
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        setPhotoState(result.assets[0].uri);
-      }
-    } catch (error) {
-      Alert.alert('Erro', 'Não foi possível acessar a galeria.');
-    }
+  function handleDemoteToSpectator(memberId) {
+    setMemberships(memberships.map(m => (m.challengeId === activeChallengeId && m.userId === memberId) ? { ...m, role: 'spectator' } : m));
   }
 
-  async function takePhotoWithCamera(setPhotoState) {
-    try {
-      const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.8 });
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        setPhotoState(result.assets[0].uri);
-      }
-    } catch (error) {
-      Alert.alert('Erro', 'Não foi possível abrir a câmera.');
-    }
+  function handlePromoteToActive(memberId) {
+    setMemberships(memberships.map(m => (m.challengeId === activeChallengeId && m.userId === memberId) ? { ...m, role: 'active' } : m));
   }
 
-  const MediaPickerField = ({ label, photoState, setPhotoState }) => (
-    <View style={styles.mediaFieldBox}>
-      <Text style={styles.mediaLabel}>{label}</Text>
-      <View style={styles.mediaButtonsRow}>
-        <TouchableOpacity style={styles.cameraBtn} onPress={() => takePhotoWithCamera(setPhotoState)}>
-          <Text style={styles.mediaBtnText}>📷 TIRAR FOTO</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.galleryBtn} onPress={() => pickImageFromGallery(setPhotoState)}>
-          <Text style={styles.mediaBtnText}>🖼️ GALERIA</Text>
-        </TouchableOpacity>
-      </View>
-
-      {photoState ? (
-        <View style={styles.previewContainer}>
-          <Image source={{ uri: photoState }} style={styles.previewImage} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.previewSuccessText}>✅ Imagem Selecionada</Text>
-            <TouchableOpacity style={styles.deleteMediaBtn} onPress={() => setPhotoState(null)}>
-              <Text style={styles.deleteMediaBtnText}>🗑️ APAGAR / TROCAR</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ) : (
-        <Text style={styles.previewPendingText}>Pendente</Text>
-      )}
-    </View>
-  );
-
-  const hoursList = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
-  const minsList = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+  function handleRemoveFromChallenge(memberId) {
+    setMemberships(memberships.filter(m => !(m.challengeId === activeChallengeId && m.userId === memberId)));
+  }
 
   if (loadingSession) {
     return (
@@ -310,16 +186,14 @@ export default function App() {
         <ScrollView contentContainerStyle={styles.authContent}>
           <Text style={styles.authBrandTitle}>MUVFIT</Text>
           <Text style={styles.authBrandSubtitle}>Mizan Soluções Técnicas</Text>
-
           <View style={styles.authCard}>
-            <Text style={styles.authTitle}>{authMode === 'login' ? '🔑 Entrar no Aplicativo' : '📝 Criar Conta'}</Text>
+            <Text style={styles.authTitle}>🔑 Entrar no Aplicativo</Text>
             <Text style={styles.inputLabel}>E-mail:</Text>
             <TextInput style={styles.input} placeholder="seuemail@exemplo.com" value={authEmail} onChangeText={setAuthEmail} />
             <Text style={styles.inputLabel}>Senha:</Text>
             <TextInput style={styles.input} placeholder="••••••••" secureTextEntry value={authPassword} onChangeText={setAuthPassword} />
-
             <TouchableOpacity style={styles.primaryBtn} onPress={() => {}}>
-              <Text style={styles.primaryBtnText}>{authMode === 'login' ? 'ENTRAR' : 'CRIAR MINHA CONTA'}</Text>
+              <Text style={styles.primaryBtnText}>ENTRAR</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -327,16 +201,51 @@ export default function App() {
     );
   }
 
-  const userMembershipsAll = memberships.filter(m => m.userId === currentUser.id);
-  const hasUserAnyCommunity = userMembershipsAll.length > 0;
+  const currentChallengeMembers = memberships.filter(m => m.challengeId === activeChallengeId);
+  const currentPendingParticipants = pendingParticipants.filter(p => p.challengeId === activeChallengeId);
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* HEADER */}
+      {/* HEADER E OVERLAY DE BUSCA Z-INDEX 9999 */}
       <View style={styles.topHeader}>
         <View style={styles.brandRow}>
           <Text style={styles.brandTitle}>MUVFIT</Text>
           <Text style={styles.brandSubtitle}>Mizan Soluções Técnicas</Text>
+        </View>
+
+        <View style={{ width: '100%', zIndex: 9999 }}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="🔍 Pesquisar Atletas ou Ligas..."
+            placeholderTextColor="#94a3b8"
+            value={searchQuery}
+            onFocus={() => setIsSearchOpen(true)}
+            onChangeText={(txt) => {
+              setSearchQuery(txt);
+              if (!isSearchOpen) setIsSearchOpen(true);
+            }}
+          />
+
+          {isSearchOpen && (
+            <View style={styles.searchResultsDropdown}>
+              <View style={styles.searchHeaderTop}>
+                <Text style={styles.searchHeaderTitle}>🔎 Pesquisa Geral no MUVFIT</Text>
+                <TouchableOpacity onPress={() => setIsSearchOpen(false)} style={styles.closeSearchBtn}>
+                  <Text style={styles.closeSearchText}>✕ FECHAR</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={{ maxHeight: 200 }}>
+                {memberships.map((m) => (
+                  <TouchableOpacity key={m.userId} style={styles.searchResultItem} onPress={() => setIsSearchOpen(false)}>
+                    <Image source={{ uri: m.avatar }} style={styles.avatarMini} />
+                    <View style={{ marginLeft: 8, flex: 1 }}>
+                      <Text style={styles.searchResultTitle}>{m.name} ({m.nickname})</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
         </View>
       </View>
 
@@ -348,126 +257,76 @@ export default function App() {
             <Text style={[styles.sidebarText, currentScreen === 'dashboard' && styles.sidebarTextActive]}>Dashboard</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'athlete_center' && styles.sidebarBtnActive]} onPress={() => { setViewedUser(currentUser); setCurrentScreen('athlete_center'); }}>
-            <Text style={styles.sidebarIcon}>👤</Text>
-            <Text style={[styles.sidebarText, currentScreen === 'athlete_center' && styles.sidebarTextActive]}>Atleta</Text>
+          <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'admin' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('admin')}>
+            <Text style={styles.sidebarIcon}>⚙️</Text>
+            <Text style={[styles.sidebarText, currentScreen === 'admin' && styles.sidebarTextActive]}>Admin</Text>
           </TouchableOpacity>
-
-          {isAdminContext && (
-            <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'admin' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('admin')}>
-              <Text style={styles.sidebarIcon}>⚙️</Text>
-              <Text style={[styles.sidebarText, currentScreen === 'admin' && styles.sidebarTextActive]}>Admin</Text>
-            </TouchableOpacity>
-          )}
         </View>
 
         <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
-          {currentScreen === 'dashboard' && (
+          {/* PAINEL ADMIN COM CORREÇÃO VISUAL EM LINHA HORIZONTAL DOS INTEGRANTES */}
+          {currentScreen === 'admin' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <Text style={styles.pageTitle}>Painel Geral de Ligas</Text>
-                <TouchableOpacity style={styles.createChallengeBtnHeader} onPress={() => setIsCreateChallengeOpen(true)}>
-                  <Text style={styles.createChallengeBtnText}>+ NOVO DESAFIO</Text>
-                </TouchableOpacity>
-              </View>
+              <Text style={styles.pageTitle}>⚙️ Administração de Membros</Text>
 
-              {challenges.map(c => (
-                <View key={c.id} style={styles.cardBox}>
-                  <Text style={styles.cardBoxTitle}>{c.title} (Temporada {c.season_number || 1})</Text>
-                  <Text style={styles.cardBoxSub}>Duração: {c.duration_type || 'Mensal'} | Código: {c.invite_code}</Text>
-                  
-                  {c.hallOfFame && c.hallOfFame.length > 0 && (
-                    <View style={styles.hallOfFameBox}>
-                      <Text style={styles.hallOfFameTitle}>🏛️ HALL DA FAMA (Campeões Anteriores):</Text>
-                      {c.hallOfFame.map((hf, idx) => (
-                        <Text key={idx} style={styles.hallOfFameText}>• {hf.season}: {hf.champions.join(', ')}</Text>
-                      ))}
+              {/* CARDS DE ATLETAS PENDENTES EM LINHA HORIZONTAL */}
+              {currentPendingParticipants.length > 0 && (
+                <View style={styles.adminControlCard}>
+                  <Text style={styles.adminCardTitle}>📩 Atletas Pendentes ({currentPendingParticipants.length})</Text>
+                  {currentPendingParticipants.map((p) => (
+                    <View key={p.id} style={styles.participantRow}>
+                      <Image source={{ uri: p.avatar }} style={styles.avatarMini} />
+                      <View style={styles.participantInfoBox}>
+                        <Text style={styles.participantName} numberOfLines={1}>{p.name}</Text>
+                        <Text style={styles.participantSub}>({p.nickname}) • Aguardando</Text>
+                      </View>
+                      <View style={styles.actionButtonsRow}>
+                        <TouchableOpacity style={styles.approveBtn} onPress={() => handleApprovePending(p, 'active')}>
+                          <Text style={styles.btnMiniText}>⚡ ATLETA</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.demoteBtn} onPress={() => handleApprovePending(p, 'spectator')}>
+                          <Text style={styles.btnMiniText}>👀 TORCEDOR</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                  )}
+                  ))}
                 </View>
-              ))}
-            </ScrollView>
-          )}
+              )}
 
-          {/* TELA ADMIN COM NOTIFICAÇÃO DE NOVA TEMPORADA (ETAPA 4) */}
-          {currentScreen === 'admin' && selectedChallenge && (
-            <ScrollView contentContainerStyle={styles.mainContent}>
-              <Text style={styles.pageTitle}>⚙️ Painel de Administração — {selectedChallenge.title}</Text>
+              {/* CARDS DE GERENCIAMENTO DE MEMBROS CORRIGIDOS NA HORIZONTAL */}
+              <View style={styles.adminControlCard}>
+                <Text style={styles.adminCardTitle}>👥 Gerenciamento de Membros</Text>
+                {currentChallengeMembers.map((m) => (
+                  <View key={m.userId} style={styles.participantRow}>
+                    <Image source={{ uri: m.avatar }} style={styles.avatarMini} />
+                    <View style={styles.participantInfoBox}>
+                      <Text style={styles.participantName} numberOfLines={1}>{m.name} ({m.nickname})</Text>
+                      <Text style={m.role === 'active' ? styles.tagActiveText : styles.tagSpectatorText}>
+                        {m.role === 'active' ? '⚡ Atleta Ativo' : '👀 Torcedor'}
+                      </Text>
+                    </View>
 
-              {/* PAINEL DESTACADO DE NOVA TEMPORADA */}
-              <View style={styles.seasonNoticeBox}>
-                <Text style={styles.seasonNoticeTitle}>🏆 Fim de Temporada / Ciclo da Liga</Text>
-                <Text style={styles.seasonNoticeSub}>
-                  Temporada Atual: {selectedChallenge.season_number || 1} ({selectedChallenge.duration_type || 'Mensal'})
-                </Text>
-                <TouchableOpacity 
-                  style={styles.startSeasonBtn} 
-                  onPress={() => handleStartNewSeason(selectedChallenge.id)}
-                >
-                  <Text style={styles.startSeasonBtnText}>🚀 INICIAR NOVA TEMPORADA (RESETA PONTOS & ARQUIVA PÓDIO)</Text>
-                </TouchableOpacity>
+                    <View style={styles.actionButtonsRow}>
+                      {m.role === 'spectator' ? (
+                        <TouchableOpacity style={styles.approveBtn} onPress={() => handlePromoteToActive(m.userId)}>
+                          <Text style={styles.btnMiniText}>⚡ ATLETA</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity style={styles.demoteBtn} onPress={() => handleDemoteToSpectator(m.userId)}>
+                          <Text style={styles.btnMiniText}>👀 TORCEDOR</Text>
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity style={styles.banBtn} onPress={() => handleRemoveFromChallenge(m.userId)}>
+                        <Text style={styles.btnMiniText}>❌ REMOVER</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
               </View>
             </ScrollView>
           )}
         </View>
       </View>
-
-      {/* MODAL CRIAR DESAFIO COM SELETOR DE DURAÇÃO (ETAPA 4) */}
-      <Modal visible={isCreateChallengeOpen} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Criar Novo Desafio / Liga</Text>
-            <TextInput style={styles.input} placeholder="Nome do Desafio" value={newChallengeTitle} onChangeText={setNewChallengeTitle} />
-            <TextInput style={styles.input} placeholder="Código (Ex: OUT2026)" value={newChallengeCode} onChangeText={setNewChallengeCode} />
-
-            <Text style={styles.inputLabel}>Selecione a Duração do Desafio:</Text>
-            <TouchableOpacity style={styles.nativeSelectButton} onPress={() => setIsDurationSelectOpen(true)}>
-              <Text style={styles.nativeSelectButtonText}>Duração: {newChallengeDuration} ▼</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.primaryBtn} onPress={() => {
-              if (newChallengeTitle && newChallengeCode) {
-                const newId = `c_${Date.now()}`;
-                setChallenges([...challenges, {
-                  id: newId,
-                  title: newChallengeTitle,
-                  invite_code: newChallengeCode.toUpperCase(),
-                  creator_id: currentUser.id,
-                  duration_type: newChallengeDuration,
-                  season_number: 1,
-                  has_daily_cap: false,
-                  hallOfFame: []
-                }]);
-                setIsCreateChallengeOpen(false);
-                setNewChallengeTitle('');
-                setNewChallengeCode('');
-                Alert.alert('Sucesso', 'Novo desafio criado com sucesso!');
-              }
-            }}>
-              <Text style={styles.primaryBtnText}>CRIAR DESAFIO</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsCreateChallengeOpen(false)}>
-              <Text style={styles.cancelBtnText}>CANCELAR</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* MODAL NATIVO SELETOR DE DURAÇÃO */}
-      <Modal visible={isDurationSelectOpen} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsDurationSelectOpen(false)}>
-          <View style={styles.modalContentSelect}>
-            <Text style={styles.modalTitle}>Escolha a Duração do Desafio</Text>
-            {['Semanal', 'Mensal', 'Semestral', 'Anual'].map(dur => (
-              <TouchableOpacity key={dur} style={styles.selectOptionRow} onPress={() => { setNewChallengeDuration(dur); setIsDurationSelectOpen(false); }}>
-                <Text style={styles.selectOptionText}>📆 Desafio {dur}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
     </SafeAreaView>
   );
 }
@@ -484,10 +343,19 @@ const styles = StyleSheet.create({
   authCard: { backgroundColor: '#ffffff', borderRadius: 12, padding: 18 },
   authTitle: { fontSize: 16, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 14, textAlign: 'center' },
 
-  topHeader: { padding: 12, backgroundColor: '#1e3a8a' },
-  brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  topHeader: { padding: 12, backgroundColor: '#1e3a8a', zIndex: 9999, elevation: 10 },
+  brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   brandTitle: { fontSize: 20, fontWeight: '900', color: '#f97316' },
   brandSubtitle: { fontSize: 10, fontWeight: 'bold', color: '#ffffff' },
+
+  searchInput: { backgroundColor: '#ffffff', borderRadius: 6, paddingHorizontal: 10, paddingVertical: Platform.OS === 'ios' ? 8 : 4, fontSize: 11, color: '#0f172a', borderWidth: 1, borderColor: '#cbd5e1' },
+  searchResultsDropdown: { position: 'absolute', top: 40, left: 0, right: 0, backgroundColor: '#ffffff', borderRadius: 8, padding: 10, borderWidth: 2, borderColor: '#f97316', elevation: 10, zIndex: 9999 },
+  searchHeaderTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, borderBottomWidth: 1, borderBottomColor: '#e2e8f0', paddingBottom: 4 },
+  searchHeaderTitle: { fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' },
+  closeSearchBtn: { backgroundColor: '#fef2f2', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  closeSearchText: { fontSize: 8, color: '#dc2626', fontWeight: 'bold' },
+  searchResultItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 6, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  searchResultTitle: { fontSize: 10, fontWeight: 'bold', color: '#0f172a' },
 
   sidebar: { width: 110, backgroundColor: '#f8fafc', borderRightWidth: 1, borderRightColor: '#cbd5e1', paddingVertical: 10 },
   sidebarBtn: { paddingVertical: 12, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -499,50 +367,26 @@ const styles = StyleSheet.create({
   mainContent: { padding: 12 },
   pageTitle: { fontSize: 14, fontWeight: 'bold', color: '#1e3a8a', marginVertical: 8 },
 
-  createChallengeBtnHeader: { backgroundColor: '#16a34a', paddingHorizontal: 8, paddingVertical: 5, borderRadius: 6 },
-  createChallengeBtnText: { color: '#ffffff', fontSize: 9, fontWeight: 'bold' },
+  adminControlCard: { backgroundColor: '#fff7ed', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#f97316', marginBottom: 12 },
+  adminCardTitle: { fontSize: 12, fontWeight: 'bold', color: '#c2410c', marginBottom: 6 },
 
-  cardBox: { backgroundColor: '#ffffff', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 10 },
-  cardBoxTitle: { fontSize: 13, fontWeight: 'bold', color: '#0f172a' },
-  cardBoxSub: { fontSize: 10, color: '#64748b', marginVertical: 2 },
+  // ESTRUTURA HORIZONTAL DOS MEMBROS (CORRIGE TEXTO VERTICAL)
+  participantRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#fed7aa', marginTop: 6 },
+  avatarMini: { width: 34, height: 34, borderRadius: 17 },
+  participantInfoBox: { flex: 1, marginLeft: 8, paddingRight: 4 },
+  participantName: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
+  participantSub: { fontSize: 9, color: '#64748b' },
+  tagActiveText: { fontSize: 9, color: '#16a34a', fontWeight: 'bold' },
+  tagSpectatorText: { fontSize: 9, color: '#1e3a8a', fontWeight: 'bold' },
 
-  hallOfFameBox: { backgroundColor: '#fef3c7', borderRadius: 6, padding: 8, marginTop: 6, borderWidth: 1, borderColor: '#f59e0b' },
-  hallOfFameTitle: { fontSize: 10, fontWeight: 'bold', color: '#92400e', marginBottom: 2 },
-  hallOfFameText: { fontSize: 9, color: '#78350f' },
-
-  seasonNoticeBox: { backgroundColor: '#fff7ed', borderRadius: 10, padding: 12, borderWidth: 2, borderColor: '#f97316', marginBottom: 12 },
-  seasonNoticeTitle: { fontSize: 13, fontWeight: 'bold', color: '#c2410c' },
-  seasonNoticeSub: { fontSize: 10, color: '#475569', marginVertical: 4 },
-  startSeasonBtn: { backgroundColor: '#16a34a', paddingVertical: 10, borderRadius: 6, alignItems: 'center', marginTop: 6 },
-  startSeasonBtnText: { color: '#ffffff', fontSize: 10, fontWeight: 'bold' },
-
-  nativeSelectButton: { backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 8 },
-  nativeSelectButtonText: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
-  selectOptionRow: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  selectOptionText: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
-
-  mediaFieldBox: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, padding: 8, marginBottom: 8 },
-  mediaLabel: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 6 },
-  mediaButtonsRow: { flexDirection: 'row', gap: 8 },
-  cameraBtn: { flex: 1, backgroundColor: '#f97316', paddingVertical: 8, borderRadius: 6, alignItems: 'center' },
-  galleryBtn: { flex: 1, backgroundColor: '#1e3a8a', paddingVertical: 8, borderRadius: 6, alignItems: 'center' },
-  mediaBtnText: { color: '#ffffff', fontSize: 10, fontWeight: 'bold' },
-  previewContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
-  previewImage: { width: 40, height: 40, borderRadius: 6, borderWidth: 1, borderColor: '#16a34a' },
-  previewSuccessText: { color: '#16a34a', fontSize: 9, fontWeight: 'bold' },
-  deleteMediaBtn: { backgroundColor: '#fef2f2', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4, marginTop: 2, alignSelf: 'flex-start' },
-  deleteMediaBtnText: { color: '#dc2626', fontSize: 8, fontWeight: 'bold' },
-  previewPendingText: { color: '#94a3b8', fontSize: 9, fontStyle: 'italic', marginTop: 4 },
-
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 14 },
-  modalContent: { backgroundColor: '#ffffff', borderRadius: 12, padding: 14, maxHeight: '85%' },
-  modalContentSelect: { backgroundColor: '#ffffff', borderRadius: 12, padding: 14, maxHeight: 300 },
-  modalTitle: { fontSize: 14, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 10, textAlign: 'center' },
-  inputLabel: { fontSize: 10, fontWeight: 'bold', color: '#475569', marginVertical: 4 },
-  input: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 8, fontSize: 11, marginBottom: 8 },
+  actionButtonsRow: { flexDirection: 'row', gap: 4, alignItems: 'center' },
+  approveBtn: { backgroundColor: '#16a34a', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 4 },
+  demoteBtn: { backgroundColor: '#d97706', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 4 },
+  banBtn: { backgroundColor: '#dc2626', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 4 },
+  btnMiniText: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
 
   primaryBtn: { backgroundColor: '#f97316', paddingVertical: 10, borderRadius: 6, alignItems: 'center', marginTop: 6 },
   primaryBtnText: { color: '#ffffff', fontSize: 11, fontWeight: 'bold' },
-  cancelBtn: { marginTop: 6, paddingVertical: 4, alignItems: 'center' },
-  cancelBtnText: { color: '#64748b', fontSize: 10, fontWeight: 'bold' }
+  inputLabel: { fontSize: 10, fontWeight: 'bold', color: '#475569', marginVertical: 4 },
+  input: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 8, fontSize: 11, marginBottom: 8 }
 });
