@@ -35,12 +35,12 @@ export default function App() {
   const [viewedUser, setViewedUser] = useState(null);
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   
-  // PESQUISA FUNCIONAL COM OVERLAY CORRIGIDO (Z-INDEX 9999 - ETAPA 5)
+  // BARRA DE PESQUISA (Z-INDEX 9999 - ETAPA 5)
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('all');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  // MODAIS SELETORAS NATIVAS
+  // CONTROLADORES DE MODAIS SELETORAS
   const [isHeaderSelectOpen, setIsHeaderSelectOpen] = useState(false);
   const [isPerfScopeSelectOpen, setIsPerfScopeSelectOpen] = useState(false);
   const [isManualAthleteSelectOpen, setIsManualAthleteSelectOpen] = useState(false);
@@ -54,11 +54,11 @@ export default function App() {
   const [isEndHourSelectOpen, setIsEndHourSelectOpen] = useState(false);
   const [isEndMinSelectOpen, setIsEndMinSelectOpen] = useState(false);
 
-  // SELETOR DE DURAÇÃO DO DESAFIO (ETAPA 4)
+  // DURAÇÃO DO DESAFIO (ETAPA 4)
   const [isDurationSelectOpen, setIsDurationSelectOpen] = useState(false);
   const [newChallengeDuration, setNewChallengeDuration] = useState('Mensal');
 
-  // REGRAS E ESTRUTURA COMPLETA DAS LIGAS COM DURAÇÃO E TEMPORADAS (ETAPA 4)
+  // ESTRUTURA COMPLETA DAS LIGAS E TEMPORADAS
   const [challenges, setChallenges] = useState([
     {
       id: 'c1',
@@ -143,7 +143,7 @@ export default function App() {
     }
   ]);
 
-  // PARTICIPANTES VINCULADOS
+  // PARTICIPANTES
   const [memberships, setMemberships] = useState([
     { challengeId: 'c1', userId: 'usr_capella', name: 'Luiz Capella', nickname: 'Poke', role: 'active', rankingPoints: 22000, bankPoints: 15400, totalSteps: 42350, avatar: 'https://picsum.photos/seed/poke/200/200', goldMedals: 3, silverMedals: 1, bronzeMedals: 0, age: 34, gender: 'Masculino', insigniaInquebravelCount: 3, insigniaDespertaCount: 1 },
     { challengeId: 'c1', userId: 'm_usr2', name: 'Rafael Souza', nickname: 'Rafa', role: 'active', rankingPoints: 14000, bankPoints: 2000, totalSteps: 31000, avatar: 'https://picsum.photos/seed/rafa/100/100', goldMedals: 2, silverMedals: 2, bronzeMedals: 1, age: 29, gender: 'Masculino', insigniaInquebravelCount: 1, insigniaDespertaCount: 0 },
@@ -156,12 +156,56 @@ export default function App() {
   ]);
 
   const [dailySubmissions, setDailySubmissions] = useState([]);
-  const [feedPosts, setFeedPosts] = useState([]);
-  const [pendingWorkouts, setPendingWorkouts] = useState([]);
-  const [commentInputs, setCommentInputs] = useState({});
-  const [evidences, setEvidences] = useState([]);
+  const [feedPosts, setFeedPosts] = useState([
+    {
+      id: 'p1',
+      challengeId: 'c1',
+      user_id: 'usr_capella',
+      user_name: 'Luiz Capella',
+      user_nickname: 'Poke',
+      user_avatar: 'https://picsum.photos/seed/poke/200/200',
+      activity_type: 'MUSCULAÇÃO',
+      caption: 'Treino de perna concluído na Liga Anti-Inércia! 🦵',
+      photo_evidence: 'https://picsum.photos/seed/w1/400/300',
+      points_to_ranking: 10000,
+      points_to_bank: 0,
+      status: 'approved',
+      created_at: 'Há 2h',
+      likes: 5,
+      isLiked: false,
+      comments: [{ id: 'c1', user: 'Cadu', text: 'Boa monstro! 👏' }]
+    }
+  ]);
 
-  // FORMULÁRIO DE TREINO (COM DATA HOJE AUTOMÁTICA E SELECTS DE HORA - ETAPA 3)
+  const [pendingWorkouts, setPendingWorkouts] = useState([
+    {
+      id: 'pw_1',
+      challengeId: 'c1',
+      user_id: 'm_usr2',
+      user_name: 'Rafael Souza',
+      user_nickname: 'Rafa',
+      user_avatar: 'https://picsum.photos/seed/rafa/100/100',
+      activity_type: 'MUSCULAÇÃO',
+      caption: 'Treino de superiores finalizado!',
+      dateStr: '18/09/2026',
+      startTime: '08:00',
+      endTime: '09:00',
+      photo_start: 'https://picsum.photos/seed/s1/200/200',
+      photo_end: 'https://picsum.photos/seed/e1/200/200',
+      photo_evidence: 'https://picsum.photos/seed/ev1/200/200',
+      points_to_ranking: 10000,
+      points_to_bank: 0,
+      created_at: 'Agora'
+    }
+  ]);
+
+  const [commentInputs, setCommentInputs] = useState({});
+  const [evidences, setEvidences] = useState([
+    { id: 'e1', title: 'Força / Perna', date: '18/09/2026', image: 'https://picsum.photos/seed/ev1/200/200' },
+    { id: 'e2', title: 'Corrida 8km', date: '15/09/2026', image: 'https://picsum.photos/seed/ev2/200/200' }
+  ]);
+
+  // FORMULÁRIO DE TREINO (ETAPA 3)
   const getTodayFormatted = () => {
     const d = new Date();
     const yyyy = d.getFullYear();
@@ -449,6 +493,131 @@ export default function App() {
     );
   }
 
+  // COMPUTAÇÃO DE PONTOS
+  function calculatePoints(type, durStr) {
+    if (type === 'passos_diarios') return 0;
+    const dur = parseInt(durStr) || 0;
+    const rawPts = dur >= 60 ? 10000 : 5000;
+    return Math.max(1000, rawPts);
+  }
+
+  function handleSubmitWorkout() {
+    const currentMemberRecord = memberships.find(m => m.challengeId === activeChallengeId && m.userId === currentUser.id);
+    if (!currentMemberRecord || currentMemberRecord.role !== 'active') {
+      Alert.alert('Acesso Restrito', 'Apenas Atletas Ativos podem submeter treinos.');
+      return;
+    }
+
+    const is3PhotosRequired = ['musculacao', 'crossfit', 'aerobico'].includes(selectedActivity);
+    if (is3PhotosRequired && (!photoStart || !photoEnd || !photoEvidence)) {
+      Alert.alert('Comprovação Incompleta', 'Envie as 3 fotos requeridas para esta modalidade.');
+      return;
+    }
+
+    if (!is3PhotosRequired && !photoEvidence) {
+      Alert.alert('Comprovante Obrigatório', 'Envie a foto comprovando a atividade.');
+      return;
+    }
+
+    const points = calculatePoints(selectedActivity, durationInput);
+    let ptsRanking = points;
+    let ptsBank = 0;
+
+    if (selectedActivity === 'passos_diarios') {
+      ptsRanking = 0;
+    } else if (selectedChallenge?.has_daily_cap && selectedChallenge?.daily_cap) {
+      ptsRanking = Math.min(points, selectedChallenge.daily_cap);
+      ptsBank = Math.max(0, points - selectedChallenge.daily_cap);
+    }
+
+    setPendingWorkouts([
+      {
+        id: `pw_${Date.now()}`,
+        challengeId: activeChallengeId,
+        user_id: currentUser.id,
+        user_name: currentUser.name,
+        user_nickname: currentUser.nickname,
+        user_avatar: currentUser.avatar,
+        activity_type: selectedActivity.toUpperCase(),
+        caption: workoutCaption || `Atividade de ${selectedActivity}`,
+        dateStr: workoutDate,
+        startTime: `${startHour}:${startMin}`,
+        endTime: `${endHour}:${endMin}`,
+        photo_start: photoStart,
+        photo_end: photoEnd,
+        photo_evidence: photoEvidence,
+        points_to_ranking: ptsRanking,
+        points_to_bank: ptsBank,
+        created_at: 'Agora'
+      },
+      ...pendingWorkouts
+    ]);
+
+    setIsWorkoutModalOpen(false);
+    resetWorkoutForm();
+    Alert.alert('Sucesso', 'Treino submetido! Aguardando aprovação.');
+  }
+
+  function resetWorkoutForm() {
+    setDurationInput('');
+    setDistanceInput('');
+    setStepsInput('');
+    setWorkoutCaption('');
+    setPhotoStart(null);
+    setPhotoEnd(null);
+    setPhotoEvidence(null);
+  }
+
+  // APROVAÇÃO ADMIN
+  function handleApproveWorkout(workoutId) {
+    const workoutToApprove = pendingWorkouts.find(w => w.id === workoutId);
+    if (!workoutToApprove) return;
+
+    setPendingWorkouts(pendingWorkouts.filter(w => w.id !== workoutId));
+
+    if (workoutToApprove.activity_type !== 'PASSOS DIÁRIOS') {
+      setMemberships(memberships.map(m => {
+        if (m.challengeId === workoutToApprove.challengeId && m.userId === workoutToApprove.user_id) {
+          return {
+            ...m,
+            rankingPoints: m.rankingPoints + workoutToApprove.points_to_ranking,
+            bankPoints: m.bankPoints + workoutToApprove.points_to_bank
+          };
+        }
+        return m;
+      }));
+    }
+
+    setFeedPosts([
+      {
+        id: `p_${Date.now()}`,
+        challengeId: workoutToApprove.challengeId,
+        user_id: workoutToApprove.user_id,
+        user_name: workoutToApprove.user_name,
+        user_nickname: workoutToApprove.user_nickname,
+        user_avatar: workoutToApprove.user_avatar,
+        activity_type: workoutToApprove.activity_type,
+        caption: workoutToApprove.caption,
+        photo_evidence: workoutToApprove.photo_evidence,
+        points_to_ranking: workoutToApprove.points_to_ranking,
+        points_to_bank: workoutToApprove.points_to_bank,
+        status: 'approved',
+        created_at: 'Agora',
+        likes: 0,
+        isLiked: false,
+        comments: []
+      },
+      ...feedPosts
+    ]);
+
+    Alert.alert('Treino Aprovado!', 'O treino foi publicado no Feed.');
+  }
+
+  function handleRejectWorkout(workoutId) {
+    setPendingWorkouts(pendingWorkouts.filter(w => w.id !== workoutId));
+    Alert.alert('Treino Rejeitado', 'O registro foi removido.');
+  }
+
   // OBJETIVOS: ADICIONAR E DELETAR COM X VERMELHO (ETAPA 6)
   function handleAddGoal() {
     if (!newGoalTitle.trim()) return;
@@ -570,7 +739,12 @@ export default function App() {
   const userMembershipsAll = memberships.filter(m => m.userId === currentUser.id);
   const hasUserAnyCommunity = userMembershipsAll.length > 0;
   const currentChallengeMembers = memberships.filter(m => m.challengeId === activeChallengeId);
+  const activeMembersInChallenge = currentChallengeMembers.filter(m => m.role === 'active');
+  const spectatorMembersInChallenge = currentChallengeMembers.filter(m => m.role === 'spectator');
+  const top3Ranked = [...activeMembersInChallenge].sort((a,b) => b.rankingPoints - a.rankingPoints).slice(0, 3);
+  const currentFeedPosts = feedPosts.filter(p => p.challengeId === activeChallengeId);
   const currentPendingParticipants = pendingParticipants.filter(p => p.challengeId === activeChallengeId);
+  const currentPendingWorkouts = pendingWorkouts.filter(w => w.challengeId === activeChallengeId);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -580,6 +754,17 @@ export default function App() {
           <Text style={styles.brandTitle}>MUVFIT</Text>
           <Text style={styles.brandSubtitle}>Mizan Soluções Técnicas</Text>
         </View>
+
+        {hasUserAnyCommunity && selectedChallenge && (
+          <View style={styles.activeChallengeSelectorBar}>
+            <Text style={styles.activeChallengeSelectorLabel}>🎯 Desafio Selecionado:</Text>
+            <TouchableOpacity style={styles.nativeSelectButton} onPress={() => setIsHeaderSelectOpen(true)}>
+              <Text style={styles.nativeSelectButtonText}>
+                {selectedChallenge.title} ({selectedChallenge.creator_id === currentUser.id ? '🔑 Admin' : '⚡ Atleta'}) ▼
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={{ width: '100%', zIndex: 9999 }}>
           <TextInput
@@ -625,11 +810,25 @@ export default function App() {
             <Text style={[styles.sidebarText, currentScreen === 'athlete_center' && styles.sidebarTextActive]}>Atleta</Text>
           </TouchableOpacity>
 
-          {isAdminContext && (
-            <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'admin' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('admin')}>
-              <Text style={styles.sidebarIcon}>⚙️</Text>
-              <Text style={[styles.sidebarText, currentScreen === 'admin' && styles.sidebarTextActive]}>Admin</Text>
-            </TouchableOpacity>
+          {hasUserAnyCommunity && (
+            <>
+              <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'feed' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('feed')}>
+                <Text style={styles.sidebarIcon}>📷</Text>
+                <Text style={[styles.sidebarText, currentScreen === 'feed' && styles.sidebarTextActive]}>Feed</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'ranking' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('ranking')}>
+                <Text style={styles.sidebarIcon}>🏆</Text>
+                <Text style={[styles.sidebarText, currentScreen === 'ranking' && styles.sidebarTextActive]}>Ranking</Text>
+              </TouchableOpacity>
+
+              {isAdminContext && (
+                <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'admin' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('admin')}>
+                  <Text style={styles.sidebarIcon}>⚙️</Text>
+                  <Text style={[styles.sidebarText, currentScreen === 'admin' && styles.sidebarTextActive]}>Admin</Text>
+                </TouchableOpacity>
+              )}
+            </>
           )}
 
           <TouchableOpacity style={[styles.sidebarBtn, { marginTop: 'auto', borderTopWidth: 1, borderTopColor: '#e2e8f0' }]} onPress={handleLogout}>
@@ -672,7 +871,81 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* TELA 2: CENTRAL DO ATLETA (CLICÁVEL + OBJETIVOS COM X VERMELHO) */}
+          {/* TELA 2: FEED */}
+          {currentScreen === 'feed' && selectedChallenge && (
+            <ScrollView contentContainerStyle={styles.mainContent}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <Text style={styles.pageTitle}>Feed — {selectedChallenge.title}</Text>
+              </View>
+
+              <TouchableOpacity style={styles.actionBtn} onPress={() => setIsWorkoutModalOpen(true)}>
+                <Text style={styles.actionBtnText}>+ REGISTRAR TREINO / PASSOS</Text>
+              </TouchableOpacity>
+
+              {currentFeedPosts.map((post) => (
+                <View key={post.id} style={styles.postCard}>
+                  <View style={styles.postHeader}>
+                    <Image source={{ uri: post.user_avatar }} style={styles.avatarMini} />
+                    <View style={{ marginLeft: 8 }}>
+                      <Text style={styles.postAuthor}>{post.user_name} ({post.user_nickname})</Text>
+                      <Text style={styles.postTime}>{post.created_at} • ✅ Aprovado</Text>
+                    </View>
+                  </View>
+                  <Image source={{ uri: post.photo_evidence }} style={styles.postImg} />
+                  <View style={{ padding: 10 }}>
+                    <Text style={styles.postCaption}>{post.caption}</Text>
+                    <Text style={styles.badgePts}>+{post.points_to_ranking} pts (Ranking)</Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
+          {/* TELA 3: RANKING COM PÓDIO */}
+          {currentScreen === 'ranking' && selectedChallenge && (
+            <ScrollView contentContainerStyle={styles.mainContent}>
+              <Text style={styles.pageTitle}>🏆 Ranking — {selectedChallenge.title}</Text>
+
+              {top3Ranked.length >= 3 && (
+                <View style={styles.podiumContainer}>
+                  <Text style={styles.podiumHeaderTitle}>🏆 PÓDIO ATUAL DA LIGA 🏆</Text>
+                  <View style={styles.podiumRow}>
+                    <View style={styles.podiumCard2nd}>
+                      <Text style={styles.podiumMedal}>🥈 2º LUGAR</Text>
+                      <Text style={styles.podiumName}>{top3Ranked[1].name}</Text>
+                      <Text style={styles.podiumPts}>{top3Ranked[1].rankingPoints} pts</Text>
+                    </View>
+
+                    <View style={styles.podiumCard1st}>
+                      <Text style={styles.podiumMedal}>🥇 CAMPEÃO</Text>
+                      <Text style={styles.podiumName1st}>{top3Ranked[0].name}</Text>
+                      <Text style={styles.podiumPts1st}>{top3Ranked[0].rankingPoints} pts</Text>
+                    </View>
+
+                    <View style={styles.podiumCard3rd}>
+                      <Text style={styles.podiumMedal}>🥉 3º LUGAR</Text>
+                      <Text style={styles.podiumName}>{top3Ranked[2].name}</Text>
+                      <Text style={styles.podiumPts}>{top3Ranked[2].rankingPoints} pts</Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {activeMembersInChallenge.map((m, idx) => (
+                <View key={m.userId} style={styles.rankingRowCard}>
+                  <Text style={styles.rankingPosNumber}>#{idx + 1}</Text>
+                  <Image source={{ uri: m.avatar }} style={styles.avatarMini} />
+                  <View style={{ flex: 1, marginLeft: 8 }}>
+                    <Text style={styles.rankingMemberName}>{m.name} ({m.nickname})</Text>
+                    <Text style={styles.rankingMemberSub}>{m.totalSteps} passos</Text>
+                  </View>
+                  <Text style={styles.rankingMemberPts}>{m.rankingPoints} pts</Text>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
+          {/* TELA 4: CENTRAL DO ATLETA (CLICÁVEL + OBJETIVOS COM X VERMELHO) */}
           {currentScreen === 'athlete_center' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.profileHeaderCard}>
@@ -742,7 +1015,7 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* TELA 3: PAINEL ADMIN (FIM DE TEMPORADA + GERENCIAMENTO HORIZONTAL) */}
+          {/* TELA 5: PAINEL ADMIN (MODERAÇÃO COM FOTOS REAIS + REGRAS AVANÇADAS) */}
           {currentScreen === 'admin' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <Text style={styles.pageTitle}>⚙️ Administração — {selectedChallenge.title}</Text>
@@ -753,6 +1026,27 @@ export default function App() {
                 <TouchableOpacity style={styles.startSeasonBtn} onPress={() => handleStartNewSeason(selectedChallenge.id)}>
                   <Text style={styles.startSeasonBtnText}>🚀 INICIAR NOVA TEMPORADA (RESETAR PONTOS & SALVAR HALL DA FAMA)</Text>
                 </TouchableOpacity>
+              </View>
+
+              <View style={styles.adminControlCard}>
+                <Text style={styles.adminCardTitle}>📋 Treinos Pendentes ({currentPendingWorkouts.length})</Text>
+                {currentPendingWorkouts.map((w) => (
+                  <View key={w.id} style={styles.participantRow}>
+                    <Image source={{ uri: w.photo_evidence }} style={styles.avatarMini} />
+                    <View style={styles.participantInfoBox}>
+                      <Text style={styles.participantName}>{w.user_name} ({w.activity_type})</Text>
+                      <Text style={styles.participantSub}>{w.caption}</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 4 }}>
+                      <TouchableOpacity style={styles.approveBtn} onPress={() => handleApproveWorkout(w.id)}>
+                        <Text style={styles.btnMiniText}>✅ APROVAR</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.banBtn} onPress={() => handleRejectWorkout(w.id)}>
+                        <Text style={styles.btnMiniText}>❌ REJEITAR</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
               </View>
 
               <View style={styles.adminControlCard}>
@@ -771,6 +1065,27 @@ export default function App() {
           )}
         </View>
       </View>
+
+      {/* MODAL REGISTRAR TREINO COM SELETOR DE HORAS E APAGAR/TROCAR PRE-ENVIO */}
+      <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <ScrollView contentContainerStyle={styles.modalContent}>
+            <Text style={styles.modalTitle}>Registrar Treino ({selectedChallenge?.title})</Text>
+            
+            <Text style={styles.inputLabel}>Data da Atividade:</Text>
+            <TextInput style={styles.input} value={workoutDate} onChangeText={setWorkoutDate} />
+
+            <MediaPickerField label="Foto de Comprovação:" photoState={photoEvidence} setPhotoState={setPhotoEvidence} />
+            
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleSubmitWorkout}>
+              <Text style={styles.primaryBtnText}>SUBMETER TREINO</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsWorkoutModalOpen(false)}>
+              <Text style={styles.cancelBtnText}>CANCELAR</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
 
       {/* MODAL PESO EDITÁVEL */}
       <Modal visible={isEditWeightOpen} transparent animationType="slide">
@@ -834,6 +1149,11 @@ const styles = StyleSheet.create({
   brandTitle: { fontSize: 20, fontWeight: '900', color: '#f97316' },
   brandSubtitle: { fontSize: 10, fontWeight: 'bold', color: '#ffffff' },
 
+  activeChallengeSelectorBar: { backgroundColor: '#172554', padding: 6, borderRadius: 6, marginBottom: 6 },
+  activeChallengeSelectorLabel: { fontSize: 9, color: '#f97316', fontWeight: 'bold', marginBottom: 2 },
+  nativeSelectButton: { backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1' },
+  nativeSelectButtonText: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
+
   searchInput: { backgroundColor: '#ffffff', borderRadius: 6, paddingHorizontal: 10, paddingVertical: Platform.OS === 'ios' ? 8 : 4, fontSize: 11, color: '#0f172a', borderWidth: 1, borderColor: '#cbd5e1' },
   searchResultsDropdown: { position: 'absolute', top: 40, left: 0, right: 0, backgroundColor: '#ffffff', borderRadius: 8, padding: 10, borderWidth: 2, borderColor: '#f97316', elevation: 10, zIndex: 9999 },
   searchHeaderTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, borderBottomWidth: 1, borderBottomColor: '#e2e8f0', paddingBottom: 4 },
@@ -866,6 +1186,32 @@ const styles = StyleSheet.create({
   hallOfFameBox: { backgroundColor: '#fef3c7', borderRadius: 6, padding: 8, marginTop: 6, borderWidth: 1, borderColor: '#f59e0b' },
   hallOfFameTitle: { fontSize: 10, fontWeight: 'bold', color: '#92400e', marginBottom: 2 },
   hallOfFameText: { fontSize: 9, color: '#78350f' },
+
+  podiumContainer: { backgroundColor: '#fff7ed', borderRadius: 10, padding: 12, borderWidth: 2, borderColor: '#f97316', marginBottom: 14, alignItems: 'center' },
+  podiumHeaderTitle: { fontSize: 12, fontWeight: '900', color: '#c2410c', marginBottom: 8 },
+  podiumRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 6, width: '100%' },
+  podiumCard1st: { backgroundColor: '#fef3c7', padding: 8, borderRadius: 8, alignItems: 'center', borderWidth: 2, borderColor: '#d97706', width: '36%' },
+  podiumCard2nd: { backgroundColor: '#f1f5f9', padding: 6, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#94a3b8', width: '30%' },
+  podiumCard3rd: { backgroundColor: '#fff7ed', padding: 6, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#f97316', width: '30%' },
+  podiumMedal: { fontSize: 8, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 2 },
+  podiumName1st: { fontSize: 10, fontWeight: 'bold', color: '#92400e' },
+  podiumPts1st: { fontSize: 10, fontWeight: '900', color: '#d97706' },
+  podiumName: { fontSize: 8, fontWeight: 'bold', color: '#334155' },
+  podiumPts: { fontSize: 8, fontWeight: 'bold', color: '#16a34a' },
+
+  postCard: { backgroundColor: '#ffffff', borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 12, overflow: 'hidden' },
+  postHeader: { flexDirection: 'row', alignItems: 'center', padding: 8, backgroundColor: '#f8fafc' },
+  postAuthor: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
+  postTime: { fontSize: 9, color: '#64748b' },
+  postImg: { width: '100%', height: 180 },
+  postCaption: { fontSize: 11, color: '#334155', marginBottom: 4 },
+  badgePts: { backgroundColor: '#fff7ed', color: '#c2410c', fontSize: 9, fontWeight: 'bold', padding: 4, borderRadius: 4, alignSelf: 'flex-start' },
+
+  rankingRowCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 6 },
+  rankingPosNumber: { fontSize: 14, fontWeight: '900', color: '#f97316', width: 30 },
+  rankingMemberName: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
+  rankingMemberSub: { fontSize: 9, color: '#64748b' },
+  rankingMemberPts: { fontSize: 12, fontWeight: 'bold', color: '#16a34a' },
 
   seasonNoticeBox: { backgroundColor: '#fff7ed', borderRadius: 10, padding: 12, borderWidth: 2, borderColor: '#f97316', marginBottom: 12 },
   seasonNoticeTitle: { fontSize: 13, fontWeight: 'bold', color: '#c2410c' },
@@ -910,7 +1256,10 @@ const styles = StyleSheet.create({
   avatarMini: { width: 34, height: 34, borderRadius: 17 },
   participantInfoBox: { flex: 1, marginLeft: 8, paddingRight: 4 },
   participantName: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
+  participantSub: { fontSize: 9, color: '#64748b' },
   tagActiveText: { fontSize: 9, color: '#16a34a', fontWeight: 'bold' },
+  approveBtn: { backgroundColor: '#16a34a', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 4 },
+  banBtn: { backgroundColor: '#dc2626', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 4 },
 
   mediaFieldBox: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, padding: 8, marginBottom: 8 },
   mediaLabel: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 6 },
@@ -924,6 +1273,9 @@ const styles = StyleSheet.create({
   deleteMediaBtn: { backgroundColor: '#fef2f2', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4, marginTop: 2, alignSelf: 'flex-start' },
   deleteMediaBtnText: { color: '#dc2626', fontSize: 8, fontWeight: 'bold' },
   previewPendingText: { color: '#94a3b8', fontSize: 9, fontStyle: 'italic', marginTop: 4 },
+
+  actionBtn: { backgroundColor: '#1e3a8a', paddingVertical: 10, borderRadius: 6, alignItems: 'center', marginBottom: 12 },
+  actionBtnText: { color: '#ffffff', fontSize: 11, fontWeight: 'bold' },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 14 },
   modalContent: { backgroundColor: '#ffffff', borderRadius: 12, padding: 14 },
