@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,28 +12,622 @@ import {
   Modal,
   Alert,
   Share,
-  Platform
+  Platform,
+  ActivityIndicator
 } from 'react-native';
 
 export default function App() {
-  // ATLETA CONECTADO
-  const [currentUser, setCurrentUser] = useState({
-    id: 'usr_capella',
-    name: 'Luiz Capella',
-    nickname: 'Poke',
-    age: 34,
-    gender: 'Masculino',
-    avatar: 'https://picsum.photos/seed/poke/200/200',
-    isAdmin: true,
-    member_status: 'active',
-    goldMedals: 3,
-    silverMedals: 1,
-    bronzeMedals: 0,
-    insigniaInquebravelCount: 3,
-    insigniaDespertaCount: 1
+  // GERENCIAMENTO DE SESSÃO REAL DO SUPABASE
+  const [session, setSession] = useState(null);
+  const [loadingSession, setLoadingSession] = useState(true);
+
+  // ESTADOS DE AUTENTICAÇÃO (LOGIN / CADASTRO)
+  const [authMode, setAuthMode] = useState('login'); // 'login' ou 'signup'
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authName, setAuthName] = useState('');
+  const [authNickname, setAuthNickname] = useState('');
+  const [authSubmitting, setAuthSubmitting] = useState(false);
+
+  // ATLETA CONECTADO (ESTADO DINÂMICO)
+  const [currentUser, setCurrentUser] = useState(null);
+  const [viewedUser, setViewedUser] = useState(null);
+  const [currentScreen, setCurrentScreen] = useState('dashboard');
+  
+  // ESTADOS DA BARRA DE PESQUISA FUNCIONAL
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchFilter, setSearchFilter] = useState('all');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // CONTROLADORES DE MODAIS SELETORAS
+  const [isHeaderSelectOpen, setIsHeaderSelectOpen] = useState(false);
+  const [isPerfScopeSelectOpen, setIsPerfScopeSelectOpen] = useState(false);
+  const [isManualAthleteSelectOpen, setIsManualAthleteSelectOpen] = useState(false);
+  const [isManualActivitySelectOpen, setIsManualActivitySelectOpen] = useState(false);
+  const [isEditingChallengeSelectOpen, setIsEditingChallengeSelectOpen] = useState(false);
+  const [isRuleTabSelectOpen, setIsRuleTabSelectOpen] = useState(false);
+
+  // REGRAS E ESTRUTURA DAS LIGAS
+  const [challenges, setChallenges] = useState([]);
+  const [activeChallengeId, setActiveChallengeId] = useState(null);
+  const [isAdminContext, setIsAdminContext] = useState(false);
+
+  const selectedChallenge = challenges.find(c => c.id === activeChallengeId) || challenges[0] || null;
+  const [editingChallengeId, setEditingChallengeId] = useState(null);
+
+  // CONVITES E PARTICIPANTES
+  const [pendingInvites, setPendingInvites] = useState([]);
+  const [memberships, setMemberships] = useState([]);
+  const [pendingParticipants, setPendingParticipants] = useState([]);
+  const [dailySubmissions, setDailySubmissions] = useState([]);
+  const [feedPosts, setFeedPosts] = useState([]);
+  const [pendingWorkouts, setPendingWorkouts] = useState([]);
+  const [commentInputs, setCommentInputs] = useState({});
+  const [evidences, setEvidences] = useState([]);
+
+  // MODAIS E FORMULÁRIOS
+  const [isWorkoutModalOpen, setIsWorkoutModalOpen] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState('musculacao');
+  const [durationInput, setDurationInput] = useState('');
+  const [distanceInput, setDistanceInput] = useState('');
+  const [stepsInput, setStepsInput] = useState('');
+  const [workoutDate, setWorkoutDate] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [workoutCaption, setWorkoutCaption] = useState('');
+
+  const [photoStart, setPhotoStart] = useState(null);
+  const [photoEnd, setPhotoEnd] = useState(null);
+  const [photoEvidence, setPhotoEvidence] = useState(null);
+
+  const [isCreateChallengeOpen, setIsCreateChallengeOpen] = useState(false);
+  const [newChallengeTitle, setNewChallengeTitle] = useState('');
+  const [newChallengeCode, setNewChallengeCode] = useState('');
+  const [hasCapToggle, setHasCapToggle] = useState(false);
+  const [newChallengeCap, setNewChallengeCap] = useState('22000');
+
+  const [isEditRulesOpen, setIsEditRulesOpen] = useState(false);
+  const [selectedRuleTab, setSelectedRuleTab] = useState('musculacao');
+  const [editingRules, setEditingRules] = useState({});
+  const [bonusInquebravelActive, setBonusInquebravelActive] = useState(true);
+  const [bonusInquebravelDays, setBonusInquebravelDays] = useState('7');
+  const [bonusInquebravelPoints, setBonusInquebravelPoints] = useState('5000');
+
+  const [bonusDespertaActive, setBonusDespertaActive] = useState(true);
+  const [bonusDespertaTime, setBonusDespertaTime] = useState('07:00');
+  const [bonusDespertaPoints, setBonusDespertaPoints] = useState('3000');
+
+  const [tiebreakerEnabled, setTiebreakerEnabled] = useState(true);
+  const [tiebreakersConfig, setTiebreakersConfig] = useState([
+    { id: 'tb1', name: 'Passos Diários', enabled: true },
+    { id: 'tb2', name: 'Banco de Pontos', enabled: true },
+    { id: 'tb3', name: 'KM Total Percorrido', enabled: false },
+    { id: 'tb4', name: 'Dias em Atividade', enabled: false }
+  ]);
+
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [inviteTargetChallenge, setInviteTargetChallenge] = useState(null);
+  const [inputInviteCode, setInputInviteCode] = useState('');
+  const [athletePerfScope, setAthletePerfScope] = useState('overall');
+
+  const [manualAthleteId, setManualAthleteId] = useState('');
+  const [manualActivity, setManualActivity] = useState('musculacao');
+  const [manualRankingPointsInput, setManualRankingPointsInput] = useState('');
+  const [manualBankPointsInput, setManualBankPointsInput] = useState('');
+  const [manualStepsInput, setManualStepsInput] = useState('');
+  const [manualInquebravelCheck, setManualInquebravelCheck] = useState(false);
+  const [manualDespertaCheck, setManualDespertaCheck] = useState(false);
+
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editAge, setEditAge] = useState('');
+  const [editGender, setEditGender] = useState('');
+  const [editAvatar, setEditAvatar] = useState('');
+
+  const [userGoals, setUserGoals] = useState([]);
+  const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
+  const [newGoalTitle, setNewGoalTitle] = useState('');
+
+  const [stories, setStories] = useState([]);
+  const [isAddStoryOpen, setIsAddStoryOpen] = useState(false);
+  const [newStoryMedia, setNewStoryMedia] = useState(null);
+  const [newStoryType, setNewStoryType] = useState('image');
+  
+  const [selectedStory, setSelectedStory] = useState(null);
+  const [storyProgress, setStoryProgress] = useState(0);
+
+  // CHECAGEM DE SESSÃO DO SUPABASE AO ABRIR O APP
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session: activeSession } }) => {
+      setSession(activeSession);
+      if (activeSession) {
+        loadUserProfile(activeSession.user);
+      } else {
+        setLoadingSession(false);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, activeSession) => {
+      setSession(activeSession);
+      if (activeSession) {
+        loadUserProfile(activeSession.user);
+      } else {
+        setCurrentUser(null);
+        setViewedUser(null);
+        setLoadingSession(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // CARREGAR OU CRIAR PERFIL DO ATLETA LOGADO
+  async function loadUserProfile(user) {
+    try {
+      const userObj = {
+        id: user.id,
+        email: user.email,
+        name: user.user_metadata?.name || user.email.split('@')[0],
+        nickname: user.user_metadata?.nickname || 'Atleta',
+        age: 34,
+        gender: 'Masculino',
+        avatar: user.user_metadata?.avatar || 'https://picsum.photos/seed/' + user.id + '/200/200',
+        isAdmin: true,
+        member_status: 'active',
+        goldMedals: 0,
+        silverMedals: 0,
+        bronzeMedals: 0,
+        insigniaInquebravelCount: 0,
+        insigniaDespertaCount: 0
+      };
+      setCurrentUser(userObj);
+      setViewedUser(userObj);
+      setEditName(userObj.name);
+      setEditAge(String(userObj.age));
+      setEditGender(userObj.gender);
+      setEditAvatar(userObj.avatar);
+    } catch (err) {
+      console.log('Erro ao carregar perfil:', err);
+    } finally {
+      setLoadingSession(false);
+    }
+  }
+
+  // FUNÇÕES DE AUTENTICAÇÃO
+  async function handleAuthSubmit() {
+    if (!authEmail.trim() || !authPassword.trim()) {
+      Alert.alert('Atenção', 'Informe e-mail e senha para prosseguir.');
+      return;
+    }
+
+    setAuthSubmitting(true);
+    try {
+      if (authMode === 'login') {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: authEmail.trim(),
+          password: authPassword.trim()
+        });
+        if (error) Alert.alert('Falha no Login', error.message);
+      } else {
+        if (!authName.trim()) {
+          Alert.alert('Atenção', 'Informe seu nome completo.');
+          setAuthSubmitting(false);
+          return;
+        }
+        const { error } = await supabase.auth.signUp({
+          email: authEmail.trim(),
+          password: authPassword.trim(),
+          options: {
+            data: {
+              name: authName.trim(),
+              nickname: authNickname.trim() || authName.split(' ')[0]
+            }
+          }
+        });
+        if (error) {
+          Alert.alert('Falha no Cadastro', error.message);
+        } else {
+          Alert.alert('Conta Criada!', 'Cadastro efetuado com sucesso.');
+        }
+      }
+    } catch (err) {
+      Alert.alert('Erro de Conexão', 'Não foi possível se comunicar com o servidor.');
+    } finally {
+      setAuthSubmitting(false);
+    }
+  }
+
+  // FUNÇÃO DE LOGOUT
+  async function handleLogout() {
+    Alert.alert(
+      'Sair da Conta',
+      'Deseja realmente encerrar sua sessão?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'Sair', 
+          style: 'destructive', 
+          onPress: async () => {
+            await supabase.auth.signOut();
+            setCurrentUser(null);
+            setViewedUser(null);
+            setSession(null);
+          } 
+        }
+      ]
+    );
+  }
+
+  // TIMER DOS STORIES
+  useEffect(() => {
+    let timer = null;
+    if (selectedStory) {
+      setStoryProgress(0);
+      const intervalTime = 100;
+      const totalDuration = 30000;
+      const stepIncrement = (intervalTime / totalDuration) * 100;
+
+      timer = setInterval(() => {
+        setStoryProgress((prev) => {
+          if (prev >= 100) {
+            clearInterval(timer);
+            setSelectedStory(null);
+            return 0;
+          }
+          return prev + stepIncrement;
+        });
+      }, intervalTime);
+    } else {
+      setStoryProgress(0);
+    }
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [selectedStory]);
+
+  if (loadingSession) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#f97316" />
+        <Text style={styles.loadingText}>Conectando ao MUVFIT...</Text>
+      </View>
+    );
+  }
+
+  // TELA DE AUTENTICAÇÃO QUANDO NÃO HOUVER SESSÃO ATIVA
+  if (!session || !currentUser) {
+    return (
+      <SafeAreaView style={styles.authContainer}>
+        <ScrollView contentContainerStyle={styles.authContent}>
+          <Text style={styles.authBrandTitle}>MUVFIT</Text>
+          <Text style={styles.authBrandSubtitle}>Mizan Soluções Técnicas</Text>
+
+          <View style={styles.authCard}>
+            <Text style={styles.authTitle}>
+              {authMode === 'login' ? '🔑 Entrar no Aplicativo' : '📝 Criar Conta de Atleta'}
+            </Text>
+
+            {authMode === 'signup' && (
+              <>
+                <Text style={styles.inputLabel}>Nome Completo:</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ex: Luiz Capella"
+                  value={authName}
+                  onChangeText={setAuthName}
+                />
+
+                <Text style={styles.inputLabel}>Apelido (Nickname):</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ex: Poke"
+                  value={authNickname}
+                  onChangeText={setAuthNickname}
+                />
+              </>
+            )}
+
+            <Text style={styles.inputLabel}>E-mail:</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="seuemail@exemplo.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={authEmail}
+              onChangeText={setAuthEmail}
+            />
+
+            <Text style={styles.inputLabel}>Senha:</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="••••••••"
+              secureTextEntry
+              value={authPassword}
+              onChangeText={setAuthPassword}
+            />
+
+            <TouchableOpacity 
+              style={styles.primaryBtn} 
+              onPress={handleAuthSubmit}
+              disabled={authSubmitting}
+            >
+              {authSubmitting ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <Text style={styles.primaryBtnText}>
+                  {authMode === 'login' ? 'ENTRAR' : 'CRIAR MINHA CONTA'}
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={{ marginTop: 14, alignItems: 'center' }}
+              onPress={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+            >
+              <Text style={{ fontSize: 11, color: '#1e3a8a', fontWeight: 'bold' }}>
+                {authMode === 'login' 
+                  ? 'Não possui uma conta? Cadastre-se aqui' 
+                  : 'Já tem uma conta? Clique para fazer login'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  const userMembershipsAll = memberships.filter(m => m.userId === currentUser.id);
+  const hasUserAnyCommunity = userMembershipsAll.length > 0;
+  const adminChallenges = challenges.filter(c => c.creator_id === currentUser.id);
+  const participantChallenges = challenges.filter(c => {
+    return memberships.some(m => m.challengeId === c.id && m.userId === currentUser.id) && c.creator_id !== currentUser.id;
   });
 
-  const [viewedUser, setViewedUser] = useState(currentUser);
+  const handleShareInvite = async (challenge) => {
+    const inviteUrl = `https://muvfit.vercel.app/convite?codigo=${challenge.invite_code}`;
+    const message = 
+      `🏃‍♂️ *Convite MuvFit* 🏃‍♀️\n\n` +
+      `Você foi convidado para participar da *${challenge.title}*!\n\n` +
+      `Acesse o link abaixo para entrar na liga e baixar o aplicativo:\n${inviteUrl}`;
+
+    try {
+      await Share.share({
+        message: message,
+        url: inviteUrl,
+        title: `Convite para ${challenge.title}`,
+      });
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível disparar o compartilhamento.');
+    }
+  };
+
+  function selectChallengeContext(challenge, asAdmin) {
+    setActiveChallengeId(challenge.id);
+    setIsAdminContext(asAdmin);
+    setEditingChallengeId(challenge.id);
+    setEditingRules(JSON.parse(JSON.stringify(challenge.rules || {})));
+    setCurrentScreen('feed');
+  }
+
+  function handleOpenUserProfile(userId) {
+    const found = memberships.find(m => m.userId === userId);
+    if (found) {
+      setViewedUser(found);
+    } else {
+      setViewedUser(currentUser);
+    }
+    setCurrentScreen('athlete_center');
+  }
+
+  const searchResultsAthletes = memberships.filter(m => {
+    if (searchFilter === 'challenge') return false;
+    const term = searchQuery.toLowerCase().trim();
+    if (!term) return true;
+    return m.name.toLowerCase().includes(term) || m.nickname.toLowerCase().includes(term);
+  }).reduce((acc, current) => {
+    const exists = acc.find(item => item.userId === current.userId);
+    if (!exists) acc.push(current);
+    return acc;
+  }, []);
+
+  const searchResultsChallenges = challenges.filter(c => {
+    if (searchFilter === 'athlete') return false;
+    const term = searchQuery.toLowerCase().trim();
+    if (!term) return true;
+    return c.title.toLowerCase().includes(term) || c.invite_code.toLowerCase().includes(term);
+  });
+
+  const currentChallengeMembers = memberships.filter(m => m.challengeId === activeChallengeId);
+  const activeMembersInChallenge = currentChallengeMembers.filter(m => m.role === 'active');
+  const spectatorMembersInChallenge = currentChallengeMembers.filter(m => m.role === 'spectator');
+
+  let displayedPerf = {
+    rankingPoints: 0,
+    bankPoints: 0,
+    totalSteps: 0,
+    goldMedals: viewedUser?.goldMedals || 0,
+    silverMedals: viewedUser?.silverMedals || 0,
+    bronzeMedals: viewedUser?.bronzeMedals || 0,
+    insigniaInquebravelCount: viewedUser?.insigniaInquebravelCount || 0,
+    insigniaDespertaCount: viewedUser?.insigniaDespertaCount || 0
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* CABEÇALHO */}
+      <View style={styles.topHeader}>
+        <View style={styles.brandRow}>
+          <Text style={styles.brandTitle}>MUVFIT</Text>
+          <Text style={styles.brandSubtitle}>Mizan Soluções Técnicas</Text>
+        </View>
+
+        {hasUserAnyCommunity && selectedChallenge && (
+          <View style={styles.activeChallengeSelectorBar}>
+            <Text style={styles.activeChallengeSelectorLabel}>🎯 Desafio Selecionado:</Text>
+            <TouchableOpacity 
+              style={styles.nativeSelectButton} 
+              onPress={() => setIsHeaderSelectOpen(true)}
+            >
+              <Text style={styles.nativeSelectButtonText}>
+                {selectedChallenge.title} ({selectedChallenge.creator_id === currentUser.id ? '🔑 Administrador' : '⚡ Atleta Ativo'}) ▼
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={{ width: '100%' }}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="🔍 Pesquisar Atletas ou Ligas..."
+            placeholderTextColor="#94a3b8"
+            value={searchQuery}
+            onFocus={() => setIsSearchOpen(true)}
+            onChangeText={(txt) => {
+              setSearchQuery(txt);
+              if (!isSearchOpen) setIsSearchOpen(true);
+            }}
+          />
+        </View>
+      </View>
+
+      <View style={{ flex: 1, flexDirection: 'row' }}>
+        {/* BARRA LATERAL DE NAVEGAÇÃO */}
+        <View style={styles.sidebar}>
+          <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'dashboard' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('dashboard')}>
+            <Text style={styles.sidebarIcon}>🏠</Text>
+            <Text style={[styles.sidebarText, currentScreen === 'dashboard' && styles.sidebarTextActive]}>Dashboard</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'athlete_center' && styles.sidebarBtnActive]} onPress={() => { setViewedUser(currentUser); setCurrentScreen('athlete_center'); }}>
+            <Text style={styles.sidebarIcon}>👤</Text>
+            <Text style={[styles.sidebarText, currentScreen === 'athlete_center' && styles.sidebarTextActive]}>Atleta</Text>
+          </TouchableOpacity>
+
+          {hasUserAnyCommunity && (
+            <>
+              <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'feed' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('feed')}>
+                <Text style={styles.sidebarIcon}>📷</Text>
+                <Text style={[styles.sidebarText, currentScreen === 'feed' && styles.sidebarTextActive]}>Feed</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'ranking' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('ranking')}>
+                <Text style={styles.sidebarIcon}>🏆</Text>
+                <Text style={[styles.sidebarText, currentScreen === 'ranking' && styles.sidebarTextActive]}>Ranking</Text>
+              </TouchableOpacity>
+
+              {isAdminContext && (
+                <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'admin' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('admin')}>
+                  <Text style={styles.sidebarIcon}>⚙️</Text>
+                  <Text style={[styles.sidebarText, currentScreen === 'admin' && styles.sidebarTextActive]}>Admin</Text>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
+
+          {/* BOTÃO DE LOGOUT NA SIDEBAR */}
+          <TouchableOpacity style={[styles.sidebarBtn, { marginTop: 'auto', borderTopWidth: 1, borderTopColor: '#e2e8f0' }]} onPress={handleLogout}>
+            <Text style={styles.sidebarIcon}>🚪</Text>
+            <Text style={[styles.sidebarText, { color: '#dc2626' }]}>Sair</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+          {/* TELA 1: DASHBOARD */}
+          {currentScreen === 'dashboard' && (
+            <ScrollView contentContainerStyle={styles.mainContent}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <Text style={styles.pageTitle}>Painel Geral de Ligas</Text>
+                <TouchableOpacity style={styles.createChallengeBtnHeader} onPress={() => setIsCreateChallengeOpen(true)}>
+                  <Text style={styles.createChallengeBtnText}>+ NOVO DESAFIO</Text>
+                </TouchableOpacity>
+              </View>
+
+              {!hasUserAnyCommunity && (
+                <View style={styles.restrictedNoticeBox}>
+                  <Text style={styles.restrictedNoticeText}>
+                    ✨ Bem-vindo ao MUVFIT! Crie um novo desafio no botão acima para iniciar a sua liga no aplicativo.
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+          )}
+
+          {/* TELA 2: CENTRAL DO ATLETA */}
+          {currentScreen === 'athlete_center' && (
+            <ScrollView contentContainerStyle={styles.mainContent}>
+              <View style={styles.profileHeaderCard}>
+                <TouchableOpacity style={styles.logoutBtnProfile} onPress={handleLogout}>
+                  <Text style={styles.logoutBtnProfileText}>🚪 SAIR</Text>
+                </TouchableOpacity>
+
+                <Image source={{ uri: viewedUser?.avatar }} style={styles.avatarLarge} />
+                <Text style={styles.profileName}>{viewedUser?.name}</Text>
+                <Text style={styles.profileMeta}>{viewedUser?.age || 34} anos | {viewedUser?.gender || 'Masculino'}</Text>
+              </View>
+            </ScrollView>
+          )}
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#ffffff' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' },
+  loadingText: { marginTop: 10, fontSize: 12, fontWeight: 'bold', color: '#1e3a8a' },
+
+  authContainer: { flex: 1, backgroundColor: '#1e3a8a' },
+  authContent: { flexGrow: 1, justifyContent: 'center', padding: 20 },
+  authBrandTitle: { fontSize: 32, fontWeight: '900', color: '#f97316', textAlign: 'center' },
+  authBrandSubtitle: { fontSize: 12, fontWeight: 'bold', color: '#ffffff', textAlign: 'center', marginBottom: 20 },
+  authCard: { backgroundColor: '#ffffff', borderRadius: 12, padding: 18, elevation: 5 },
+  authTitle: { fontSize: 16, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 14, textAlign: 'center' },
+
+  topHeader: { padding: 12, backgroundColor: '#1e3a8a', position: 'relative' },
+  brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  brandTitle: { fontSize: 20, fontWeight: '900', color: '#f97316' },
+  brandSubtitle: { fontSize: 10, fontWeight: 'bold', color: '#ffffff' },
+  
+  activeChallengeSelectorBar: { backgroundColor: '#172554', padding: 6, borderRadius: 6, marginBottom: 6 },
+  activeChallengeSelectorLabel: { fontSize: 9, color: '#f97316', fontWeight: 'bold', marginBottom: 2 },
+
+  nativeSelectButton: { backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 6 },
+  nativeSelectButtonText: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
+
+  searchInput: { backgroundColor: '#ffffff', borderRadius: 6, paddingHorizontal: 10, paddingVertical: Platform.OS === 'ios' ? 8 : 4, fontSize: 11, color: '#0f172a', borderWidth: 1, borderColor: '#cbd5e1' },
+
+  sidebar: { width: 110, backgroundColor: '#f8fafc', borderRightWidth: 1, borderRightColor: '#cbd5e1', paddingVertical: 10 },
+  sidebarBtn: { paddingVertical: 12, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  sidebarBtnActive: { backgroundColor: '#ffffff', borderLeftWidth: 4, borderLeftColor: '#f97316' },
+  sidebarIcon: { fontSize: 12 },
+  sidebarText: { fontSize: 9, fontWeight: 'bold', color: '#64748b' },
+  sidebarTextActive: { color: '#f97316' },
+
+  mainContent: { padding: 12 },
+  pageTitle: { fontSize: 14, fontWeight: 'bold', color: '#1e3a8a', marginVertical: 8 },
+
+  createChallengeBtnHeader: { backgroundColor: '#16a34a', paddingHorizontal: 8, paddingVertical: 5, borderRadius: 6 },
+  createChallengeBtnText: { color: '#ffffff', fontSize: 9, fontWeight: 'bold' },
+
+  primaryBtn: { backgroundColor: '#f97316', paddingVertical: 10, borderRadius: 6, alignItems: 'center', marginTop: 6 },
+  primaryBtnText: { color: '#ffffff', fontSize: 11, fontWeight: 'bold' },
+
+  restrictedNoticeBox: { backgroundColor: '#eff6ff', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#1e3a8a', marginBottom: 12 },
+  restrictedNoticeText: { fontSize: 10, color: '#1e3a8a', fontWeight: 'bold' },
+
+  profileHeaderCard: { backgroundColor: '#f8fafc', borderRadius: 10, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: '#cbd5e1', position: 'relative', marginBottom: 10 },
+  avatarLarge: { width: 70, height: 70, borderRadius: 35, marginBottom: 6, borderWidth: 2, borderColor: '#f97316' },
+  profileName: { fontSize: 15, fontWeight: 'bold', color: '#0f172a' },
+  profileMeta: { fontSize: 10, color: '#64748b', marginBottom: 4 },
+
+  logoutBtnProfile: { position: 'absolute', top: 10, right: 10, backgroundColor: '#fef2f2', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, borderWidth: 1, borderColor: '#fca5a5' },
+  logoutBtnProfileText: { color: '#dc2626', fontSize: 9, fontWeight: 'bold' },
+
+  inputLabel: { fontSize: 10, fontWeight: 'bold', color: '#475569', marginVertical: 4 },
+  input: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 8, fontSize: 11, marginBottom: 8 }
+});
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   
   // ESTADOS DA BARRA DE PESQUISA FUNCIONAL
