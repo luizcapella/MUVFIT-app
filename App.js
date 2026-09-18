@@ -36,6 +36,15 @@ export default function App() {
   const [viewedUser, setViewedUser] = useState(currentUser);
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   
+  // ESTADOS PRINCIPAIS SINCRONIZADOS COM SUPABASE
+  const [challenges, setChallenges] = useState([]);
+  const [memberships, setMemberships] = useState([]);
+  const [feedPosts, setFeedPosts] = useState([]);
+  const [pendingWorkouts, setPendingWorkouts] = useState([]);
+  const [stories, setStories] = useState([]);
+  const [pendingInvites, setPendingInvites] = useState([]);
+  const [pendingParticipants, setPendingParticipants] = useState([]);
+
   // ESTADOS DA BARRA DE PESQUISA FUNCIONAL
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('all');
@@ -49,147 +58,14 @@ export default function App() {
   const [isEditingChallengeSelectOpen, setIsEditingChallengeSelectOpen] = useState(false);
   const [isRuleTabSelectOpen, setIsRuleTabSelectOpen] = useState(false);
 
-  // REGRAS E ESTRUTURA COMPLETA DAS LIGAS
-  const [challenges, setChallenges] = useState([
-    {
-      id: 'c1',
-      title: 'Liga Anti-Inércia 2026',
-      invite_code: 'ANTI2026',
-      creator_id: 'usr_capella',
-      has_daily_cap: true,
-      daily_cap: 22000,
-      registrations_closed: false,
-      is_finished: false,
-      startDate: '01/09/2026',
-      endDate: '30/09/2026',
-      tiebreakerEnabled: true,
-      tiebreakersConfig: [
-        { id: 'tb1', name: 'Passos Diários', enabled: true },
-        { id: 'tb2', name: 'Banco de Pontos', enabled: true },
-        { id: 'tb3', name: 'KM Total Percorrido', enabled: false },
-        { id: 'tb4', name: 'Dias em Atividade', enabled: false }
-      ],
-      bonuses: {
-        inquebravel: { active: true, days: 7, points: 5000 },
-        desperta: { active: true, limitTime: '07:00', points: 3000 }
-      },
-      rules: {
-        musculacao: { enabled: true, mode: 'steps', minMinutes: 30, minPoints: 5000, minKm: '', minKmPoints: '', steps: [{ min: '30', max: '59', pts: '5000' }, { min: '60', max: '120', pts: '10000' }], stepsKm: [] },
-        crossfit: { enabled: true, mode: 'tempo', minMinutes: 40, minPoints: 12000, minKm: '', minKmPoints: '', steps: [], stepsKm: [] },
-        aerobico: { enabled: true, mode: 'tempo', minMinutes: 45, minPoints: 10000, minKm: '', minKmPoints: '', steps: [], stepsKm: [] },
-        corrida: { enabled: true, mode: 'steps', minMinutes: '', minPoints: '', minKm: 3, minKmPoints: 5000, steps: [{ min: '20', max: '40', pts: '4000' }], stepsKm: [{ min: '3', max: '6', pts: '5000' }] },
-        caminhada: { enabled: true, mode: 'km', minMinutes: '', minPoints: '', minKm: 3, minKmPoints: 3000, steps: [], stepsKm: [] },
-        bike: { enabled: true, mode: 'km', minMinutes: '', minPoints: '', minKm: 10, minKmPoints: 5000, steps: [], stepsKm: [] },
-        esporte_coletivo: { enabled: true, mode: 'tempo', minMinutes: 60, points: 5000 },
-        esporte_individual: { enabled: true, mode: 'tempo', minMinutes: 45, points: 8000 },
-        passos_diarios: { enabled: true }
-      }
-    },
-    {
-      id: 'c2',
-      title: 'Desafio Reta Final MuvFit',
-      invite_code: 'RETA2026',
-      creator_id: 'usr_rafa',
-      has_daily_cap: false,
-      daily_cap: null,
-      registrations_closed: false,
-      is_finished: false,
-      startDate: '10/09/2026',
-      endDate: '10/10/2026',
-      tiebreakerEnabled: false,
-      tiebreakersConfig: [],
-      bonuses: {
-        inquebravel: { active: false, days: 7, points: 0 },
-        desperta: { active: true, limitTime: '06:00', points: 4000 }
-      },
-      rules: {
-        musculacao: { enabled: true, mode: 'tempo', minMinutes: 45, minPoints: 6000, steps: [], stepsKm: [] },
-        corrida: { enabled: true, mode: 'km', minKm: 5, minKmPoints: 8000, steps: [], stepsKm: [] },
-        passos_diarios: { enabled: true }
-      }
-    }
-  ]);
-
   // CONTROLADORES DE SELEÇÃO DE DESAFIO E PERMISSÕES
-  const [activeChallengeId, setActiveChallengeId] = useState(challenges[0].id);
+  const [activeChallengeId, setActiveChallengeId] = useState(null);
   const [isAdminContext, setIsAdminContext] = useState(true);
 
-  const selectedChallenge = challenges.find(c => c.id === activeChallengeId) || challenges[0];
+  const selectedChallenge = challenges.find(c => c.id === activeChallengeId) || challenges[0] || {};
   const [editingChallengeId, setEditingChallengeId] = useState(selectedChallenge.id);
 
-  // CONVITES PENDENTES
-  const [pendingInvites, setPendingInvites] = useState([
-    {
-      id: 'inv_1',
-      challengeId: 'c2',
-      challengeTitle: 'Desafio Reta Final MuvFit',
-      inviterName: 'Rafael Souza'
-    }
-  ]);
-
-  // PARTICIPANTES VINCULADOS
-  const [memberships, setMemberships] = useState([
-    { challengeId: 'c1', userId: 'usr_capella', name: 'Luiz Capella', nickname: 'Poke', role: 'active', rankingPoints: 22000, bankPoints: 15400, totalSteps: 42350, avatar: 'https://picsum.photos/seed/poke/200/200', goldMedals: 3, silverMedals: 1, bronzeMedals: 0, age: 34, gender: 'Masculino', insigniaInquebravelCount: 3, insigniaDespertaCount: 1 },
-    { challengeId: 'c1', userId: 'm_usr2', name: 'Rafael Souza', nickname: 'Rafa', role: 'active', rankingPoints: 14000, bankPoints: 2000, totalSteps: 31000, avatar: 'https://picsum.photos/seed/rafa/100/100', goldMedals: 2, silverMedals: 2, bronzeMedals: 1, age: 29, gender: 'Masculino', insigniaInquebravelCount: 1, insigniaDespertaCount: 0 },
-    { challengeId: 'c1', userId: 'm_usr4', name: 'Carlos Eduardo', nickname: 'Cadu', role: 'active', rankingPoints: 8000, bankPoints: 0, totalSteps: 12000, avatar: 'https://picsum.photos/seed/cadu/100/100', goldMedals: 1, silverMedals: 0, bronzeMedals: 0, age: 31, gender: 'Masculino', insigniaInquebravelCount: 0, insigniaDespertaCount: 0 },
-    { challengeId: 'c1', userId: 'm_usr3', name: 'Beatriz Lima', nickname: 'Bia', role: 'spectator', rankingPoints: 0, bankPoints: 0, totalSteps: 5000, avatar: 'https://picsum.photos/seed/bia/100/100', goldMedals: 0, silverMedals: 0, bronzeMedals: 0, age: 26, gender: 'Feminino', insigniaInquebravelCount: 0, insigniaDespertaCount: 0 },
-    { challengeId: 'c2', userId: 'usr_capella', name: 'Luiz Capella', nickname: 'Poke', role: 'active', rankingPoints: 18000, bankPoints: 0, totalSteps: 25000, avatar: 'https://picsum.photos/seed/poke/200/200', goldMedals: 3, silverMedals: 0, bronzeMedals: 0, age: 34, gender: 'Masculino', insigniaInquebravelCount: 1, insigniaDespertaCount: 1 },
-    { challengeId: 'c2', userId: 'usr_rafa', name: 'Rafael Souza', nickname: 'Rafa', role: 'active', rankingPoints: 25000, bankPoints: 0, totalSteps: 38000, avatar: 'https://picsum.photos/seed/rafa/100/100', goldMedals: 2, silverMedals: 0, bronzeMedals: 0, age: 29, gender: 'Masculino', insigniaInquebravelCount: 2, insigniaDespertaCount: 2 }
-  ]);
-
-  const [pendingParticipants, setPendingParticipants] = useState([
-    { challengeId: 'c1', id: 'p_usr3', name: 'Lucas Mendes', nickname: 'Luquinhas', avatar: 'https://picsum.photos/seed/lucas/100/100', age: 25, gender: 'Masculino' }
-  ]);
-
-  const [dailySubmissions, setDailySubmissions] = useState([
-    { challengeId: 'c1', userId: 'usr_capella', activity: 'musculacao', dateStr: new Date().toLocaleDateString() }
-  ]);
-
-  // FEED
-  const [feedPosts, setFeedPosts] = useState([
-    {
-      id: 'p1',
-      challengeId: 'c1',
-      user_id: 'usr_capella',
-      user_name: 'Luiz Capella',
-      user_nickname: 'Poke',
-      user_avatar: 'https://picsum.photos/seed/poke/200/200',
-      activity_type: 'MUSCULAÇÃO',
-      caption: 'Treino de perna finalizado na Liga Anti-Inércia! 🦵',
-      photo_evidence: 'https://picsum.photos/seed/w1/400/300',
-      points_to_ranking: 10000,
-      points_to_bank: 0,
-      status: 'approved',
-      created_at: 'Há 2h',
-      likes: 5,
-      isLiked: false,
-      comments: [{ id: 'c1', user: 'Cadu', text: 'Boa monstro! 👏' }]
-    }
-  ]);
-
-  // SOLICITAÇÕES PENDENTES
-  const [pendingWorkouts, setPendingWorkouts] = useState([
-    {
-      id: 'pw_1',
-      challengeId: 'c1',
-      user_id: 'm_usr2',
-      user_name: 'Rafael Souza',
-      user_nickname: 'Rafa',
-      user_avatar: 'https://picsum.photos/seed/rafa/100/100',
-      activity_type: 'MUSCULAÇÃO',
-      caption: 'Treino de superiores concluído!',
-      dateStr: '17/09/2026',
-      startTime: '08:00',
-      endTime: '09:00',
-      photo_start: 'https://picsum.photos/seed/s1/200/200',
-      photo_end: 'https://picsum.photos/seed/e1/200/200',
-      photo_evidence: 'https://picsum.photos/seed/ev1/200/200',
-      points_to_ranking: 10000,
-      points_to_bank: 0,
-      created_at: 'Agora'
-    }
-  ]);
-
+  // ESTADOS DOS FORMULÁRIOS
   const [commentInputs, setCommentInputs] = useState({});
   const [evidences] = useState([
     { id: 'e1', title: 'Força / Perna', date: '17/09/2026', image: 'https://picsum.photos/seed/ev1/200/200' },
@@ -219,7 +95,7 @@ export default function App() {
   const [isEditRulesOpen, setIsEditRulesOpen] = useState(false);
   const [selectedRuleTab, setSelectedRuleTab] = useState('musculacao');
 
-  const [editingRules, setEditingRules] = useState(selectedChallenge.rules);
+  const [editingRules, setEditingRules] = useState(selectedChallenge.rules || {});
   const [bonusInquebravelActive, setBonusInquebravelActive] = useState(true);
   const [bonusInquebravelDays, setBonusInquebravelDays] = useState('7');
   const [bonusInquebravelPoints, setBonusInquebravelPoints] = useState('5000');
@@ -236,15 +112,12 @@ export default function App() {
     { id: 'tb4', name: 'Dias em Atividade', enabled: false }
   ]);
 
-  // ESTADOS DE CONVITE E ENTRADA EM DESAFIO
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [inviteTargetChallenge] = useState(null);
   const [inputInviteCode, setInputInviteCode] = useState('');
 
-  // ESTADO DO FILTRO DA CENTRAL DO ATLETA
   const [athletePerfScope, setAthletePerfScope] = useState('overall');
 
-  // ESTADOS DO LANÇAMENTO MANUAL
   const [manualAthleteId, setManualAthleteId] = useState('');
   const [manualActivity, setManualActivity] = useState('musculacao');
   const [manualRankingPointsInput, setManualRankingPointsInput] = useState('');
@@ -259,7 +132,6 @@ export default function App() {
   const [editGender, setEditGender] = useState(currentUser.gender);
   const [editAvatar, setEditAvatar] = useState(currentUser.avatar);
 
-  // ESTADOS DE OBJETIVOS
   const [userGoals, setUserGoals] = useState([
     { id: 'g1', title: 'Perder Peso', completed: true },
     { id: 'g2', title: 'Ganhar Massa Magra', completed: true },
@@ -269,19 +141,74 @@ export default function App() {
   const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
   const [newGoalTitle, setNewGoalTitle] = useState('');
 
-  // SISTEMA DE STORIES
-  const [stories, setStories] = useState([
-    { id: 's1', userId: 'usr_capella', type: 'image', uri: 'https://picsum.photos/seed/s1/300/500', timestamp: 'Há 10m' },
-    { id: 's2', userId: 'usr_capella', type: 'image', uri: 'https://picsum.photos/seed/s2/300/500', timestamp: 'Há 1h' }
-  ]);
   const [isAddStoryOpen, setIsAddStoryOpen] = useState(false);
   const [newStoryMedia, setNewStoryMedia] = useState(null);
   const [newStoryType, setNewStoryType] = useState('image');
   
-  // STORY EM EXIBIÇÃO TELA CHEIA
   const [selectedStory, setSelectedStory] = useState(null);
   const [storyProgress, setStoryProgress] = useState(0);
 
+  // --- CARREGAMENTO INICIAL DE DADOS DO SUPABASE ---
+  useEffect(() => {
+    fetchDataFromSupabase();
+  }, []);
+
+  async function fetchDataFromSupabase() {
+    try {
+      // 1. Desafios
+      const { data: challengesData } = await supabase.from('challenges').select('*');
+      if (challengesData && challengesData.length > 0) {
+        const formattedChallenges = challengesData.map(c => ({
+          ...c,
+          startDate: c.start_date,
+          endDate: c.end_date,
+          tiebreakerEnabled: c.tiebreaker_enabled,
+          tiebreakersConfig: c.tiebreakers_config
+        }));
+        setChallenges(formattedChallenges);
+        if (!activeChallengeId) {
+          setActiveChallengeId(formattedChallenges[0].id);
+          setEditingRules(formattedChallenges[0].rules || {});
+        }
+      }
+
+      // 2. Memberships
+      const { data: membersData } = await supabase.from('memberships').select('*');
+      if (membersData) {
+        const formattedMembers = membersData.map(m => ({
+          ...m,
+          challengeId: m.challenge_id,
+          userId: m.user_id,
+          rankingPoints: m.ranking_points,
+          bankPoints: m.bank_points,
+          totalSteps: m.total_steps,
+          goldMedals: m.gold_medals,
+          silverMedals: m.silver_medals,
+          bronzeMedals: m.bronze_medals,
+          insigniaInquebravelCount: m.insignia_inquebravel_count,
+          insigniaDespertaCount: m.insignia_desperta_count
+        }));
+        setMemberships(formattedMembers);
+      }
+
+      // 3. Feed
+      const { data: feedData } = await supabase.from('feed_posts').select('*');
+      if (feedData) setFeedPosts(feedData);
+
+      // 4. Pending Workouts
+      const { data: pendingData } = await supabase.from('pending_workouts').select('*');
+      if (pendingData) setPendingWorkouts(pendingData);
+
+      // 5. Stories
+      const { data: storiesData } = await supabase.from('stories').select('*');
+      if (storiesData) setStories(storiesData);
+
+    } catch (err) {
+      console.log('Erro ao carregar do Supabase:', err);
+    }
+  }
+
+  // TIMER DO PLAYER DE STORIES
   useEffect(() => {
     let timer = null;
     if (selectedStory) {
@@ -353,40 +280,36 @@ export default function App() {
     setCurrentScreen('athlete_center');
   }
 
-  function handleToggleLike(postId) {
-    setFeedPosts(feedPosts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          isLiked: !post.isLiked,
-          likes: post.isLiked ? post.likes - 1 : post.likes + 1
-        };
-      }
-      return post;
-    }));
+  async function handleToggleLike(postId) {
+    const post = feedPosts.find(p => p.id === postId);
+    if (!post) return;
+    
+    const updatedLikes = post.isLiked ? post.likes - 1 : post.likes + 1;
+    const isLiked = !post.isLiked;
+
+    setFeedPosts(feedPosts.map(p => p.id === postId ? { ...p, likes: updatedLikes, isLiked } : p));
+    await supabase.from('feed_posts').update({ likes: updatedLikes }).eq('id', postId);
   }
 
-  function handleAddComment(postId) {
+  async function handleAddComment(postId) {
     const commentText = commentInputs[postId];
     if (!commentText || !commentText.trim()) return;
 
-    setFeedPosts(feedPosts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          comments: [
-            ...post.comments,
-            { id: `c_${Date.now()}`, user: currentUser.nickname, text: commentText.trim() }
-          ]
-        };
-      }
-      return post;
-    }));
+    const post = feedPosts.find(p => p.id === postId);
+    if (!post) return;
 
+    const newComments = [
+      ...(post.comments || []),
+      { id: `c_${Date.now()}`, user: currentUser.nickname, text: commentText.trim() }
+    ];
+
+    setFeedPosts(feedPosts.map(p => p.id === postId ? { ...p, comments: newComments } : p));
     setCommentInputs({ ...commentInputs, [postId]: '' });
+
+    await supabase.from('feed_posts').update({ comments: newComments }).eq('id', postId);
   }
 
-  function handleCreateChallenge() {
+  async function handleCreateChallenge() {
     if (!newChallengeTitle.trim() || !newChallengeCode.trim()) {
       Alert.alert('Erro', 'Preencha o Nome e o Código do Desafio.');
       return;
@@ -402,331 +325,173 @@ export default function App() {
       daily_cap: hasCapToggle ? (parseInt(newChallengeCap, 10) || 22000) : null,
       registrations_closed: false,
       is_finished: false,
-      startDate: '01/10/2026',
-      endDate: '31/10/2026',
-      tiebreakerEnabled: true,
-      tiebreakersConfig: JSON.parse(JSON.stringify(tiebreakersConfig)),
+      start_date: '01/10/2026',
+      end_date: '31/10/2026',
+      tiebreaker_enabled: true,
+      tiebreakers_config: tiebreakersConfig,
       bonuses: {
         inquebravel: { active: bonusInquebravelActive, days: parseInt(bonusInquebravelDays, 10) || 7, points: parseInt(bonusInquebravelPoints, 10) || 5000 },
         desperta: { active: bonusDespertaActive, limitTime: bonusDespertaTime, points: parseInt(bonusDespertaPoints, 10) || 3000 }
       },
-      rules: JSON.parse(JSON.stringify(selectedChallenge.rules || {}))
+      rules: selectedChallenge.rules || {}
     };
 
-    setChallenges([newObj, ...challenges]);
-    
-    setMemberships([
-      ...memberships,
-      { challengeId: newId, userId: currentUser.id, name: currentUser.name, nickname: currentUser.nickname, role: 'active', rankingPoints: 0, bankPoints: 0, totalSteps: 0, avatar: currentUser.avatar, goldMedals: 0, silverMedals: 0, bronzeMedals: 0, age: currentUser.age, gender: currentUser.gender, insigniaInquebravelCount: 0, insigniaDespertaCount: 0 }
-    ]);
+    // Salvar no Supabase
+    await supabase.from('challenges').insert([newObj]);
 
-    selectChallengeContext(newObj, true);
+    const newMembership = {
+      challenge_id: newId,
+      user_id: currentUser.id,
+      name: currentUser.name,
+      nickname: currentUser.nickname,
+      role: 'active',
+      ranking_points: 0,
+      bank_points: 0,
+      total_steps: 0,
+      avatar: currentUser.avatar,
+      gold_medals: 0,
+      silver_medals: 0,
+      bronze_medals: 0,
+      age: currentUser.age,
+      gender: currentUser.gender,
+      insignia_inquebravel_count: 0,
+      insignia_desperta_count: 0
+    };
+
+    await supabase.from('memberships').insert([newMembership]);
+
+    fetchDataFromSupabase();
     setIsCreateChallengeOpen(false);
     setNewChallengeTitle('');
     setNewChallengeCode('');
-    Alert.alert('Sucesso', 'Novo desafio criado com sucesso!');
+    Alert.alert('Sucesso', 'Novo desafio criado e salvo na nuvem!');
   }
 
-  function handleAcceptInvite() {
-    if (!inviteTargetChallenge) return;
-    if (inputInviteCode.trim().toUpperCase() !== inviteTargetChallenge.invite_code) {
-      Alert.alert('Código Incorreto', 'O código digitado não corresponde a este desafio.');
-      return;
-    }
-
-    const alreadyMember = memberships.some(m => m.challengeId === inviteTargetChallenge.id && m.userId === currentUser.id);
-    if (alreadyMember) {
-      Alert.alert('Aviso', 'Você já é participante deste desafio!');
-      setIsInviteModalOpen(false);
-      return;
-    }
-
-    setMemberships([
-      ...memberships,
-      { challengeId: inviteTargetChallenge.id, userId: currentUser.id, name: currentUser.name, nickname: currentUser.nickname, role: 'active', rankingPoints: 0, bankPoints: 0, totalSteps: 0, avatar: currentUser.avatar, goldMedals: 0, silverMedals: 0, bronzeMedals: 0, age: currentUser.age, gender: currentUser.gender, insigniaInquebravelCount: 0, insigniaDespertaCount: 0 }
-    ]);
-
-    setPendingInvites(pendingInvites.filter(inv => inv.challengeId !== inviteTargetChallenge.id));
-    setIsInviteModalOpen(false);
-    selectChallengeContext(inviteTargetChallenge, false);
-    Alert.alert('🎉 Bem-vindo ao Desafio!', `Sua entrada foi confirmada.`);
-  }
-
-  function handleAcceptDashboardInvite(invite) {
+  async function handleAcceptDashboardInvite(invite) {
     const ch = challenges.find(c => c.id === invite.challengeId);
     if (!ch) return;
 
-    setMemberships([
-      ...memberships,
-      { challengeId: ch.id, userId: currentUser.id, name: currentUser.name, nickname: currentUser.nickname, role: 'active', rankingPoints: 0, bankPoints: 0, totalSteps: 0, avatar: currentUser.avatar, goldMedals: 0, silverMedals: 0, bronzeMedals: 0, age: currentUser.age, gender: currentUser.gender, insigniaInquebravelCount: 0, insigniaDespertaCount: 0 }
-    ]);
+    const newMember = {
+      challenge_id: ch.id,
+      user_id: currentUser.id,
+      name: currentUser.name,
+      nickname: currentUser.nickname,
+      role: 'active',
+      ranking_points: 0,
+      bank_points: 0,
+      total_steps: 0,
+      avatar: currentUser.avatar,
+      gold_medals: 0,
+      silver_medals: 0,
+      bronze_medals: 0,
+      age: currentUser.age,
+      gender: currentUser.gender
+    };
 
+    await supabase.from('memberships').insert([newMember]);
     setPendingInvites(pendingInvites.filter(inv => inv.id !== invite.id));
+    fetchDataFromSupabase();
     selectChallengeContext(ch, false);
     Alert.alert('🎉 Convite Aceito!', `Você entrou no desafio "${ch.title}".`);
   }
 
-  function handleDeclineDashboardInvite(inviteId) {
-    setPendingInvites(pendingInvites.filter(inv => inv.id !== inviteId));
-    Alert.alert('Convite Recusado', 'O convite foi removido.');
-  }
-
-  function handleDeleteChallenge(challengeId) {
+  async function handleDeleteChallenge(challengeId) {
     if (challenges.length <= 1) {
       Alert.alert('Atenção', 'Você não pode excluir o único desafio ativo.');
       return;
     }
-    const filtered = challenges.filter(c => c.id !== challengeId);
-    setChallenges(filtered);
-    selectChallengeContext(filtered[0], filtered[0].creator_id === currentUser.id);
-    Alert.alert('Desafio Excluído', 'A liga foi removida com sucesso.');
+
+    await supabase.from('challenges').delete().eq('id', challengeId);
+    fetchDataFromSupabase();
+    Alert.alert('Desafio Excluído', 'A liga foi removida com sucesso do Supabase.');
   }
 
-  function handleFinishChallenge(challengeId) {
-    setChallenges(challenges.map(c => c.id === challengeId ? { ...c, is_finished: true, registrations_closed: true } : c));
+  async function handleFinishChallenge(challengeId) {
+    await supabase.from('challenges').update({ is_finished: true, registrations_closed: true }).eq('id', challengeId);
+    fetchDataFromSupabase();
     Alert.alert('Desafio Encerrado', 'O pódio foi gerado no Feed.');
   }
 
-  function toggleChallengeRegistrations() {
+  async function toggleChallengeRegistrations() {
     const updatedStatus = !selectedChallenge.registrations_closed;
-    setChallenges(challenges.map(c => c.id === selectedChallenge.id ? { ...c, registrations_closed: updatedStatus } : c));
-    Alert.alert(
-      'Status Atualizado',
-      updatedStatus ? 'Inscrições ENCERRADAS.' : 'Inscrições ABERTAS.'
-    );
+    await supabase.from('challenges').update({ registrations_closed: updatedStatus }).eq('id', selectedChallenge.id);
+    fetchDataFromSupabase();
+    Alert.alert('Status Atualizado', updatedStatus ? 'Inscrições ENCERRADAS.' : 'Inscrições ABERTAS.');
   }
 
-  function handleApproveWorkout(workoutId) {
-    const workoutToApprove = pendingWorkouts.find(w => w.id === workoutId);
-    if (!workoutToApprove) return;
+  async function handleApproveWorkout(workoutId) {
+    const workout = pendingWorkouts.find(w => w.id === workoutId);
+    if (!workout) return;
 
-    setPendingWorkouts(pendingWorkouts.filter(w => w.id !== workoutId));
+    // Remove do pendentes
+    await supabase.from('pending_workouts').delete().eq('id', workoutId);
 
-    if (workoutToApprove.activity_type !== 'PASSOS DIÁRIOS') {
-      setMemberships(memberships.map(m => {
-        if (m.challengeId === workoutToApprove.challengeId && m.userId === workoutToApprove.user_id) {
-          return {
-            ...m,
-            rankingPoints: m.rankingPoints + workoutToApprove.points_to_ranking,
-            bankPoints: m.bankPoints + workoutToApprove.points_to_bank
-          };
-        }
-        return m;
-      }));
+    // Se não for passos, credita pontos ao atleta no Supabase
+    if (workout.activity_type !== 'PASSOS DIÁRIOS') {
+      const { data: currentMem } = await supabase.from('memberships')
+        .select('ranking_points, bank_points')
+        .eq('challenge_id', workout.challengeId)
+        .eq('user_id', workout.user_id)
+        .single();
+
+      if (currentMem) {
+        await supabase.from('memberships').update({
+          ranking_points: (currentMem.ranking_points || 0) + workout.points_to_ranking,
+          bank_points: (currentMem.bank_points || 0) + workout.points_to_bank
+        }).eq('challenge_id', workout.challengeId).eq('user_id', workout.user_id);
+      }
     }
 
-    setFeedPosts([
-      {
-        id: `p_${Date.now()}`,
-        challengeId: workoutToApprove.challengeId,
-        user_id: workoutToApprove.user_id,
-        user_name: workoutToApprove.user_name,
-        user_nickname: workoutToApprove.user_nickname,
-        user_avatar: workoutToApprove.user_avatar,
-        activity_type: workoutToApprove.activity_type,
-        caption: workoutToApprove.caption,
-        photo_evidence: workoutToApprove.photo_evidence,
-        points_to_ranking: workoutToApprove.points_to_ranking,
-        points_to_bank: workoutToApprove.points_to_bank,
-        status: 'approved',
-        created_at: 'Agora',
-        likes: 0,
-        isLiked: false,
-        comments: []
-      },
-      ...feedPosts
-    ]);
+    // Publica no Feed do Supabase
+    const newPost = {
+      id: `p_${Date.now()}`,
+      challenge_id: workout.challengeId,
+      user_id: workout.user_id,
+      user_name: workout.user_name,
+      user_nickname: workout.user_nickname,
+      user_avatar: workout.user_avatar,
+      activity_type: workout.activity_type,
+      caption: workout.caption,
+      photo_evidence: workout.photo_evidence,
+      points_to_ranking: workout.points_to_ranking,
+      points_to_bank: workout.points_to_bank,
+      status: 'approved',
+      created_at: 'Agora',
+      likes: 0,
+      comments: []
+    };
 
-    Alert.alert('Treino Aprovado!', 'O treino foi publicado no Feed.');
+    await supabase.from('feed_posts').insert([newPost]);
+    fetchDataFromSupabase();
+    Alert.alert('Treino Aprovado!', 'O treino foi publicado na nuvem e no Feed.');
   }
 
-  function handleRejectWorkout(workoutId) {
-    setPendingWorkouts(pendingWorkouts.filter(w => w.id !== workoutId));
+  async function handleRejectWorkout(workoutId) {
+    await supabase.from('pending_workouts').delete().eq('id', workoutId);
+    fetchDataFromSupabase();
     Alert.alert('Treino Rejeitado', 'O registro foi removido.');
   }
 
-  function handlePromoteToActive(memberId) {
-    setMemberships(memberships.map(m => (m.challengeId === activeChallengeId && m.userId === memberId) ? { ...m, role: 'active' } : m));
-    Alert.alert('Atleta Aprovado!', 'O participante agora é um Atleta Ativo.');
-  }
-
-  function handleApprovePending(participant, targetRole) {
-    setPendingParticipants(pendingParticipants.filter(p => p.id !== participant.id));
-    setMemberships([
-      ...memberships,
-      { challengeId: activeChallengeId, userId: participant.id, name: participant.name, nickname: participant.nickname, role: targetRole, rankingPoints: 0, bankPoints: 0, totalSteps: 0, avatar: participant.avatar, goldMedals: 0, silverMedals: 0, bronzeMedals: 0, age: participant.age, gender: participant.gender, insigniaInquebravelCount: 0, insigniaDespertaCount: 0 }
-    ]);
-    Alert.alert('Solicitação Aprovada', `Participante adicionado.`);
-  }
-
-  function handleDemoteToSpectator(memberId) {
-    setMemberships(memberships.map(m => (m.challengeId === activeChallengeId && m.userId === memberId) ? { ...m, role: 'spectator' } : m));
-    Alert.alert('Status Alterado', 'O participante agora é Torcedor.');
-  }
-
-  function handleRemoveFromChallenge(memberId) {
-    setMemberships(memberships.filter(m => !(m.challengeId === activeChallengeId && m.userId === memberId)));
-    Alert.alert('Participante Removido', 'O participante foi retirado do desafio.');
-  }
-
-  function toggleRuleModalidadEnabled(tabKey) {
-    setEditingRules(prev => ({
-      ...prev,
-      [tabKey]: {
-        ...prev[tabKey],
-        enabled: !prev[tabKey]?.enabled
+  async function handleSaveRules() {
+    await supabase.from('challenges').update({
+      rules: editingRules,
+      tiebreaker_enabled: tiebreakerEnabled,
+      tiebreakers_config: tiebreakersConfig,
+      bonuses: {
+        inquebravel: { active: bonusInquebravelActive, days: parseInt(bonusInquebravelDays, 10) || 7, points: parseInt(bonusInquebravelPoints, 10) || 5000 },
+        desperta: { active: bonusDespertaActive, limitTime: bonusDespertaTime, points: parseInt(bonusDespertaPoints, 10) || 3000 }
       }
-    }));
-  }
+    }).eq('id', editingChallengeId);
 
-  function setRuleMode(tabKey, selectedMode) {
-    setEditingRules(prev => ({
-      ...prev,
-      [tabKey]: {
-        ...prev[tabKey],
-        mode: selectedMode,
-        steps: prev[tabKey]?.steps && prev[tabKey].steps.length > 0 ? prev[tabKey].steps : [{ min: '', max: '', pts: '' }],
-        stepsKm: prev[tabKey]?.stepsKm && prev[tabKey].stepsKm.length > 0 ? prev[tabKey].stepsKm : [{ min: '', max: '', pts: '' }]
-      }
-    }));
-  }
-
-  function handleAddStep(tabKey, stepType = 'time') {
-    const targetKey = stepType === 'km' ? 'stepsKm' : 'steps';
-    const currentSteps = editingRules[tabKey]?.[targetKey] || [];
-    const updatedSteps = [...currentSteps, { min: '', max: '', pts: '' }];
-    setEditingRules(prev => ({
-      ...prev,
-      [tabKey]: {
-        ...prev[tabKey],
-        [targetKey]: updatedSteps
-      }
-    }));
-  }
-
-  function handleRemoveStep(tabKey, index, stepType = 'time') {
-    const targetKey = stepType === 'km' ? 'stepsKm' : 'steps';
-    const currentSteps = editingRules[tabKey]?.[targetKey] || [];
-    if (currentSteps.length <= 1) {
-      Alert.alert('Atenção', 'Mantenha pelo menos 1 Step.');
-      return;
-    }
-    const updatedSteps = currentSteps.filter((_, i) => i !== index);
-    setEditingRules(prev => ({
-      ...prev,
-      [tabKey]: {
-        ...prev[tabKey],
-        [targetKey]: updatedSteps
-      }
-    }));
-  }
-
-  function handleUpdateStepField(tabKey, index, field, value, stepType = 'time') {
-    const targetKey = stepType === 'km' ? 'stepsKm' : 'steps';
-    const currentSteps = editingRules[tabKey]?.[targetKey] || [];
-    const updatedSteps = currentSteps.map((step, i) => {
-      if (i === index) {
-        return { ...step, [field]: value };
-      }
-      return step;
-    });
-    setEditingRules(prev => ({
-      ...prev,
-      [tabKey]: {
-        ...prev[tabKey],
-        [targetKey]: updatedSteps
-      }
-    }));
-  }
-
-  function handleSaveRules() {
-    setChallenges(challenges.map(c => {
-      if (c.id === editingChallengeId) {
-        return {
-          ...c,
-          rules: editingRules,
-          tiebreakerEnabled: tiebreakerEnabled,
-          tiebreakersConfig: tiebreakersConfig,
-          bonuses: {
-            inquebravel: { active: bonusInquebravelActive, days: parseInt(bonusInquebravelDays, 10) || 7, points: parseInt(bonusInquebravelPoints, 10) || 5000 },
-            desperta: { active: bonusDespertaActive, limitTime: bonusDespertaTime, points: parseInt(bonusDespertaPoints, 10) || 3000 }
-          }
-        };
-      }
-      return c;
-    }));
-
+    fetchDataFromSupabase();
     setIsEditRulesOpen(false);
-    Alert.alert('Regras Salvas', 'As regras foram atualizadas!');
+    Alert.alert('Regras Salvas', 'As regras foram salvas na nuvem!');
   }
 
-  function handleAdminAddPointsManual() {
-    if (!manualAthleteId) {
-      Alert.alert('Erro', 'Selecione um Atleta Ativo.');
-      return;
-    }
-
-    const addedRankingPts = parseInt(manualRankingPointsInput, 10) || 0;
-    const addedBankPts = parseInt(manualBankPointsInput, 10) || 0;
-    const addedSteps = parseInt(manualStepsInput, 10) || 0;
-
-    if (addedRankingPts <= 0 && addedBankPts <= 0 && addedSteps <= 0 && !manualInquebravelCheck && !manualDespertaCheck) {
-      Alert.alert('Erro', 'Informe pelo menos um valor ou bônus.');
-      return;
-    }
-
-    const targetChallenge = challenges.find(c => c.id === activeChallengeId) || selectedChallenge;
-    let extraInquebravelPts = (manualInquebravelCheck && targetChallenge.bonuses?.inquebravel?.active) ? targetChallenge.bonuses.inquebravel.points : 0;
-    let extraDespertaPts = (manualDespertaCheck && targetChallenge.bonuses?.desperta?.active) ? targetChallenge.bonuses.desperta.points : 0;
-
-    const totalToRanking = addedRankingPts + extraInquebravelPts + extraDespertaPts;
-
-    setMemberships(memberships.map(m => {
-      if (m.challengeId === activeChallengeId && m.userId === manualAthleteId) {
-        return {
-          ...m,
-          rankingPoints: m.rankingPoints + totalToRanking,
-          bankPoints: m.bankPoints + addedBankPts,
-          totalSteps: m.totalSteps + addedSteps,
-          insigniaInquebravelCount: m.insigniaInquebravelCount + (manualInquebravelCheck ? 1 : 0),
-          insigniaDespertaCount: m.insigniaDespertaCount + (manualDespertaCheck ? 1 : 0)
-        };
-      }
-      return m;
-    }));
-
-    setManualRankingPointsInput('');
-    setManualBankPointsInput('');
-    setManualStepsInput('');
-    setManualInquebravelCheck(false);
-    setManualDespertaCheck(false);
-    Alert.alert('Lançamento Concluído!', `Créditos aplicados ao atleta.`);
-  }
-
-  function calculatePoints(type, durStr) {
-    if (type === 'passos_diarios') return 0;
-    const dur = parseInt(durStr, 10) || 0;
-    const rawPts = dur >= 60 ? 10000 : 5000;
-    return Math.max(1000, rawPts);
-  }
-
-  function handleSubmitWorkout() {
+  async function handleSubmitWorkout() {
     const currentMemberRecord = memberships.find(m => m.challengeId === activeChallengeId && m.userId === currentUser.id);
     if (!currentMemberRecord || currentMemberRecord.role !== 'active') {
       Alert.alert('Acesso Restrito', 'Apenas Atletas Ativos podem submeter treinos.');
-      return;
-    }
-
-    const todayStr = new Date().toLocaleDateString();
-    const alreadyDoneToday = dailySubmissions.some(
-      sub => sub.challengeId === activeChallengeId && sub.userId === currentUser.id && sub.activity === selectedActivity && sub.dateStr === todayStr
-    );
-
-    if (alreadyDoneToday) {
-      Alert.alert(
-        '🔒 Trava Diária Excedida',
-        `Você já registrou ${selectedActivity.toUpperCase()} hoje.`
-      );
       return;
     }
 
@@ -741,56 +506,41 @@ export default function App() {
       return;
     }
 
-    const points = calculatePoints(selectedActivity, durationInput);
+    const dur = parseInt(durationInput, 10) || 0;
+    const points = dur >= 60 ? 10000 : 5000;
     let ptsRanking = points;
     let ptsBank = 0;
 
-    if (selectedActivity === 'passos_diarios') {
-      ptsRanking = 0;
-    } else if (selectedChallenge?.has_daily_cap && selectedChallenge?.daily_cap) {
+    if (selectedChallenge?.has_daily_cap && selectedChallenge?.daily_cap) {
       ptsRanking = Math.min(points, selectedChallenge.daily_cap);
       ptsBank = Math.max(0, points - selectedChallenge.daily_cap);
     }
 
-    const stepsVal = parseInt(stepsInput, 10) || (selectedActivity === 'passos_diarios' ? parseInt(distanceInput, 10) || 5000 : 0);
+    const newPendingWorkout = {
+      id: `pw_${Date.now()}`,
+      challenge_id: activeChallengeId,
+      user_id: currentUser.id,
+      user_name: currentUser.name,
+      user_nickname: currentUser.nickname,
+      user_avatar: currentUser.avatar,
+      activity_type: selectedActivity.toUpperCase(),
+      caption: workoutCaption || `Atividade de ${selectedActivity}`,
+      date_str: workoutDate,
+      start_time: startTime,
+      end_time: endTime,
+      photo_start: photoStart,
+      photo_end: photoEnd,
+      photo_evidence: photoEvidence,
+      points_to_ranking: ptsRanking,
+      points_to_bank: ptsBank,
+      created_at: 'Agora'
+    };
 
-    setDailySubmissions([...dailySubmissions, { challengeId: activeChallengeId, userId: currentUser.id, activity: selectedActivity, dateStr: todayStr }]);
-
-    if (selectedActivity === 'passos_diarios') {
-      setMemberships(memberships.map(m => {
-        if (m.challengeId === activeChallengeId && m.userId === currentUser.id) {
-          return { ...m, totalSteps: m.totalSteps + stepsVal };
-        }
-        return m;
-      }));
-    }
-
-    setPendingWorkouts([
-      {
-        id: `pw_${Date.now()}`,
-        challengeId: activeChallengeId,
-        user_id: currentUser.id,
-        user_name: currentUser.name,
-        user_nickname: currentUser.nickname,
-        user_avatar: currentUser.avatar,
-        activity_type: selectedActivity.toUpperCase(),
-        caption: workoutCaption || `Atividade de ${selectedActivity}`,
-        dateStr: workoutDate,
-        startTime: startTime,
-        endTime: endTime,
-        photo_start: photoStart,
-        photo_end: photoEnd,
-        photo_evidence: photoEvidence,
-        points_to_ranking: ptsRanking,
-        points_to_bank: ptsBank,
-        created_at: 'Agora'
-      },
-      ...pendingWorkouts
-    ]);
-
+    await supabase.from('pending_workouts').insert([newPendingWorkout]);
+    fetchDataFromSupabase();
     setIsWorkoutModalOpen(false);
     resetForm();
-    Alert.alert('Sucesso', 'Treino submetido! Aguardando aprovação.');
+    Alert.alert('Sucesso', 'Treino enviado para a nuvem! Aguardando aprovação do Admin.');
   }
 
   function resetForm() {
@@ -811,7 +561,7 @@ export default function App() {
     if (searchFilter === 'challenge') return false;
     const term = searchQuery.toLowerCase().trim();
     if (!term) return true;
-    return m.name.toLowerCase().includes(term) || m.nickname.toLowerCase().includes(term);
+    return (m.name || '').toLowerCase().includes(term) || (m.nickname || '').toLowerCase().includes(term);
   }).reduce((acc, current) => {
     const exists = acc.find(item => item.userId === current.userId);
     if (!exists) acc.push(current);
@@ -822,7 +572,7 @@ export default function App() {
     if (searchFilter === 'athlete') return false;
     const term = searchQuery.toLowerCase().trim();
     if (!term) return true;
-    return c.title.toLowerCase().includes(term) || c.invite_code.toLowerCase().includes(term);
+    return (c.title || '').toLowerCase().includes(term) || (c.invite_code || '').toLowerCase().includes(term);
   });
 
   const MediaPickerField = ({ label, photoState, setPhotoState, acceptVideo = false, setMediaType = null }) => (
@@ -870,10 +620,10 @@ export default function App() {
   const currentChallengeMembers = memberships.filter(m => m.challengeId === activeChallengeId);
   const activeMembersInChallenge = currentChallengeMembers.filter(m => m.role === 'active');
   const spectatorMembersInChallenge = currentChallengeMembers.filter(m => m.role === 'spectator');
-  const top3Ranked = [...activeMembersInChallenge].sort((a,b) => b.rankingPoints - a.rankingPoints).slice(0, 3);
-  const currentFeedPosts = feedPosts.filter(p => p.challengeId === activeChallengeId);
+  const top3Ranked = [...activeMembersInChallenge].sort((a,b) => (b.rankingPoints || 0) - (a.rankingPoints || 0)).slice(0, 3);
+  const currentFeedPosts = feedPosts.filter(p => p.challenge_id === activeChallengeId);
   const currentPendingParticipants = pendingParticipants.filter(p => p.challengeId === activeChallengeId);
-  const currentPendingWorkouts = pendingWorkouts.filter(w => w.challengeId === activeChallengeId);
+  const currentPendingWorkouts = pendingWorkouts.filter(w => w.challenge_id === activeChallengeId);
 
   const top3Winners = [...currentChallengeMembers]
     .sort((a, b) => (b.goldMedals || 0) - (a.goldMedals || 0))
@@ -923,7 +673,7 @@ export default function App() {
   }
 
   const currentMemberState = currentChallengeMembers.find(m => m.userId === currentUser.id);
-  const userStories = stories.filter(st => st.userId === viewedUser.id);
+  const userStories = stories.filter(st => st.user_id === viewedUser.id);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -942,7 +692,7 @@ export default function App() {
               onPress={() => setIsHeaderSelectOpen(true)}
             >
               <Text style={styles.nativeSelectButtonText}>
-                {selectedChallenge.title} ({selectedChallenge.creator_id === currentUser.id ? '🔑 Administrador' : '⚡ Atleta Ativo'}) ▼
+                {selectedChallenge.title || 'Selecione um Desafio'} ({selectedChallenge.creator_id === currentUser.id ? '🔑 Administrador' : '⚡ Atleta Ativo'}) ▼
               </Text>
             </TouchableOpacity>
           </View>
@@ -1085,7 +835,7 @@ export default function App() {
           {currentScreen === 'dashboard' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <Text style={styles.pageTitle}>Painel Geral de Ligas</Text>
+                <Text style={styles.pageTitle}>Painel Geral de Ligas (Nuvem)</Text>
                 {currentUser.isAdmin && (
                   <TouchableOpacity style={styles.createChallengeBtnHeader} onPress={() => setIsCreateChallengeOpen(true)}>
                     <Text style={styles.createChallengeBtnText}>+ NOVO DESAFIO</Text>
@@ -1106,9 +856,6 @@ export default function App() {
                         <TouchableOpacity style={styles.acceptInviteBtn} onPress={() => handleAcceptDashboardInvite(inv)}>
                           <Text style={styles.btnMiniText}>✅ ACEITAR</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.declineInviteBtn} onPress={() => handleDeclineDashboardInvite(inv.id)}>
-                          <Text style={styles.btnMiniText}>❌ RECUSAR</Text>
-                        </TouchableOpacity>
                       </View>
                     </View>
                   ))}
@@ -1125,7 +872,7 @@ export default function App() {
 
               <Text style={styles.sectionHeaderTitle}>🔑 Ligas que Você Administra</Text>
               {adminChallenges.length === 0 ? (
-                <Text style={styles.emptyNoticeText}>Você ainda não criou nenhum desafio.</Text>
+                <Text style={styles.emptyNoticeText}>Você ainda não criou nenhum desafio no Supabase.</Text>
               ) : (
                 adminChallenges.map((c) => (
                   <View key={c.id} style={[styles.cardBox, { borderColor: '#f97316', borderWidth: 1.5 }]}>
@@ -1210,21 +957,21 @@ export default function App() {
                       <Text style={styles.podiumMedal}>🥈 2º LUGAR</Text>
                       <Image source={{ uri: top3Ranked[1].avatar }} style={styles.avatarMini} />
                       <Text style={styles.podiumName}>{top3Ranked[1].name}</Text>
-                      <Text style={styles.podiumPts}>{top3Ranked[1].rankingPoints.toLocaleString()} pts</Text>
+                      <Text style={styles.podiumPts}>{(top3Ranked[1].rankingPoints || 0).toLocaleString()} pts</Text>
                     </View>
 
                     <View style={styles.podiumCard1st}>
                       <Text style={styles.podiumMedal}>🥇 CAMPEÃO</Text>
                       <Image source={{ uri: top3Ranked[0].avatar }} style={styles.avatarLargePodium} />
                       <Text style={styles.podiumName1st}>{top3Ranked[0].name}</Text>
-                      <Text style={styles.podiumPts1st}>{top3Ranked[0].rankingPoints.toLocaleString()} pts</Text>
+                      <Text style={styles.podiumPts1st}>{(top3Ranked[0].rankingPoints || 0).toLocaleString()} pts</Text>
                     </View>
 
                     <View style={styles.podiumCard3rd}>
                       <Text style={styles.podiumMedal}>🥉 3º LUGAR</Text>
                       <Image source={{ uri: top3Ranked[2].avatar }} style={styles.avatarMini} />
                       <Text style={styles.podiumName}>{top3Ranked[2].name}</Text>
-                      <Text style={styles.podiumPts}>{top3Ranked[2].rankingPoints.toLocaleString()} pts</Text>
+                      <Text style={styles.podiumPts}>{(top3Ranked[2].rankingPoints || 0).toLocaleString()} pts</Text>
                     </View>
                   </View>
                 </View>
@@ -1267,10 +1014,10 @@ export default function App() {
                             {post.isLiked ? '❤️' : '🤍'} {post.likes} Curtidas
                           </Text>
                         </TouchableOpacity>
-                        <Text style={styles.socialBtnText}>💬 {post.comments.length} Comentários</Text>
+                        <Text style={styles.socialBtnText}>💬 {(post.comments || []).length} Comentários</Text>
                       </View>
 
-                      {post.comments.length > 0 && (
+                      {(post.comments || []).length > 0 && (
                         <View style={styles.commentsListContainer}>
                           {post.comments.map(cm => (
                             <Text key={cm.id} style={styles.commentItemText}>
@@ -1311,18 +1058,18 @@ export default function App() {
                 </Text>
               </View>
 
-              {activeMembersInChallenge.sort((a,b) => b.rankingPoints - a.rankingPoints).map((member, index) => (
+              {activeMembersInChallenge.sort((a,b) => (b.rankingPoints || 0) - (a.rankingPoints || 0)).map((member, index) => (
                 <TouchableOpacity key={member.userId} style={styles.rankingRowCard} onPress={() => handleOpenUserProfile(member.userId)}>
                   <Text style={styles.rankingPosNumber}>#{index + 1}</Text>
                   <Image source={{ uri: member.avatar }} style={styles.avatarMini} />
                   <View style={{ flex: 1, marginLeft: 8 }}>
                     <Text style={styles.rankingMemberName}>{member.name} ({member.nickname})</Text>
-                    <Text style={styles.rankingMemberSub}>{member.totalSteps.toLocaleString()} passos</Text>
+                    <Text style={styles.rankingMemberSub}>{(member.totalSteps || 0).toLocaleString()} passos</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={styles.rankingMemberPts}>{member.rankingPoints.toLocaleString()} pts</Text>
+                    <Text style={styles.rankingMemberPts}>{(member.rankingPoints || 0).toLocaleString()} pts</Text>
                     {selectedChallenge.has_daily_cap && (
-                      <Text style={styles.rankingMemberBank}>Banco: {member.bankPoints.toLocaleString()} pts</Text>
+                      <Text style={styles.rankingMemberBank}>Banco: {(member.bankPoints || 0).toLocaleString()} pts</Text>
                     )}
                   </View>
                 </TouchableOpacity>
@@ -1503,7 +1250,7 @@ export default function App() {
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.adminControlCard}>
                 <Text style={styles.adminCardTitle}>🎯 Gerenciando: {selectedChallenge.title}</Text>
-                <Text style={styles.adminCardSub}>Todas as alterações feitas afetam esta liga.</Text>
+                <Text style={styles.adminCardSub}>Todas as alterações feitas afetam esta liga no Supabase.</Text>
               </View>
 
               <View style={styles.adminControlCard}>
@@ -1540,149 +1287,6 @@ export default function App() {
                     {selectedChallenge.registrations_closed ? '🔓 REABRIR CANDIDATURAS' : '🔒 ENCERRAR CANDIDATURA'}
                   </Text>
                 </TouchableOpacity>
-              </View>
-
-              <View style={styles.adminControlCard}>
-                <Text style={styles.adminCardTitle}>➕ Lançamento Manual de Pontos & Passos</Text>
-
-                <Text style={styles.inputLabel}>Selecione o Atleta Ativo:</Text>
-                <TouchableOpacity 
-                  style={styles.nativeSelectButton}
-                  onPress={() => setIsManualAthleteSelectOpen(true)}
-                >
-                  <Text style={styles.nativeSelectButtonText}>
-                    {manualAthleteId 
-                      ? (activeMembersInChallenge.find(m => m.userId === manualAthleteId) || {}).name || 'Atleta Selecionado'
-                      : '-- Escolha o Atleta Ativo --'
-                    } ▼
-                  </Text>
-                </TouchableOpacity>
-
-                <Text style={styles.inputLabel}>Modalidade Realizada:</Text>
-                <TouchableOpacity 
-                  style={styles.nativeSelectButton}
-                  onPress={() => setIsManualActivitySelectOpen(true)}
-                >
-                  <Text style={styles.nativeSelectButtonText}>
-                    {manualActivity.toUpperCase()} ▼
-                  </Text>
-                </TouchableOpacity>
-
-                <View style={{ flexDirection: 'row', gap: 6, marginVertical: 4 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.inputLabel}>Pontos Ranking:</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Ex: 5000"
-                      keyboardType="numeric"
-                      value={manualRankingPointsInput}
-                      onChangeText={setManualRankingPointsInput}
-                    />
-                  </View>
-
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.inputLabel}>Banco de Pontos:</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Ex: 2000"
-                      keyboardType="numeric"
-                      value={manualBankPointsInput}
-                      onChangeText={setManualBankPointsInput}
-                    />
-                  </View>
-
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.inputLabel}>Passos:</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Ex: 10000"
-                      keyboardType="numeric"
-                      value={manualStepsInput}
-                      onChangeText={setManualStepsInput}
-                    />
-                  </View>
-                </View>
-
-                <Text style={styles.inputLabel}>Conceder Bônus (Opcional):</Text>
-                {selectedChallenge.bonuses?.inquebravel?.active && (
-                  <TouchableOpacity
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 4 }}
-                    onPress={() => setManualInquebravelCheck(!manualInquebravelCheck)}
-                  >
-                    <Text style={{ fontSize: 16 }}>{manualInquebravelCheck ? '☑️' : '⬜'}</Text>
-                    <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#c2410c' }}>
-                      🪨 Bônus "O Inquebrável" (+{selectedChallenge.bonuses.inquebravel.points} pts)
-                    </Text>
-                  </TouchableOpacity>
-                )}
-
-                {selectedChallenge.bonuses?.desperta?.active && (
-                  <TouchableOpacity
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 4 }}
-                    onPress={() => setManualDespertaCheck(!manualDespertaCheck)}
-                  >
-                    <Text style={{ fontSize: 16 }}>{manualDespertaCheck ? '☑️' : '⬜'}</Text>
-                    <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>
-                      ⏰ Bônus "O Desperta" (+{selectedChallenge.bonuses.desperta.points} pts)
-                    </Text>
-                  </TouchableOpacity>
-                )}
-
-                <TouchableOpacity style={styles.primaryBtn} onPress={handleAdminAddPointsManual}>
-                  <Text style={styles.primaryBtnText}>CREDITAR VALORES AO ATLETA</Text>
-                </TouchableOpacity>
-              </View>
-
-              {currentPendingParticipants.length > 0 && (
-                <View style={styles.adminControlCard}>
-                  <Text style={styles.adminCardTitle}>📩 Atletas Pendentes ({currentPendingParticipants.length})</Text>
-                  {currentPendingParticipants.map((p) => (
-                    <View key={p.id} style={styles.participantRow}>
-                      <Image source={{ uri: p.avatar }} style={styles.avatarMini} />
-                      <View style={{ flex: 1, marginLeft: 8 }}>
-                        <Text style={styles.participantName}>{p.name} ({p.nickname})</Text>
-                        <Text style={styles.participantSub}>Aguardando Aprovação</Text>
-                      </View>
-                      <View style={{ flexDirection: 'row', gap: 4 }}>
-                        <TouchableOpacity style={styles.approveBtn} onPress={() => handleApprovePending(p, 'active')}>
-                          <Text style={styles.btnMiniText}>⚡ ATLETA</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.demoteBtn} onPress={() => handleApprovePending(p, 'spectator')}>
-                          <Text style={styles.btnMiniText}>👀 TORCEDOR</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              <View style={styles.adminControlCard}>
-                <Text style={styles.adminCardTitle}>👥 Gerenciamento de Membros</Text>
-                {currentChallengeMembers.map((m) => (
-                  <View key={m.userId} style={styles.participantRow}>
-                    <Image source={{ uri: m.avatar }} style={styles.avatarMini} />
-                    <View style={styles.participantInfoBox}>
-                      <Text style={styles.participantName}>{m.name} ({m.nickname})</Text>
-                      <Text style={m.role === 'active' ? styles.tagActiveText : styles.tagSpectatorText}>
-                        {m.role === 'active' ? '⚡ Atleta Ativo' : '👀 Torcedor'}
-                      </Text>
-                    </View>
-                    <View style={styles.actionButtonsRow}>
-                      {m.role === 'spectator' ? (
-                        <TouchableOpacity style={styles.approveBtn} onPress={() => handlePromoteToActive(m.userId)}>
-                          <Text style={styles.btnMiniText}>⚡ ATLETA</Text>
-                        </TouchableOpacity>
-                      ) : (
-                        <TouchableOpacity style={styles.demoteBtn} onPress={() => handleDemoteToSpectator(m.userId)}>
-                          <Text style={styles.btnMiniText}>👀 TORCEDOR</Text>
-                        </TouchableOpacity>
-                      )}
-                      <TouchableOpacity style={styles.banBtn} onPress={() => handleRemoveFromChallenge(m.userId)}>
-                        <Text style={styles.btnMiniText}>❌ REMOVER</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ))}
               </View>
 
               <View style={styles.adminControlCard}>
@@ -1733,52 +1337,25 @@ export default function App() {
               setMediaType={setNewStoryType}
             />
 
-            <TouchableOpacity style={styles.primaryBtn} onPress={() => {
+            <TouchableOpacity style={styles.primaryBtn} onPress={async () => {
               if (newStoryMedia) {
-                setStories([
-                  { id: `st_${Date.now()}`, userId: currentUser.id, type: newStoryType, uri: newStoryMedia, timestamp: 'Agora' },
-                  ...stories
-                ]);
+                const newStory = {
+                  id: `st_${Date.now()}`,
+                  user_id: currentUser.id,
+                  type: newStoryType,
+                  uri: newStoryMedia,
+                  timestamp: 'Agora'
+                };
+                await supabase.from('stories').insert([newStory]);
+                fetchDataFromSupabase();
                 setNewStoryMedia(null);
                 setIsAddStoryOpen(false);
-                Alert.alert('Story Publicado!', 'Seu story está visível para os atletas.');
+                Alert.alert('Story Publicado!', 'Seu story foi salvo na nuvem.');
               }
             }}>
               <Text style={styles.primaryBtnText}>PUBLICAR STORY</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsAddStoryOpen(false)}>
-              <Text style={styles.cancelBtnText}>CANCELAR</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal visible={isInviteModalOpen} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>🎉 Convite para o Desafio</Text>
-            <Text style={{ fontSize: 12, color: '#1e3a8a', fontWeight: 'bold', textAlign: 'center', marginBottom: 4 }}>
-              {inviteTargetChallenge?.title}
-            </Text>
-
-            <View style={styles.inviteBoxHighlight}>
-              <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#0f172a' }}>📱 Novo Cadastro no MuvFit?</Text>
-              <Text style={{ fontSize: 8, color: '#475569', marginBottom: 6 }}>1. Baixe o app MuvFit na Store {"\n"}2. Crie seu cadastro {"\n"}3. Digite o código abaixo para entrar no desafio!</Text>
-            </View>
-
-            <Text style={styles.inputLabel}>Digite o Código de Acesso do Desafio:</Text>
-            <TextInput
-              style={styles.input}
-              placeholder={`Código do Desafio (Ex: ${inviteTargetChallenge?.invite_code})`}
-              value={inputInviteCode}
-              onChangeText={setInputInviteCode}
-            />
-
-            <TouchableOpacity style={styles.primaryBtn} onPress={handleAcceptInvite}>
-              <Text style={styles.primaryBtnText}>ACEITAR CONVITE & ENTRAR NO DESAFIO</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsInviteModalOpen(false)}>
               <Text style={styles.cancelBtnText}>CANCELAR</Text>
             </TouchableOpacity>
           </View>
@@ -1820,311 +1397,10 @@ export default function App() {
         </View>
       </Modal>
 
-      <Modal visible={isEditRulesOpen} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <ScrollView contentContainerStyle={styles.modalContent}>
-            <Text style={styles.modalTitle}>Configuração Avançada de Pontuação</Text>
-            
-            <Text style={styles.inputLabel}>Selecione o Desafio para Configurar:</Text>
-            <TouchableOpacity 
-              style={styles.nativeSelectButton}
-              onPress={() => setIsEditingChallengeSelectOpen(true)}
-            >
-              <Text style={styles.nativeSelectButtonText}>
-                {(challenges.find(c => c.id === editingChallengeId) || {}).title || 'Desafio'} ▼
-              </Text>
-            </TouchableOpacity>
-
-            <Text style={{ fontSize: 9, color: '#f97316', fontWeight: 'bold', textAlign: 'center', marginVertical: 6 }}>
-              ⚠️ Escolha 1 ÚNICO MODO DE PONTUAÇÃO por modalidade habilitada.
-            </Text>
-
-            <Text style={styles.inputLabel}>Selecione a Modalidade para Configurar:</Text>
-            <TouchableOpacity 
-              style={styles.nativeSelectButton}
-              onPress={() => setIsRuleTabSelectOpen(true)}
-            >
-              <Text style={styles.nativeSelectButtonText}>
-                {selectedRuleTab.toUpperCase()} ▼
-              </Text>
-            </TouchableOpacity>
-
-            {selectedRuleTab !== 'bonuses_desempate' && (
-              <TouchableOpacity
-                style={styles.toggleModalidadeBox}
-                onPress={() => toggleRuleModalidadEnabled(selectedRuleTab)}
-              >
-                <Text style={{ fontSize: 16 }}>{currentTabRule.enabled ? '☑️' : '⬜'}</Text>
-                <Text style={styles.toggleModalidadeText}>
-                  {currentTabRule.enabled ? 'Modalidade Habilitada neste Desafio' : 'Modalidade Desabilitada'}
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            {selectedRuleTab !== 'bonuses_desempate' && currentTabRule.enabled && (
-              <View style={styles.ruleSectionBox}>
-                <Text style={styles.ruleSectionTitle}>Selecione o Modo Exclusivo de Pontuação:</Text>
-
-                <TouchableOpacity
-                  style={[styles.modeCardOption, currentTabRule.mode === 'tempo' && styles.modeCardOptionActive]}
-                  onPress={() => setRuleMode(selectedRuleTab, 'tempo')}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={{ fontSize: 14 }}>{currentTabRule.mode === 'tempo' ? '🔘' : '⚪'}</Text>
-                    <Text style={styles.modeCardTitle}>1ª Opção: Pontuação por Tempo Mínimo</Text>
-                  </View>
-                  {currentTabRule.mode === 'tempo' ? (
-                    <View style={{ marginTop: 8 }}>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Minutos Mínimos (Ex: 30 min)"
-                        keyboardType="numeric"
-                        value={String(currentTabRule.minMinutes || '')}
-                        onChangeText={(txt) => setEditingRules(prev => ({ ...prev, [selectedRuleTab]: { ...prev[selectedRuleTab], minMinutes: txt } }))}
-                      />
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Pontos Mínimos (Ex: 5000 pts)"
-                        keyboardType="numeric"
-                        value={String(currentTabRule.minPoints || '')}
-                        onChangeText={(txt) => setEditingRules(prev => ({ ...prev, [selectedRuleTab]: { ...prev[selectedRuleTab], minPoints: txt } }))}
-                      />
-                    </View>
-                  ) : (
-                    <Text style={styles.modeCardDisabledText}>Opção indisponível (Selecione para ativar)</Text>
-                  )}
-                </TouchableOpacity>
-
-                {['corrida', 'caminhada', 'bike'].includes(selectedRuleTab) && (
-                  <TouchableOpacity
-                    style={[styles.modeCardOption, currentTabRule.mode === 'km' && styles.modeCardOptionActive]}
-                    onPress={() => setRuleMode(selectedRuleTab, 'km')}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={{ fontSize: 14 }}>{currentTabRule.mode === 'km' ? '🔘' : '⚪'}</Text>
-                      <Text style={styles.modeCardTitle}>2ª Opção: Pontuação por KM Mínimo</Text>
-                    </View>
-                    {currentTabRule.mode === 'km' ? (
-                      <View style={{ marginTop: 8 }}>
-                        <TextInput
-                          style={styles.input}
-                          placeholder="KM Mínimo (Ex: 5 km)"
-                          keyboardType="numeric"
-                          value={String(currentTabRule.minKm || '')}
-                          onChangeText={(txt) => setEditingRules(prev => ({ ...prev, [selectedRuleTab]: { ...prev[selectedRuleTab], minKm: txt } }))}
-                        />
-                        <TextInput
-                          style={styles.input}
-                          placeholder="Pontos Mínimos (Ex: 5000 pts)"
-                          keyboardType="numeric"
-                          value={String(currentTabRule.minKmPoints || '')}
-                          onChangeText={(txt) => setEditingRules(prev => ({ ...prev, [selectedRuleTab]: { ...prev[selectedRuleTab], minKmPoints: txt } }))}
-                        />
-                      </View>
-                    ) : (
-                      <Text style={styles.modeCardDisabledText}>Opção indisponível (Selecione para ativar)</Text>
-                    )}
-                  </TouchableOpacity>
-                )}
-
-                <TouchableOpacity
-                  style={[styles.modeCardOption, currentTabRule.mode === 'steps' && styles.modeCardOptionActive]}
-                  onPress={() => setRuleMode(selectedRuleTab, 'steps')}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={{ fontSize: 14 }}>{currentTabRule.mode === 'steps' ? '🔘' : '⚪'}</Text>
-                    <Text style={styles.modeCardTitle}>
-                      {['corrida', 'caminhada', 'bike'].includes(selectedRuleTab) ? '3ª Opção: Steps Progressivos' : '2ª Opção: Steps Progressivos'}
-                    </Text>
-                  </View>
-                  
-                  {currentTabRule.mode === 'steps' ? (
-                    <View style={{ marginTop: 8 }}>
-                      <Text style={{ fontSize: 10, color: '#1e3a8a', fontWeight: 'bold', marginBottom: 4 }}>
-                        ⏱️ Steps por TEMPO (minutos):
-                      </Text>
-
-                      {(currentTabRule.steps || []).map((step, idx) => (
-                        <View key={idx} style={styles.stepBoxRow}>
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                            <Text style={styles.stepBoxLabel}>Step Tempo {idx + 1}:</Text>
-                            {(currentTabRule.steps || []).length > 1 && (
-                              <TouchableOpacity onPress={() => handleRemoveStep(selectedRuleTab, idx, 'time')}>
-                                <Text style={styles.stepRemoveText}>🗑️ Remover</Text>
-                              </TouchableOpacity>
-                            )}
-                          </View>
-                          
-                          <View style={{ flexDirection: 'row', gap: 4 }}>
-                            <TextInput
-                              style={[styles.input, { flex: 1 }]}
-                              placeholder="Mín min"
-                              keyboardType="numeric"
-                              value={step.min}
-                              onChangeText={(txt) => handleUpdateStepField(selectedRuleTab, idx, 'min', txt, 'time')}
-                            />
-                            <TextInput
-                              style={[styles.input, { flex: 1 }]}
-                              placeholder="Máx min"
-                              keyboardType="numeric"
-                              value={step.max}
-                              onChangeText={(txt) => handleUpdateStepField(selectedRuleTab, idx, 'max', txt, 'time')}
-                            />
-                            <TextInput
-                              style={[styles.input, { flex: 1 }]}
-                              placeholder="Pontos"
-                              keyboardType="numeric"
-                              value={step.pts}
-                              onChangeText={(txt) => handleUpdateStepField(selectedRuleTab, idx, 'pts', txt, 'time')}
-                            />
-                          </View>
-                        </View>
-                      ))}
-
-                      <TouchableOpacity style={styles.addStepBtn} onPress={() => handleAddStep(selectedRuleTab, 'time')}>
-                        <Text style={styles.addStepBtnText}>+ ADICIONAR STEP DE TEMPO</Text>
-                      </TouchableOpacity>
-
-                      {['corrida', 'caminhada', 'bike'].includes(selectedRuleTab) && (
-                        <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#fed7aa' }}>
-                          <Text style={{ fontSize: 10, color: '#c2410c', fontWeight: 'bold', marginBottom: 4 }}>
-                            🏃 Steps por QUILOMETRAGEM (KM):
-                          </Text>
-
-                          {(currentTabRule.stepsKm || []).map((step, idx) => (
-                            <View key={idx} style={styles.stepBoxRow}>
-                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                <Text style={styles.stepBoxLabel}>Step KM {idx + 1}:</Text>
-                                {(currentTabRule.stepsKm || []).length > 1 && (
-                                  <TouchableOpacity onPress={() => handleRemoveStep(selectedRuleTab, idx, 'km')}>
-                                    <Text style={styles.stepRemoveText}>🗑️ Remover</Text>
-                                  </TouchableOpacity>
-                                )}
-                              </View>
-                              
-                              <View style={{ flexDirection: 'row', gap: 4 }}>
-                                <TextInput
-                                  style={[styles.input, { flex: 1 }]}
-                                  placeholder="Mín km"
-                                  keyboardType="numeric"
-                                  value={step.min}
-                                  onChangeText={(txt) => handleUpdateStepField(selectedRuleTab, idx, 'min', txt, 'km')}
-                                />
-                                <TextInput
-                                  style={[styles.input, { flex: 1 }]}
-                                  placeholder="Máx km"
-                                  keyboardType="numeric"
-                                  value={step.max}
-                                  onChangeText={(txt) => handleUpdateStepField(selectedRuleTab, idx, 'max', txt, 'km')}
-                                />
-                                <TextInput
-                                  style={[styles.input, { flex: 1 }]}
-                                  placeholder="Pontos"
-                                  keyboardType="numeric"
-                                  value={step.pts}
-                                  onChangeText={(txt) => handleUpdateStepField(selectedRuleTab, idx, 'pts', txt, 'km')}
-                                />
-                              </View>
-                            </View>
-                          ))}
-
-                          <TouchableOpacity style={[styles.addStepBtn, { backgroundColor: '#c2410c' }]} onPress={() => handleAddStep(selectedRuleTab, 'km')}>
-                            <Text style={styles.addStepBtnText}>+ ADICIONAR STEP DE KM</Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
-                  ) : (
-                    <Text style={styles.modeCardDisabledText}>Opção indisponível (Selecione para ativar)</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {selectedRuleTab === 'bonuses_desempate' && (
-              <View style={styles.ruleSectionBox}>
-                <Text style={styles.ruleSectionTitle}>Bônus Individuais</Text>
-
-                <View style={styles.bonusConfigCard}>
-                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }} onPress={() => setBonusInquebravelActive(!bonusInquebravelActive)}>
-                    <Text style={{ fontSize: 16 }}>{bonusInquebravelActive ? '☑️' : '⬜'}</Text>
-                    <Text style={styles.bonusTitleText}>🪨 Bônus "O Inquebrável"</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.bonusDescText}>Premia X dias consecutivos de atividade.</Text>
-                  {bonusInquebravelActive && (
-                    <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
-                      <TextInput style={[styles.input, { flex: 1 }]} placeholder="Qtd Dias" keyboardType="numeric" value={bonusInquebravelDays} onChangeText={setBonusInquebravelDays} />
-                      <TextInput style={[styles.input, { flex: 1 }]} placeholder="Pontos" keyboardType="numeric" value={bonusInquebravelPoints} onChangeText={setBonusInquebravelPoints} />
-                    </View>
-                  )}
-                </View>
-
-                <View style={styles.bonusConfigCard}>
-                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }} onPress={() => setBonusDespertaActive(!bonusDespertaActive)}>
-                    <Text style={{ fontSize: 16 }}>{bonusDespertaActive ? '☑️' : '⬜'}</Text>
-                    <Text style={styles.bonusTitleText}>⏰ Bônus "O Desperta"</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.bonusDescText}>Premia comprovante enviado até horário limite.</Text>
-                  {bonusDespertaActive && (
-                    <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
-                      <TextInput style={[styles.input, { flex: 1 }]} placeholder="Hora Limite" value={bonusDespertaTime} onChangeText={setBonusDespertaTime} />
-                      <TextInput style={[styles.input, { flex: 1 }]} placeholder="Pontos" keyboardType="numeric" value={bonusDespertaPoints} onChangeText={setBonusDespertaPoints} />
-                    </View>
-                  )}
-                </View>
-
-                <TouchableOpacity
-                  style={styles.toggleModalidadeBox}
-                  onPress={() => setTiebreakerEnabled(!tiebreakerEnabled)}
-                >
-                  <Text style={{ fontSize: 16 }}>{tiebreakerEnabled ? '☑️' : '⬜'}</Text>
-                  <Text style={styles.toggleModalidadeText}>
-                    {tiebreakerEnabled ? 'Habilitar Critérios de Desempate' : 'Desabilitar Critérios de Desempate'}
-                  </Text>
-                </TouchableOpacity>
-
-                {tiebreakerEnabled && (
-                  <View style={{ marginTop: 6 }}>
-                    <Text style={styles.ruleSectionTitle}>Critérios de Desempate Ativos:</Text>
-                    {tiebreakersConfig.map((tb, idx) => (
-                      <TouchableOpacity
-                        key={tb.id}
-                        style={styles.tiebreakerCheckRow}
-                        onPress={() => {
-                          const updated = tiebreakersConfig.map(item => item.id === tb.id ? { ...item, enabled: !item.enabled } : item);
-                          setTiebreakersConfig(updated);
-                        }}
-                      >
-                        <Text style={{ fontSize: 16 }}>{tb.enabled ? '☑️' : '⬜'}</Text>
-                        <Text style={styles.tiebreakerCheckLabel}>{idx + 1}º Critério: {tb.name}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-              </View>
-            )}
-
-            <TouchableOpacity style={styles.primaryBtn} onPress={handleSaveRules}>
-              <Text style={styles.primaryBtnText}>SALVAR REGRAS DO DESAFIO</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsEditRulesOpen(false)}>
-              <Text style={styles.cancelBtnText}>CANCELAR</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </Modal>
-
       <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={styles.modalContent}>
             <Text style={styles.modalTitle}>Registrar Treino ({selectedChallenge?.title || 'Desafio'})</Text>
-
-            <View style={styles.rulesInfoBox}>
-              <Text style={styles.rulesInfoTitle}>📜 Regras Ativas:</Text>
-              <Text style={styles.rulesInfoText}>• Musculação: 30m ({selectedChallenge?.rules?.musculacao?.minPoints || 5000}pts) | 1h+ (10000pts)</Text>
-              <Text style={styles.rulesInfoText}>• Corrida: Mín {selectedChallenge?.rules?.corrida?.minKm || 3}km</Text>
-              <Text style={styles.rulesInfoText}>• Trava: Máximo 1 envio por modalidade ao dia</Text>
-            </View>
 
             <Text style={styles.inputLabel}>Selecione a Modalidade:</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
@@ -2134,11 +1410,8 @@ export default function App() {
                 { id: 'corrida', label: 'Corrida' },
                 { id: 'caminhada', label: 'Caminhada' },
                 { id: 'bike', label: 'Bike' },
-                { id: 'esporte_coletivo', label: 'Esporte Coletivo' },
-                { id: 'esporte_individual', label: 'Esporte Individual' },
                 { id: 'aerobico', label: 'Aeróbico' },
-                { id: 'passos_diarios', label: '🚶 Passos Diários' },
-              ].filter(opt => opt.id === 'passos_diarios' || selectedChallenge?.rules?.[opt.id]?.enabled !== false).map((opt) => (
+              ].map((opt) => (
                 <TouchableOpacity
                   key={opt.id}
                   style={[styles.chipBtn, selectedActivity === opt.id && styles.chipBtnActive]}
@@ -2149,42 +1422,9 @@ export default function App() {
               ))}
             </View>
 
-            {['musculacao', 'crossfit', 'aerobico'].includes(selectedActivity) && (
-              <TextInput style={styles.input} placeholder="Duração em minutos (ex: 60)" keyboardType="numeric" value={durationInput} onChangeText={setDurationInput} />
-            )}
+            <TextInput style={styles.input} placeholder="Duração em minutos (ex: 60)" keyboardType="numeric" value={durationInput} onChangeText={setDurationInput} />
 
-            {['corrida', 'caminhada', 'bike'].includes(selectedActivity) && (
-              <>
-                <TextInput style={styles.input} placeholder="Distância (km) ou Duração (min)" keyboardType="numeric" value={distanceInput} onChangeText={setDistanceInput} />
-                <TextInput style={styles.input} placeholder="Duração em minutos (opcional)" keyboardType="numeric" value={durationInput} onChangeText={setDurationInput} />
-              </>
-            )}
-
-            {selectedActivity === 'passos_diarios' && (
-              <TextInput style={styles.input} placeholder="Quantidade de passos" keyboardType="numeric" value={stepsInput} onChangeText={setStepsInput} />
-            )}
-
-            <View style={{ flexDirection: 'row', gap: 6 }}>
-              <TextInput style={[styles.input, { flex: 1 }]} placeholder="Data (DD/MM)" value={workoutDate} onChangeText={setWorkoutDate} />
-              <TextInput style={[styles.input, { flex: 1 }]} placeholder="Início (08:00)" value={startTime} onChangeText={setStartTime} />
-              <TextInput style={[styles.input, { flex: 1 }]} placeholder="Fim (09:00)" value={endTime} onChangeText={setEndTime} />
-            </View>
-
-            <Text style={styles.inputLabel}>
-              {['musculacao', 'crossfit', 'aerobico'].includes(selectedActivity)
-                ? '3 Fotos Obrigatórias (Início, Fim e Evidência):'
-                : 'Comprovante da Atividade:'}
-            </Text>
-
-            {['musculacao', 'crossfit', 'aerobico'].includes(selectedActivity) ? (
-              <>
-                <MediaPickerField label="1. Foto Horário Inicial:" photoState={photoStart} setPhotoState={setPhotoStart} />
-                <MediaPickerField label="2. Foto Horário Final:" photoState={photoEnd} setPhotoState={setPhotoEnd} />
-                <MediaPickerField label="3. Foto Evidência do Treino:" photoState={photoEvidence} setPhotoState={setPhotoEvidence} />
-              </>
-            ) : (
-              <MediaPickerField label="Comprovante (Print / Foto):" photoState={photoEvidence} setPhotoState={setPhotoEvidence} />
-            )}
+            <MediaPickerField label="Foto Evidência do Treino:" photoState={photoEvidence} setPhotoState={setPhotoEvidence} />
 
             <TextInput style={styles.inputArea} placeholder="Legenda / Comentário (Opcional)..." multiline value={workoutCaption} onChangeText={setWorkoutCaption} />
 
@@ -2198,51 +1438,7 @@ export default function App() {
         </View>
       </Modal>
 
-      <Modal visible={isEditProfileOpen} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Editar Perfil do Atleta</Text>
-            <MediaPickerField label="Foto de Perfil (Avatar):" photoState={editAvatar} setPhotoState={setEditAvatar} />
-            <TextInput style={styles.input} placeholder="Nome Completo" value={editName} onChangeText={setEditName} />
-            <TextInput style={styles.input} placeholder="Idade" keyboardType="numeric" value={editAge} onChangeText={setEditAge} />
-            <TextInput style={styles.input} placeholder="Sexo" value={editGender} onChangeText={setEditGender} />
-            <TouchableOpacity style={styles.primaryBtn} onPress={() => {
-              const updated = { ...currentUser, name: editName, age: parseInt(editAge, 10) || currentUser.age, gender: editGender, avatar: editAvatar };
-              setCurrentUser(updated);
-              setViewedUser(updated);
-              setIsEditProfileOpen(false);
-            }}>
-              <Text style={styles.primaryBtnText}>SALVAR ALTERAÇÕES</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsEditProfileOpen(false)}>
-              <Text style={styles.cancelBtnText}>CANCELAR</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal visible={isAddGoalOpen} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Novo Objetivo Pessoal</Text>
-            <TextInput style={styles.input} placeholder="Ex: Correr 15km sem parar" value={newGoalTitle} onChangeText={setNewGoalTitle} />
-            <TouchableOpacity style={styles.primaryBtn} onPress={() => {
-              if (newGoalTitle.trim()) {
-                setUserGoals([...userGoals, { id: `g_${Date.now()}`, title: newGoalTitle.trim(), completed: false }]);
-                setNewGoalTitle('');
-                setIsAddGoalOpen(false);
-              }
-            }}>
-              <Text style={styles.primaryBtnText}>SALVAR OBJETIVO</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsAddGoalOpen(false)}>
-              <Text style={styles.cancelBtnText}>CANCELAR</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* MODAIS NATIVAS DE SELEÇÃO */}
+      {/* SELEÇÃO DE DESAFIO CABEÇALHO */}
       <Modal visible={isHeaderSelectOpen} transparent animationType="fade">
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsHeaderSelectOpen(false)}>
           <View style={styles.modalContent}>
@@ -2257,116 +1453,6 @@ export default function App() {
                 }}
               >
                 <Text style={styles.selectOptionText}>{c.title} ({c.creator_id === currentUser.id ? '🔑 Admin' : '⚡ Atleta'})</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      <Modal visible={isPerfScopeSelectOpen} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsPerfScopeSelectOpen(false)}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Visualizar Desempenho Por:</Text>
-            <TouchableOpacity 
-              style={styles.selectOptionRow}
-              onPress={() => { setAthletePerfScope('overall'); setIsPerfScopeSelectOpen(false); }}
-            >
-              <Text style={styles.selectOptionText}>🌐 Somatório Geral (Todos os Desafios)</Text>
-            </TouchableOpacity>
-            {userMembershipsAll.map(m => {
-              const ch = challenges.find(c => c.id === m.challengeId);
-              return (
-                <TouchableOpacity 
-                  key={m.challengeId} 
-                  style={styles.selectOptionRow}
-                  onPress={() => { setAthletePerfScope(m.challengeId); setIsPerfScopeSelectOpen(false); }}
-                >
-                  <Text style={styles.selectOptionText}>🎯 {ch ? ch.title : 'Desafio'}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      <Modal visible={isManualAthleteSelectOpen} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsManualAthleteSelectOpen(false)}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Escolha o Atleta Ativo</Text>
-            {activeMembersInChallenge.map(m => (
-              <TouchableOpacity 
-                key={m.userId} 
-                style={styles.selectOptionRow}
-                onPress={() => { setManualAthleteId(m.userId); setIsManualAthleteSelectOpen(false); }}
-              >
-                <Text style={styles.selectOptionText}>{m.name} ({m.nickname})</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      <Modal visible={isManualActivitySelectOpen} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsManualActivitySelectOpen(false)}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Selecione a Modalidade</Text>
-            {['musculacao', 'crossfit', 'corrida', 'caminhada', 'bike', 'esporte_coletivo', 'esporte_individual', 'aerobico'].map(act => (
-              <TouchableOpacity 
-                key={act} 
-                style={styles.selectOptionRow}
-                onPress={() => { setManualActivity(act); setIsManualActivitySelectOpen(false); }}
-              >
-                <Text style={styles.selectOptionText}>{act.toUpperCase()}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      <Modal visible={isEditingChallengeSelectOpen} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsEditingChallengeSelectOpen(false)}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Selecione o Desafio para Configurar</Text>
-            {adminChallenges.map(c => (
-              <TouchableOpacity 
-                key={c.id} 
-                style={styles.selectOptionRow}
-                onPress={() => {
-                  setEditingChallengeId(c.id);
-                  setEditingRules(JSON.parse(JSON.stringify(c.rules || {})));
-                  setTiebreakerEnabled(c.tiebreakerEnabled ?? true);
-                  if (c.tiebreakersConfig) setTiebreakersConfig(c.tiebreakersConfig);
-                  setIsEditingChallengeSelectOpen(false);
-                }}
-              >
-                <Text style={styles.selectOptionText}>{c.title} ({c.invite_code})</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      <Modal visible={isRuleTabSelectOpen} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsRuleTabSelectOpen(false)}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Selecione a Modalidade</Text>
-            {[
-              { id: 'musculacao', label: '💪 MUSCULAÇÃO' },
-              { id: 'crossfit', label: '🏋️ CROSSFIT / FUNCIONAL' },
-              { id: 'aerobico', label: '🧘 AERÓBICO' },
-              { id: 'corrida', label: '🏃 CORRIDA' },
-              { id: 'caminhada', label: '🚶 CAMINHADA' },
-              { id: 'bike', label: '🚴 BIKE' },
-              { id: 'esporte_coletivo', label: '⚽ ESPORTE COLETIVO' },
-              { id: 'esporte_individual', label: '🎾 ESPORTE INDIVIDUAL' },
-              { id: 'bonuses_desempate', label: '🏆 BÔNUS & DESEMPATE' },
-            ].map(tab => (
-              <TouchableOpacity 
-                key={tab.id} 
-                style={styles.selectOptionRow}
-                onPress={() => { setSelectedRuleTab(tab.id); setIsRuleTabSelectOpen(false); }}
-              >
-                <Text style={styles.selectOptionText}>{tab.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -2458,15 +1544,11 @@ const styles = StyleSheet.create({
   toggleRegBtnText: { color: '#ffffff', fontSize: 10, fontWeight: 'bold' },
 
   participantRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#fed7aa', marginTop: 6 },
-  participantInfoBox: { flex: 1, marginLeft: 8 },
   participantName: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
   tagActiveText: { fontSize: 9, color: '#16a34a', fontWeight: 'bold' },
-  tagSpectatorText: { fontSize: 9, color: '#1e3a8a', fontWeight: 'bold' },
   participantSub: { fontSize: 9, color: '#64748b' },
 
-  actionButtonsRow: { flexDirection: 'row', gap: 4, alignItems: 'center' },
   approveBtn: { backgroundColor: '#16a34a', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 4 },
-  demoteBtn: { backgroundColor: '#d97706', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 4 },
   banBtn: { backgroundColor: '#dc2626', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 4 },
   inviteBtn: { backgroundColor: '#16a34a', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6, justifyContent: 'center' },
   deleteChallengeBtn: { backgroundColor: '#dc2626', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6, justifyContent: 'center' },
@@ -2500,7 +1582,6 @@ const styles = StyleSheet.create({
   inviteChallengeName: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
   inviteSubText: { fontSize: 9, color: '#64748b' },
   acceptInviteBtn: { backgroundColor: '#16a34a', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
-  declineInviteBtn: { backgroundColor: '#dc2626', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
 
   postCard: { backgroundColor: '#ffffff', borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 12, overflow: 'hidden' },
   postHeader: { flexDirection: 'row', alignItems: 'center', padding: 8, backgroundColor: '#f8fafc' },
@@ -2574,36 +1655,6 @@ const styles = StyleSheet.create({
   goalItem: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 4 },
   goalText: { fontSize: 10, color: '#0f172a', fontWeight: 'bold' },
   goalDone: { textDecorationLine: 'line-through', color: '#94a3b8' },
-
-  rulesInfoBox: { backgroundColor: '#fff7ed', borderWidth: 1, borderColor: '#f97316', borderRadius: 8, padding: 10, marginBottom: 12 },
-  rulesInfoTitle: { fontSize: 11, fontWeight: 'bold', color: '#c2410c', marginBottom: 4 },
-  rulesInfoText: { fontSize: 9, color: '#334155', marginBottom: 2 },
-
-  ruleSectionBox: { backgroundColor: '#f8fafc', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 10 },
-  ruleSectionTitle: { fontSize: 11, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 6 },
-
-  toggleModalidadeBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#eff6ff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#1e3a8a', marginBottom: 10 },
-  toggleModalidadeText: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
-
-  modeCardOption: { backgroundColor: '#ffffff', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 8 },
-  modeCardOptionActive: { borderColor: '#f97316', borderWidth: 2, backgroundColor: '#fff7ed' },
-  modeCardTitle: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
-  modeCardDisabledText: { fontSize: 9, color: '#94a3b8', fontStyle: 'italic', marginTop: 4 },
-
-  stepBoxRow: { backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 6 },
-  stepBoxLabel: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
-  stepRemoveText: { fontSize: 9, color: '#dc2626', fontWeight: 'bold' },
-  addStepBtn: { backgroundColor: '#1e3a8a', paddingVertical: 6, borderRadius: 6, alignItems: 'center', marginTop: 4 },
-  addStepBtnText: { color: '#ffffff', fontSize: 9, fontWeight: 'bold' },
-
-  tiebreakerCheckRow: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 4 },
-  tiebreakerCheckLabel: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
-
-  bonusConfigCard: { backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#fed7aa', marginBottom: 6 },
-  bonusTitleText: { fontSize: 10, fontWeight: 'bold', color: '#c2410c' },
-  bonusDescText: { fontSize: 8, color: '#64748b', marginTop: 2 },
-
-  inviteBoxHighlight: { backgroundColor: '#eff6ff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#1e3a8a', marginBottom: 10 },
 
   mediaFieldBox: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, padding: 8, marginBottom: 8 },
   mediaLabel: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 6 },
