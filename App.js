@@ -248,7 +248,7 @@ export default function App() {
         dbBirthDate = `${y}-${m}-${d}`;
       }
 
-      // REGISTRO
+      // REGISTRO NO SUPABASE AUTH
       const { data, error } = await supabase.auth.signUp({
         email: emailInput,
         password: passwordInput,
@@ -257,7 +257,8 @@ export default function App() {
       if (error) {
         Alert.alert('Erro no Cadastro', error.message);
       } else if (data.user) {
-        await supabase.from('profiles').insert([
+        // INSERE O PERFIL NA TABELA 'profiles'
+        const { error: profileError } = await supabase.from('profiles').insert([
           {
             id: data.user.id,
             full_name: fullNameInput,
@@ -268,10 +269,23 @@ export default function App() {
             updated_at: new Date()
           }
         ]);
-        Alert.alert('Conta Criada!', 'Seu perfil foi registrado com sucesso.');
+
+        if (profileError) {
+          console.log('Erro ao salvar perfil:', profileError.message);
+        }
+
+        // DESLOGA PARA GARANTIR VOLTA À TELA DE LOGIN
+        await supabase.auth.signOut();
+        setSession(null);
+
+        // VOLTA O MODO PARA LOGIN E LIMPA A SENHA
+        setIsSignUp(false);
+        setPasswordInput('');
+
+        Alert.alert('Conta Criada!', 'Seu cadastro foi concluído com sucesso. Agora faça login com seu e-mail e senha.');
       }
     } else {
-      // LOGIN
+      // LOGIN NO SUPABASE AUTH
       const { error } = await supabase.auth.signInWithPassword({
         email: emailInput,
         password: passwordInput,
