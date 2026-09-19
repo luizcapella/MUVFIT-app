@@ -12,25 +12,40 @@ import {
   Modal,
   Alert,
   Share,
-  Platform
+  Platform,
+  ActivityIndicator
 } from 'react-native';
 
 export default function App() {
-  // ATLETA CONECTADO
+  // SESSÃO E AUTENTICAÇÃO SUPABASE
+  const [session, setSession] = useState(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+
+  // ESTADOS DO FORMULÁRIO DE LOGIN/CADASTRO
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [fullNameInput, setFullNameInput] = useState('');
+  const [nicknameInput, setNicknameInput] = useState('');
+  const [ageInput, setAgeInput] = useState('');
+  const [genderInput, setGenderInput] = useState('Masculino');
+  const [authSubmitting, setAuthSubmitting] = useState(false);
+
+  // ATLETA CONECTADO (REAL DO SUPABASE PROFILES)
   const [currentUser, setCurrentUser] = useState({
-    id: 'usr_capella',
-    name: 'Luiz Capella',
-    nickname: 'Poke',
+    id: '',
+    name: '',
+    nickname: '',
     age: 34,
     gender: 'Masculino',
     avatar: 'https://picsum.photos/seed/poke/200/200',
     isAdmin: true,
     member_status: 'active',
-    goldMedals: 3,
-    silverMedals: 1,
+    goldMedals: 0,
+    silverMedals: 0,
     bronzeMedals: 0,
-    insigniaInquebravelCount: 3,
-    insigniaDespertaCount: 1
+    insigniaInquebravelCount: 0,
+    insigniaDespertaCount: 0
   });
 
   const [viewedUser, setViewedUser] = useState(currentUser);
@@ -53,10 +68,6 @@ export default function App() {
   // CONTROLADORES DE MODAIS SELETORAS
   const [isHeaderSelectOpen, setIsHeaderSelectOpen] = useState(false);
   const [isPerfScopeSelectOpen, setIsPerfScopeSelectOpen] = useState(false);
-  const [isManualAthleteSelectOpen, setIsManualAthleteSelectOpen] = useState(false);
-  const [isManualActivitySelectOpen, setIsManualActivitySelectOpen] = useState(false);
-  const [isEditingChallengeSelectOpen, setIsEditingChallengeSelectOpen] = useState(false);
-  const [isRuleTabSelectOpen, setIsRuleTabSelectOpen] = useState(false);
 
   // CONTROLADORES DE SELEÇÃO DE DESAFIO E PERMISSÕES
   const [activeChallengeId, setActiveChallengeId] = useState(null);
@@ -75,15 +86,7 @@ export default function App() {
   const [isWorkoutModalOpen, setIsWorkoutModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState('musculacao');
   const [durationInput, setDurationInput] = useState('');
-  const [distanceInput, setDistanceInput] = useState('');
-  const [stepsInput, setStepsInput] = useState('');
-  const [workoutDate, setWorkoutDate] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
   const [workoutCaption, setWorkoutCaption] = useState('');
-
-  const [photoStart, setPhotoStart] = useState(null);
-  const [photoEnd, setPhotoEnd] = useState(null);
   const [photoEvidence, setPhotoEvidence] = useState(null);
 
   const [isCreateChallengeOpen, setIsCreateChallengeOpen] = useState(false);
@@ -93,7 +96,6 @@ export default function App() {
   const [newChallengeCap, setNewChallengeCap] = useState('22000');
 
   const [isEditRulesOpen, setIsEditRulesOpen] = useState(false);
-  const [selectedRuleTab, setSelectedRuleTab] = useState('musculacao');
 
   const [editingRules, setEditingRules] = useState(selectedChallenge.rules || {});
   const [bonusInquebravelActive, setBonusInquebravelActive] = useState(true);
@@ -104,7 +106,6 @@ export default function App() {
   const [bonusDespertaTime, setBonusDespertaTime] = useState('07:00');
   const [bonusDespertaPoints, setBonusDespertaPoints] = useState('3000');
 
-  const [tiebreakerEnabled, setTiebreakerEnabled] = useState(true);
   const [tiebreakersConfig, setTiebreakersConfig] = useState([
     { id: 'tb1', name: 'Passos Diários', enabled: true },
     { id: 'tb2', name: 'Banco de Pontos', enabled: true },
@@ -112,25 +113,9 @@ export default function App() {
     { id: 'tb4', name: 'Dias em Atividade', enabled: false }
   ]);
 
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [inviteTargetChallenge] = useState(null);
-  const [inputInviteCode, setInputInviteCode] = useState('');
-
   const [athletePerfScope, setAthletePerfScope] = useState('overall');
 
-  const [manualAthleteId, setManualAthleteId] = useState('');
-  const [manualActivity, setManualActivity] = useState('musculacao');
-  const [manualRankingPointsInput, setManualRankingPointsInput] = useState('');
-  const [manualBankPointsInput, setManualBankPointsInput] = useState('');
-  const [manualStepsInput, setManualStepsInput] = useState('');
-  const [manualInquebravelCheck, setManualInquebravelCheck] = useState(false);
-  const [manualDespertaCheck, setManualDespertaCheck] = useState(false);
-
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
-  const [editName, setEditName] = useState(currentUser.name);
-  const [editAge, setEditAge] = useState(String(currentUser.age));
-  const [editGender, setEditGender] = useState(currentUser.gender);
-  const [editAvatar, setEditAvatar] = useState(currentUser.avatar);
 
   const [userGoals, setUserGoals] = useState([
     { id: 'g1', title: 'Perder Peso', completed: true },
@@ -139,7 +124,6 @@ export default function App() {
     { id: 'g4', title: 'Participar de Maratona', completed: false },
   ]);
   const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
-  const [newGoalTitle, setNewGoalTitle] = useState('');
 
   const [isAddStoryOpen, setIsAddStoryOpen] = useState(false);
   const [newStoryMedia, setNewStoryMedia] = useState(null);
@@ -148,11 +132,117 @@ export default function App() {
   const [selectedStory, setSelectedStory] = useState(null);
   const [storyProgress, setStoryProgress] = useState(0);
 
-  // --- CARREGAMENTO INICIAL DE DADOS DO SUPABASE ---
+  // --- GERENCIAMENTO DE SESSÃO DO SUPABASE AUTH ---
   useEffect(() => {
-    fetchDataFromSupabase();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) {
+        fetchUserProfile(session.user.id, session.user.email);
+        fetchDataFromSupabase();
+      }
+      setLoadingAuth(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) {
+        fetchUserProfile(session.user.id, session.user.email);
+        fetchDataFromSupabase();
+      } else {
+        setCurrentUser({ id: '', name: '', nickname: '' });
+      }
+      setLoadingAuth(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
+  // CARREGAR PERFIL DO UTILIZADOR DO SUPABASE
+  async function fetchUserProfile(userId, userEmail) {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (data) {
+        const loadedUser = {
+          id: data.id,
+          name: data.full_name || userEmail.split('@')[0],
+          nickname: data.nickname || data.full_name || userEmail.split('@')[0],
+          age: data.age || 30,
+          gender: data.gender || 'Masculino',
+          avatar: data.avatar_url || `https://picsum.photos/seed/${data.id}/200/200`,
+          isAdmin: true,
+          member_status: 'active',
+          goldMedals: 0,
+          silverMedals: 0,
+          bronzeMedals: 0,
+          insigniaInquebravelCount: 0,
+          insigniaDespertaCount: 0
+        };
+        setCurrentUser(loadedUser);
+        setViewedUser(loadedUser);
+      }
+    } catch (err) {
+      console.log('Erro ao buscar perfil:', err);
+    }
+  }
+
+  // LÓGICA DE LOGIN E CADASTRO
+  async function handleAuthAction() {
+    if (!emailInput || !passwordInput) {
+      Alert.alert('Atenção', 'Preencha E-mail e Senha para continuar.');
+      return;
+    }
+
+    setAuthSubmitting(true);
+
+    if (isSignUp) {
+      // REGISTRO
+      const { data, error } = await supabase.auth.signUp({
+        email: emailInput,
+        password: passwordInput,
+      });
+
+      if (error) {
+        Alert.alert('Erro no Cadastro', error.message);
+      } else if (data.user) {
+        await supabase.from('profiles').insert([
+          {
+            id: data.user.id,
+            full_name: fullNameInput,
+            nickname: nicknameInput || fullNameInput,
+            age: ageInput ? parseInt(ageInput, 10) : null,
+            gender: genderInput,
+            updated_at: new Date()
+          }
+        ]);
+        Alert.alert('Conta Criada!', 'Seu perfil foi registrado com sucesso.');
+      }
+    } else {
+      // LOGIN
+      const { error } = await supabase.auth.signInWithPassword({
+        email: emailInput,
+        password: passwordInput,
+      });
+
+      if (error) {
+        Alert.alert('Erro no Login', error.message);
+      }
+    }
+
+    setAuthSubmitting(false);
+  }
+
+  // LOGOUT
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    setSession(null);
+  }
+
+  // --- CARREGAMENTO INICIAL DE DADOS DO SUPABASE ---
   async function fetchDataFromSupabase() {
     try {
       // 1. Desafios
@@ -336,7 +426,6 @@ export default function App() {
       rules: selectedChallenge.rules || {}
     };
 
-    // Salvar no Supabase
     await supabase.from('challenges').insert([newObj]);
 
     const newMembership = {
@@ -423,10 +512,8 @@ export default function App() {
     const workout = pendingWorkouts.find(w => w.id === workoutId);
     if (!workout) return;
 
-    // Remove do pendentes
     await supabase.from('pending_workouts').delete().eq('id', workoutId);
 
-    // Se não for passos, credita pontos ao atleta no Supabase
     if (workout.activity_type !== 'PASSOS DIÁRIOS') {
       const { data: currentMem } = await supabase.from('memberships')
         .select('ranking_points, bank_points')
@@ -442,7 +529,6 @@ export default function App() {
       }
     }
 
-    // Publica no Feed do Supabase
     const newPost = {
       id: `p_${Date.now()}`,
       challenge_id: workout.challengeId,
@@ -472,22 +558,6 @@ export default function App() {
     Alert.alert('Treino Rejeitado', 'O registro foi removido.');
   }
 
-  async function handleSaveRules() {
-    await supabase.from('challenges').update({
-      rules: editingRules,
-      tiebreaker_enabled: tiebreakerEnabled,
-      tiebreakers_config: tiebreakersConfig,
-      bonuses: {
-        inquebravel: { active: bonusInquebravelActive, days: parseInt(bonusInquebravelDays, 10) || 7, points: parseInt(bonusInquebravelPoints, 10) || 5000 },
-        desperta: { active: bonusDespertaActive, limitTime: bonusDespertaTime, points: parseInt(bonusDespertaPoints, 10) || 3000 }
-      }
-    }).eq('id', editingChallengeId);
-
-    fetchDataFromSupabase();
-    setIsEditRulesOpen(false);
-    Alert.alert('Regras Salvas', 'As regras foram salvas na nuvem!');
-  }
-
   async function handleSubmitWorkout() {
     const currentMemberRecord = memberships.find(m => m.challengeId === activeChallengeId && m.userId === currentUser.id);
     if (!currentMemberRecord || currentMemberRecord.role !== 'active') {
@@ -495,13 +565,7 @@ export default function App() {
       return;
     }
 
-    const is3PhotosRequired = ['musculacao', 'crossfit', 'aerobico'].includes(selectedActivity);
-    if (is3PhotosRequired && (!photoStart || !photoEnd || !photoEvidence)) {
-      Alert.alert('Comprovação Incompleta', 'Envie as 3 fotos requeridas para esta modalidade.');
-      return;
-    }
-
-    if (!is3PhotosRequired && !photoEvidence) {
+    if (!photoEvidence) {
       Alert.alert('Comprovante Obrigatório', 'Envie a foto comprovando a atividade.');
       return;
     }
@@ -525,11 +589,6 @@ export default function App() {
       user_avatar: currentUser.avatar,
       activity_type: selectedActivity.toUpperCase(),
       caption: workoutCaption || `Atividade de ${selectedActivity}`,
-      date_str: workoutDate,
-      start_time: startTime,
-      end_time: endTime,
-      photo_start: photoStart,
-      photo_end: photoEnd,
       photo_evidence: photoEvidence,
       points_to_ranking: ptsRanking,
       points_to_bank: ptsBank,
@@ -539,21 +598,10 @@ export default function App() {
     await supabase.from('pending_workouts').insert([newPendingWorkout]);
     fetchDataFromSupabase();
     setIsWorkoutModalOpen(false);
-    resetForm();
-    Alert.alert('Sucesso', 'Treino enviado para a nuvem! Aguardando aprovação do Admin.');
-  }
-
-  function resetForm() {
     setDurationInput('');
-    setDistanceInput('');
-    setStepsInput('');
-    setWorkoutDate('');
-    setStartTime('');
-    setEndTime('');
     setWorkoutCaption('');
-    setPhotoStart(null);
-    setPhotoEnd(null);
     setPhotoEvidence(null);
+    Alert.alert('Sucesso', 'Treino enviado para a nuvem! Aguardando aprovação do Admin.');
   }
 
   // PESQUISA
@@ -622,7 +670,6 @@ export default function App() {
   const spectatorMembersInChallenge = currentChallengeMembers.filter(m => m.role === 'spectator');
   const top3Ranked = [...activeMembersInChallenge].sort((a,b) => (b.rankingPoints || 0) - (a.rankingPoints || 0)).slice(0, 3);
   const currentFeedPosts = feedPosts.filter(p => p.challenge_id === activeChallengeId);
-  const currentPendingParticipants = pendingParticipants.filter(p => p.challengeId === activeChallengeId);
   const currentPendingWorkouts = pendingWorkouts.filter(w => w.challenge_id === activeChallengeId);
 
   const top3Winners = [...currentChallengeMembers]
@@ -636,17 +683,6 @@ export default function App() {
       else if (g > 3) label = `${g}x Campeão`;
       return `${m.name} - ${label}`;
     });
-
-  const currentTabRule = (editingRules && editingRules[selectedRuleTab]) || {
-    enabled: true,
-    mode: 'tempo',
-    minMinutes: '',
-    minPoints: '',
-    minKm: '',
-    minKmPoints: '',
-    steps: [],
-    stepsKm: []
-  };
 
   let displayedPerf = {
     rankingPoints: 0,
@@ -675,13 +711,121 @@ export default function App() {
   const currentMemberState = currentChallengeMembers.find(m => m.userId === currentUser.id);
   const userStories = stories.filter(st => st.user_id === viewedUser.id);
 
+  // TELA DE CARREGAMENTO INICIAL
+  if (loadingAuth) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1e3a8a' }}>
+        <ActivityIndicator size="large" color="#f97316" />
+        <Text style={{ color: '#ffffff', marginTop: 12, fontWeight: 'bold' }}>A carregar MuvFit...</Text>
+      </View>
+    );
+  }
+
+  // TELA DE AUTENTICAÇÃO (LOGIN / REGISTRO)
+  if (!session) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#1e3a8a' }}>
+        <ScrollView contentContainerStyle={{ padding: 24, justifyContent: 'center', flexGrow: 1 }}>
+          <Text style={{ fontSize: 36, fontWeight: '900', color: '#f97316', textAlign: 'center' }}>MUVFIT</Text>
+          <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#ffffff', textAlign: 'center', marginBottom: 24 }}>
+            Mizan Soluções Técnicas
+          </Text>
+
+          <View style={{ backgroundColor: '#ffffff', borderRadius: 12, padding: 16, elevation: 5 }}>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center', marginBottom: 16 }}>
+              {isSignUp ? 'Criar Nova Conta' : 'Acessar Plataforma'}
+            </Text>
+
+            {isSignUp && (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nome Completo"
+                  value={fullNameInput}
+                  onChangeText={setFullNameInput}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Apelido (exibido no perfil e ranking)"
+                  value={nicknameInput}
+                  onChangeText={setNicknameInput}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Idade (ex: 34)"
+                  keyboardType="numeric"
+                  value={ageInput}
+                  onChangeText={setAgeInput}
+                />
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                  <TouchableOpacity
+                    style={[styles.chipBtn, genderInput === 'Masculino' && styles.chipBtnActive, { flex: 1, alignItems: 'center' }]}
+                    onPress={() => setGenderInput('Masculino')}
+                  >
+                    <Text style={[styles.chipText, genderInput === 'Masculino' && styles.chipTextActive]}>Masculino</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.chipBtn, genderInput === 'Feminino' && styles.chipBtnActive, { flex: 1, alignItems: 'center' }]}
+                    onPress={() => setGenderInput('Feminino')}
+                  >
+                    <Text style={[styles.chipText, genderInput === 'Feminino' && styles.chipTextActive]}>Feminino</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+
+            <TextInput
+              style={styles.input}
+              placeholder="E-mail"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={emailInput}
+              onChangeText={setEmailInput}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Senha"
+              secureTextEntry
+              value={passwordInput}
+              onChangeText={setPasswordInput}
+            />
+
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleAuthAction} disabled={authSubmitting}>
+              {authSubmitting ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <Text style={styles.primaryBtnText}>{isSignUp ? 'CADASTRAR CONTA' : 'ENTRAR NO MUVFIT'}</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={{ marginTop: 14, alignItems: 'center' }} onPress={() => setIsSignUp(!isSignUp)}>
+              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>
+                {isSignUp ? 'Já tem uma conta? Faça Login' : 'Não tem conta? Cadastre-se gratuitamente'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // PLATAFORMA PRINCIPAL
   return (
     <SafeAreaView style={styles.container}>
-      {/* CABEÇALHO */}
+      {/* CABEÇALHO COM BOTÃO DE SAIR */}
       <View style={styles.topHeader}>
         <View style={styles.brandRow}>
-          <Text style={styles.brandTitle}>MUVFIT</Text>
-          <Text style={styles.brandSubtitle}>Mizan Soluções Técnicas</Text>
+          <View>
+            <Text style={styles.brandTitle}>MUVFIT</Text>
+            <Text style={styles.brandSubtitle}>Mizan Soluções Técnicas</Text>
+          </View>
+
+          <TouchableOpacity 
+            style={{ backgroundColor: '#dc2626', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6 }} 
+            onPress={handleSignOut}
+          >
+            <Text style={{ color: '#ffffff', fontSize: 9, fontWeight: 'bold' }}>🚪 SAIR</Text>
+          </TouchableOpacity>
         </View>
 
         {hasUserAnyCommunity && (
@@ -841,7 +985,6 @@ export default function App() {
                 
                 const handleAction = () => {
                   if (isAndroid) {
-                    // Cole aqui o link direto do seu APK quando o gerar no EAS Build
                     Alert.alert('Download', 'Iniciando o download do APK do MuvFit!');
                   } else {
                     Alert.alert('Acesso iOS / Web', 'Você está no navegador/iPhone. Use o menu de compartilhar para adicionar à Tela de Início!');
@@ -901,7 +1044,7 @@ export default function App() {
               {!hasUserAnyCommunity && (
                 <View style={styles.restrictedNoticeBox}>
                   <Text style={styles.restrictedNoticeText}>
-                    ✨ Bem-vindo ao MuvFit! Crie um novo desafio no botão acima ou aceite um convite para liberar as abas da comunidade.
+                    ✨ Bem-vindo ao MuvFit, {currentUser.nickname || currentUser.name}! Crie um novo desafio no botão acima ou aceite um convite para liberar as abas da comunidade.
                   </Text>
                 </View>
               )}
@@ -1133,14 +1276,8 @@ export default function App() {
           {currentScreen === 'athlete_center' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.profileHeaderCard}>
-                {viewedUser.id === currentUser.id && (
-                  <TouchableOpacity style={styles.editBtnBadge} onPress={() => setIsEditProfileOpen(true)}>
-                    <Text style={styles.editBtnBadgeText}>✏️ EDITAR PERFIL</Text>
-                  </TouchableOpacity>
-                )}
-
                 <Image source={{ uri: viewedUser.avatar }} style={styles.avatarLarge} />
-                <Text style={styles.profileName}>{viewedUser.name}</Text>
+                <Text style={styles.profileName}>{viewedUser.name} ({viewedUser.nickname})</Text>
                 <Text style={styles.profileMeta}>{viewedUser.age || 34} anos | {viewedUser.gender || 'Masculino'}</Text>
 
                 <View style={styles.statusBadgeRow}>
@@ -1258,11 +1395,6 @@ export default function App() {
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
                 <Text style={styles.pageTitle}>Checklist de Objetivos Pessoais</Text>
-                {viewedUser.id === currentUser.id && (
-                  <TouchableOpacity style={styles.smallAddBtn} onPress={() => setIsAddGoalOpen(true)}>
-                    <Text style={styles.smallAddBtnText}>+ OBJETIVO</Text>
-                  </TouchableOpacity>
-                )}
               </View>
               {userGoals.map((g) => (
                 <TouchableOpacity 
@@ -1322,13 +1454,6 @@ export default function App() {
                   <Text style={styles.toggleRegBtnText}>
                     {selectedChallenge.registrations_closed ? '🔓 REABRIR CANDIDATURAS' : '🔒 ENCERRAR CANDIDATURA'}
                   </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.adminControlCard}>
-                <Text style={styles.adminCardTitle}>✏️ Configuração Avançada de Pontos</Text>
-                <TouchableOpacity style={styles.primaryBtn} onPress={() => setIsEditRulesOpen(true)}>
-                  <Text style={styles.primaryBtnText}>EDITAR REGRAS DETALHADAS DA LIGA</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -1639,8 +1764,6 @@ const styles = StyleSheet.create({
   sendCommentBtnText: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
 
   profileHeaderCard: { backgroundColor: '#f8fafc', borderRadius: 10, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: '#cbd5e1', position: 'relative', marginBottom: 10 },
-  editBtnBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: '#1e3a8a', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
-  editBtnBadgeText: { color: '#ffffff', fontSize: 9, fontWeight: 'bold' },
   avatarLarge: { width: 70, height: 70, borderRadius: 35, marginBottom: 6, borderWidth: 2, borderColor: '#f97316' },
   profileName: { fontSize: 15, fontWeight: 'bold', color: '#0f172a' },
   profileMeta: { fontSize: 10, color: '#64748b', marginBottom: 4 },
@@ -1684,9 +1807,6 @@ const styles = StyleSheet.create({
   evidenceImg: { width: '100%', height: 75, borderRadius: 4, marginBottom: 4 },
   evidenceTitle: { fontSize: 9, fontWeight: 'bold', color: '#0f172a' },
   evidenceDate: { fontSize: 8, color: '#94a3b8' },
-
-  smallAddBtn: { backgroundColor: '#f97316', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 },
-  smallAddBtnText: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
 
   goalItem: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 4 },
   goalText: { fontSize: 10, color: '#0f172a', fontWeight: 'bold' },
