@@ -16,6 +16,29 @@ import {
   ActivityIndicator
 } from 'react-native';
 
+// Função para calcular idade automática a partir da data de nascimento (DD/MM/AAAA)
+function calculateAge(birthDateString) {
+  if (!birthDateString || birthDateString.length < 10) return null;
+  const parts = birthDateString.split('/');
+  if (parts.length !== 3) return null;
+
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const year = parseInt(parts[2], 10);
+
+  const birthDate = new Date(year, month, day);
+  const today = new Date();
+
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+
+  return isNaN(age) ? null : age;
+}
+
 export default function App() {
   // SESSÃO E AUTENTICAÇÃO SUPABASE
   const [session, setSession] = useState(null);
@@ -27,7 +50,7 @@ export default function App() {
   const [passwordInput, setPasswordInput] = useState('');
   const [fullNameInput, setFullNameInput] = useState('');
   const [nicknameInput, setNicknameInput] = useState('');
-  const [ageInput, setAgeInput] = useState('');
+  const [birthDateInput, setBirthDateInput] = useState('');
   const [genderInput, setGenderInput] = useState('Masculino');
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
@@ -36,6 +59,7 @@ export default function App() {
     id: '',
     name: '',
     nickname: '',
+    birth_date: '',
     age: 34,
     gender: 'Masculino',
     avatar: 'https://picsum.photos/seed/poke/200/200',
@@ -132,6 +156,20 @@ export default function App() {
   const [selectedStory, setSelectedStory] = useState(null);
   const [storyProgress, setStoryProgress] = useState(0);
 
+  // MÁSCARA AUTOMÁTICA PARA DATA (DD/MM/AAAA)
+  const handleBirthDateChange = (text) => {
+    let cleaned = text.replace(/\D/g, '');
+    if (cleaned.length > 8) cleaned = cleaned.slice(0, 8);
+
+    if (cleaned.length >= 5) {
+      cleaned = `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(4)}`;
+    } else if (cleaned.length >= 3) {
+      cleaned = `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
+    }
+
+    setBirthDateInput(cleaned);
+  };
+
   // --- GERENCIAMENTO DE SESSÃO DO SUPABASE AUTH ---
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -167,11 +205,13 @@ export default function App() {
         .single();
 
       if (data) {
+        const computedAge = data.birth_date ? calculateAge(data.birth_date.split('-').reverse().join('/')) : data.age;
         const loadedUser = {
           id: data.id,
           name: data.full_name || userEmail.split('@')[0],
           nickname: data.nickname || data.full_name || userEmail.split('@')[0],
-          age: data.age || 30,
+          birth_date: data.birth_date || '',
+          age: computedAge || 34,
           gender: data.gender || 'Masculino',
           avatar: data.avatar_url || `https://picsum.photos/seed/${data.id}/200/200`,
           isAdmin: true,
@@ -200,6 +240,14 @@ export default function App() {
     setAuthSubmitting(true);
 
     if (isSignUp) {
+      const calculatedAge = calculateAge(birthDateInput);
+
+      let dbBirthDate = null;
+      if (birthDateInput.length === 10) {
+        const [d, m, y] = birthDateInput.split('/');
+        dbBirthDate = `${y}-${m}-${d}`;
+      }
+
       // REGISTRO
       const { data, error } = await supabase.auth.signUp({
         email: emailInput,
@@ -214,7 +262,8 @@ export default function App() {
             id: data.user.id,
             full_name: fullNameInput,
             nickname: nicknameInput || fullNameInput,
-            age: ageInput ? parseInt(ageInput, 10) : null,
+            birth_date: dbBirthDate,
+            age: calculatedAge,
             gender: genderInput,
             updated_at: new Date()
           }
@@ -752,11 +801,20 @@ export default function App() {
                 />
                 <TextInput
                   style={styles.input}
-                  placeholder="Idade (ex: 34)"
+                  placeholder="Data de Nascimento (DD/MM/AAAA)"
                   keyboardType="numeric"
-                  value={ageInput}
-                  onChangeText={setAgeInput}
+                  maxLength={10}
+                  value={birthDateInput}
+                  onChangeText={handleBirthDateChange}
                 />
+
+                {/* Exibição em tempo real da idade calculada */}
+                {birthDateInput.length === 10 && (
+                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#16a34a', marginBottom: 8, textAlign: 'center' }}>
+                    🎉 Idade Calculada: {calculateAge(birthDateInput)} anos
+                  </Text>
+                )}
+
                 <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
                   <TouchableOpacity
                     style={[styles.chipBtn, genderInput === 'Masculino' && styles.chipBtnActive, { flex: 1, alignItems: 'center' }]}
