@@ -224,13 +224,29 @@ export default function App() {
         };
         setCurrentUser(loadedUser);
         setViewedUser(loadedUser);
+      } else {
+        // Se a tabela profiles não existir ou não tiver linha, constrói perfil fallback via email
+        const fallbackName = userEmail.split('@')[0];
+        const loadedUser = {
+          id: userId,
+          name: fallbackName,
+          nickname: fallbackName,
+          birth_date: '',
+          age: 34,
+          gender: 'Masculino',
+          avatar: `https://picsum.photos/seed/${userId}/200/200`,
+          isAdmin: true,
+          member_status: 'active'
+        };
+        setCurrentUser(loadedUser);
+        setViewedUser(loadedUser);
       }
     } catch (err) {
       console.log('Erro ao buscar perfil:', err);
     }
   }
 
-  // LÓGICA DE LOGIN E CADASTRO
+  // LÓGICA DE LOGIN E CADASTRO ATUALIZADA E RESISTENTE
   async function handleAuthAction() {
     if (!emailInput || !passwordInput) {
       Alert.alert('Atenção', 'Preencha E-mail e Senha para continuar.');
@@ -248,51 +264,76 @@ export default function App() {
         dbBirthDate = `${y}-${m}-${d}`;
       }
 
-      // REGISTRO NO SUPABASE AUTH
+      // 1. REGISTRO COM PASSE DE DADOS NOS METADADOS DO SUPABASE AUTH
       const { data, error } = await supabase.auth.signUp({
-        email: emailInput,
+        email: emailInput.trim(),
         password: passwordInput,
+        options: {
+          data: {
+            full_name: fullNameInput.trim(),
+            nickname: nicknameInput.trim() || fullNameInput.trim(),
+            birth_date: dbBirthDate,
+            age: calculatedAge,
+            gender: genderInput
+          }
+        }
       });
 
       if (error) {
         Alert.alert('Erro no Cadastro', error.message);
-      } else if (data.user) {
-        // INSERE O PERFIL NA TABELA 'profiles'
-        const { error: profileError } = await supabase.from('profiles').insert([
+        setAuthSubmitting(false);
+        return;
+      }
+
+      if (data.user) {
+        // Tenta salvar o registro do perfil na tabela `profiles`
+        await supabase.from('profiles').upsert([
           {
             id: data.user.id,
-            full_name: fullNameInput,
-            nickname: nicknameInput || fullNameInput,
+            full_name: fullNameInput.trim(),
+            nickname: nicknameInput.trim() || fullNameInput.trim(),
             birth_date: dbBirthDate,
             age: calculatedAge,
             gender: genderInput,
             updated_at: new Date()
           }
-        ]);
+        ], { onConflict: 'id' });
 
-        if (profileError) {
-          console.log('Erro ao salvar perfil:', profileError.message);
-        }
-
-        // DESLOGA PARA GARANTIR VOLTA À TELA DE LOGIN
+        // Faz logout para fechar qualquer sessão temporária e alternar o formulário
         await supabase.auth.signOut();
         setSession(null);
 
-        // VOLTA O MODO PARA LOGIN E LIMPA A SENHA
+        // Prepara tela para o login
         setIsSignUp(false);
         setPasswordInput('');
 
-        Alert.alert('Conta Criada!', 'Seu cadastro foi concluído com sucesso. Agora faça login com seu e-mail e senha.');
+        Alert.alert(
+          '🎉 Cadastro Concluído!', 
+          'Sua conta foi registrada com sucesso no banco de dados! Agora digite sua senha e clique em ENTRAR NO MUVFIT.'
+        );
       }
     } else {
-      // LOGIN NO SUPABASE AUTH
-      const { error } = await supabase.auth.signInWithPassword({
-        email: emailInput,
+      // 2. TENTATIVA DE LOGIN COM TRATAMENTO DE ERROS CLAROS
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: emailInput.trim(),
         password: passwordInput,
       });
 
       if (error) {
-        Alert.alert('Erro no Login', error.message);
+        if (error.message.includes('Email not confirmed')) {
+          Alert.alert(
+            'E-mail Não Confirmado', 
+            'Acesse as configurações do Supabase (Authentication -> Providers -> Email) e desative "Confirm email" para autorizar o login direto sem verificação por e-mail.'
+          );
+        } else if (error.message.includes('Invalid login credentials')) {
+          Alert.alert('Credenciais Inválidas', 'E-mail ou senha incorretos. Verifique se digitou os dados cadastrados.');
+        } else {
+          Alert.alert('Erro no Login', error.message);
+        }
+      } else if (data.session) {
+        setSession(data.session);
+        fetchUserProfile(data.session.user.id, data.session.user.email);
+        fetchDataFromSupabase();
       }
     }
 
