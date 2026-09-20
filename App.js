@@ -50,7 +50,7 @@ export default function App() {
   const [genderInput, setGenderInput] = useState('Masculino');
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
-  // EDIÇÃO DE PERFIL NA CENTRAL
+  // EDIÇÃO DE PERFIL
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editNickname, setEditNickname] = useState('');
   const [editBirthDate, setEditBirthDate] = useState('');
@@ -238,7 +238,7 @@ export default function App() {
     }
   }
 
-  // AÇÃO DE AUTENTICAÇÃO
+  // AÇÃO DE AUTENTICAÇÃO E REGISTRO
   async function handleAuthAction() {
     if (!emailInput.trim() || !passwordInput.trim()) {
       Alert.alert('Atenção', 'Preencha E-mail e Senha para continuar.');
@@ -257,7 +257,7 @@ export default function App() {
 
         const cleanName = fullNameInput.trim();
 
-        // 1. Criar Utilizador na Auth do Supabase
+        // 1. Criar Usuário na Auth do Supabase
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: emailInput.trim(),
           password: passwordInput.trim(),
@@ -277,19 +277,19 @@ export default function App() {
         }
 
         if (authData?.user) {
-          // 2. Gravar Perfil na Tabela 'profiles'
-          const { error: profileErr } = await supabase.from('profiles').upsert([
-            {
-              id: authData.user.id,
-              full_name: cleanName,
-              nickname: cleanName,
-              gender: genderInput,
-              updated_at: new Date().toISOString()
-            }
-          ], { onConflict: 'id' });
-
-          if (profileErr) {
-            console.log('Aviso perfil:', profileErr.message);
+          // 2. Gravar Perfil na Tabela 'profiles' (sem travar caso o RLS dê aviso)
+          try {
+            await supabase.from('profiles').upsert([
+              {
+                id: authData.user.id,
+                full_name: cleanName,
+                nickname: cleanName,
+                gender: genderInput,
+                updated_at: new Date().toISOString()
+              }
+            ], { onConflict: 'id' });
+          } catch (e) {
+            console.log('Aviso ao inserir em profiles:', e);
           }
 
           // 3. Efetuar Login Imediato
@@ -299,7 +299,7 @@ export default function App() {
           });
 
           if (loginError) {
-            Alert.alert('Conta Criada!', 'Por favor clique em "Entrar" com as suas credenciais.');
+            Alert.alert('Cadastro Criado!', 'Conta criada com sucesso. Clique em Entrar.');
             setIsSignUp(false);
           } else if (loginData.session) {
             setSession(loginData.session);
