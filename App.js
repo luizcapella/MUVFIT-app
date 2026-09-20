@@ -16,7 +16,7 @@ import {
   ActivityIndicator
 } from 'react-native';
 
-// Função para calcular idade automática a partir da data de nascimento (DD/MM/AAAA)
+// Função para calcular idade a partir da data (DD/MM/AAAA)
 function calculateAge(birthDateString) {
   if (!birthDateString || birthDateString.length < 10) return null;
   const parts = birthDateString.split('/');
@@ -40,27 +40,33 @@ function calculateAge(birthDateString) {
 }
 
 export default function App() {
-  // SESSÃO E AUTENTICAÇÃO SUPABASE
+  // AUTENTICAÇÃO E SESSÃO
   const [session, setSession] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
-  // ESTADOS DO FORMULÁRIO DE LOGIN/CADASTRO
+  // ESTADOS DO FORMULÁRIO DE AUTENTICAÇÃO (CADASTRO REDUZIDO)
   const [isSignUp, setIsSignUp] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [fullNameInput, setFullNameInput] = useState('');
-  const [nicknameInput, setNicknameInput] = useState('');
-  const [birthDateInput, setBirthDateInput] = useState('');
   const [genderInput, setGenderInput] = useState('Masculino');
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
-  // ATLETA CONECTADO (REAL DO SUPABASE PROFILES)
+  // ESTADOS DE EDIÇÃO DE PERFIL NA CENTRAL DO ATLETA
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [editNickname, setEditNickname] = useState('');
+  const [editBirthDate, setEditBirthDate] = useState('');
+  const [editGender, setEditGender] = useState('Masculino');
+  const [editAvatar, setEditAvatar] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // ATLETA CONECTADO
   const [currentUser, setCurrentUser] = useState({
     id: '',
     name: '',
     nickname: '',
     birth_date: '',
-    age: 34,
+    age: 0,
     gender: 'Masculino',
     avatar: 'https://picsum.photos/seed/poke/200/200',
     isAdmin: true,
@@ -75,7 +81,7 @@ export default function App() {
   const [viewedUser, setViewedUser] = useState(currentUser);
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   
-  // ESTADOS PRINCIPAIS SINCRONIZADOS COM SUPABASE
+  // ESTADOS DA PLATAFORMA
   const [challenges, setChallenges] = useState([]);
   const [memberships, setMemberships] = useState([]);
   const [feedPosts, setFeedPosts] = useState([]);
@@ -83,23 +89,22 @@ export default function App() {
   const [stories, setStories] = useState([]);
   const [pendingInvites, setPendingInvites] = useState([]);
 
-  // ESTADOS DA BARRA DE PESQUISA FUNCIONAL
+  // PESQUISA
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('all');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  // CONTROLADORES DE MODAIS SELETORAS
+  // MODAIS SELETORAS
   const [isHeaderSelectOpen, setIsHeaderSelectOpen] = useState(false);
   const [isPerfScopeSelectOpen, setIsPerfScopeSelectOpen] = useState(false);
 
-  // CONTROLADORES DE SELEÇÃO DE DESAFIO E PERMISSÕES
   const [activeChallengeId, setActiveChallengeId] = useState(null);
   const [isAdminContext, setIsAdminContext] = useState(true);
 
   const selectedChallenge = challenges.find(c => c.id === activeChallengeId) || challenges[0] || {};
   const [, setEditingChallengeId] = useState(selectedChallenge.id);
 
-  // ESTADOS DOS FORMULÁRIOS
+  // FORMULÁRIOS SECUNDÁRIOS
   const [commentInputs, setCommentInputs] = useState({});
   const [evidences] = useState([
     { id: 'e1', title: 'Força / Perna', date: '17/09/2026', image: 'https://picsum.photos/seed/ev1/200/200' },
@@ -150,8 +155,8 @@ export default function App() {
   const [selectedStory, setSelectedStory] = useState(null);
   const [storyProgress, setStoryProgress] = useState(0);
 
-  // MÁSCARA AUTOMÁTICA PARA DATA (DD/MM/AAAA)
-  const handleBirthDateChange = (text) => {
+  // MÁSCARA DE DATA
+  const formatBirthDateMask = (text) => {
     let cleaned = text.replace(/\D/g, '');
     if (cleaned.length > 8) cleaned = cleaned.slice(0, 8);
 
@@ -160,11 +165,10 @@ export default function App() {
     } else if (cleaned.length >= 3) {
       cleaned = `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
     }
-
-    setBirthDateInput(cleaned);
+    return cleaned;
   };
 
-  // --- GERENCIAMENTO DE SESSÃO DO SUPABASE AUTH ---
+  // --- ESCUTAR SESSÃO NO SUPABASE ---
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -189,7 +193,7 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // CARREGAR PERFIL DO UTILIZADOR DO SUPABASE
+  // PERFIL
   async function fetchUserProfile(userId, userEmail) {
     try {
       const { data } = await supabase
@@ -199,13 +203,20 @@ export default function App() {
         .single();
 
       if (data) {
-        const computedAge = data.birth_date ? calculateAge(data.birth_date.split('-').reverse().join('/')) : data.age;
+        let formattedDate = '';
+        if (data.birth_date) {
+          const parts = data.birth_date.split('-');
+          if (parts.length === 3) formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        const computedAge = formattedDate ? calculateAge(formattedDate) : (data.age || 0);
+
         const loadedUser = {
           id: data.id,
           name: data.full_name || userEmail.split('@')[0],
           nickname: data.nickname || data.full_name || userEmail.split('@')[0],
-          birth_date: data.birth_date || '',
-          age: computedAge || 34,
+          birth_date: formattedDate,
+          age: computedAge,
           gender: data.gender || 'Masculino',
           avatar: data.avatar_url || `https://picsum.photos/seed/${data.id}/200/200`,
           isAdmin: true,
@@ -225,7 +236,7 @@ export default function App() {
           name: fallbackName,
           nickname: fallbackName,
           birth_date: '',
-          age: 34,
+          age: 0,
           gender: 'Masculino',
           avatar: `https://picsum.photos/seed/${userId}/200/200`,
           isAdmin: true,
@@ -239,7 +250,7 @@ export default function App() {
     }
   }
 
-  // LÓGICA DE LOGIN E CADASTRO SUBSTANTIALMENTE REVISADA
+  // CADASTRO DIRETO E SIMPLIFICADO
   async function handleAuthAction() {
     if (!emailInput || !passwordInput) {
       Alert.alert('Atenção', 'Preencha E-mail e Senha para continuar.');
@@ -256,26 +267,16 @@ export default function App() {
           return;
         }
 
-        const calculatedAge = calculateAge(birthDateInput);
+        const cleanName = fullNameInput.trim();
 
-        // Converte DD/MM/AAAA para YYYY-MM-DD para aceitação estrita no Postgres/Supabase
-        let dbBirthDate = null;
-        if (birthDateInput && birthDateInput.length === 10) {
-          const parts = birthDateInput.split('/');
-          if (parts.length === 3) {
-            dbBirthDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-          }
-        }
-
+        // 1. SignUp no Supabase Auth
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: emailInput.trim(),
           password: passwordInput,
           options: {
             data: {
-              full_name: fullNameInput.trim(),
-              nickname: nicknameInput.trim() || fullNameInput.trim(),
-              birth_date: dbBirthDate,
-              age: calculatedAge || 0,
+              full_name: cleanName,
+              nickname: cleanName,
               gender: genderInput
             }
           }
@@ -288,33 +289,29 @@ export default function App() {
         }
 
         if (authData?.user) {
-          // Insere ou atualiza os dados na tabela 'profiles'
+          // 2. Salvar na tabela profiles sem colunas de data obrigatórias
           const { error: profileError } = await supabase
             .from('profiles')
             .upsert([
               {
                 id: authData.user.id,
-                full_name: fullNameInput.trim(),
-                nickname: nicknameInput.trim() || fullNameInput.trim(),
-                birth_date: dbBirthDate,
-                age: calculatedAge || 0,
+                full_name: cleanName,
+                nickname: cleanName,
                 gender: genderInput,
                 updated_at: new Date()
               }
             ], { onConflict: 'id' });
 
-          if (profileError) {
-            console.log('Aviso ao criar perfil:', profileError.message);
-          }
+          if (profileError) console.log('Aviso perfil:', profileError.message);
 
-          // Executa o login diretamente para criar a sessão e liberar a entrada
+          // 3. Login automático
           const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
             email: emailInput.trim(),
             password: passwordInput,
           });
 
           if (loginError) {
-            Alert.alert('🎉 Cadastro Realizado!', 'Sua conta foi criada. Faça login para acessar.');
+            Alert.alert('Sucesso!', 'Conta criada com sucesso. Por favor clique em Entrar.');
             setIsSignUp(false);
           } else if (loginData.session) {
             setSession(loginData.session);
@@ -323,7 +320,7 @@ export default function App() {
           }
         }
       } else {
-        // LÓGICA DE LOGIN CONVENCIONAL
+        // LOGIN
         const { data, error } = await supabase.auth.signInWithPassword({
           email: emailInput.trim(),
           password: passwordInput,
@@ -349,13 +346,81 @@ export default function App() {
     }
   }
 
+  // ABRIR EDIÇÃO
+  function handleOpenEditProfile() {
+    setEditNickname(currentUser.nickname || '');
+    setEditBirthDate(currentUser.birth_date || '');
+    setEditGender(currentUser.gender || 'Masculino');
+    setEditAvatar(currentUser.avatar || '');
+    setIsEditProfileOpen(true);
+  }
+
+  // SALVAR EDIÇÃO DO PERFIL
+  async function handleSaveProfile() {
+    if (!editNickname.trim()) {
+      Alert.alert('Atenção', 'O apelido não pode ficar vazio.');
+      return;
+    }
+
+    setSavingProfile(true);
+
+    try {
+      const computedAge = calculateAge(editBirthDate);
+
+      let dbBirthDate = null;
+      if (editBirthDate && editBirthDate.length === 10) {
+        const parts = editBirthDate.split('/');
+        if (parts.length === 3) {
+          dbBirthDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .upsert([
+          {
+            id: currentUser.id,
+            nickname: editNickname.trim(),
+            birth_date: dbBirthDate,
+            age: computedAge || 0,
+            gender: editGender,
+            avatar_url: editAvatar,
+            updated_at: new Date()
+          }
+        ], { onConflict: 'id' });
+
+      if (error) {
+        Alert.alert('Erro', 'Não foi possível salvar o perfil: ' + error.message);
+      } else {
+        const updatedUser = {
+          ...currentUser,
+          nickname: editNickname.trim(),
+          birth_date: editBirthDate,
+          age: computedAge || 0,
+          gender: editGender,
+          avatar: editAvatar || currentUser.avatar
+        };
+
+        setCurrentUser(updatedUser);
+        setViewedUser(updatedUser);
+        setIsEditProfileOpen(false);
+
+        Alert.alert('🎉 Sucesso!', 'Perfil atualizado com sucesso!');
+      }
+    } catch (err) {
+      Alert.alert('Erro Inesperado', err.message || 'Ocorreu um erro ao salvar o perfil.');
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
   // LOGOUT
   async function handleSignOut() {
     await supabase.auth.signOut();
     setSession(null);
   }
 
-  // --- CARREGAMENTO INICIAL DE DADOS DO SUPABASE ---
+  // CARREGAR DADOS
   async function fetchDataFromSupabase() {
     try {
       const { data: challengesData } = await supabase.from('challenges').select('*');
@@ -406,7 +471,7 @@ export default function App() {
     }
   }
 
-  // TIMER DO PLAYER DE STORIES
+  // TIMER STORIES
   useEffect(() => {
     let timer = null;
     if (selectedStory) {
@@ -819,7 +884,7 @@ export default function App() {
   const currentMemberState = currentChallengeMembers.find(m => m.userId === currentUser.id);
   const userStories = stories.filter(st => st.user_id === viewedUser.id);
 
-  // TELA DE CARREGAMENTO INICIAL
+  // TELA DE CARREGAMENTO
   if (loadingAuth) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1e3a8a' }}>
@@ -829,7 +894,7 @@ export default function App() {
     );
   }
 
-  // TELA DE AUTENTICAÇÃO (LOGIN / REGISTRO)
+  // TELA DE LOGIN / CADASTRO (FORMULÁRIO TOTALMENTE LIMPO E SEM APELIDO/DATA)
   if (!session) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#1e3a8a' }}>
@@ -852,26 +917,6 @@ export default function App() {
                   value={fullNameInput}
                   onChangeText={setFullNameInput}
                 />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Apelido (exibido no perfil e ranking)"
-                  value={nicknameInput}
-                  onChangeText={setNicknameInput}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Data de Nascimento (DD/MM/AAAA)"
-                  keyboardType="numeric"
-                  maxLength={10}
-                  value={birthDateInput}
-                  onChangeText={handleBirthDateChange}
-                />
-
-                {birthDateInput.length === 10 && (
-                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#16a34a', marginBottom: 8, textAlign: 'center' }}>
-                    🎉 Idade Calculada: {calculateAge(birthDateInput)} anos
-                  </Text>
-                )}
 
                 <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
                   <TouchableOpacity
@@ -925,10 +970,10 @@ export default function App() {
     );
   }
 
-  // PLATAFORMA PRINCIPAL
+  // APLICAÇÃO PRINCIPAL LOGADA
   return (
     <SafeAreaView style={styles.container}>
-      {/* CABEÇALHO COM BOTÃO DE SAIR */}
+      {/* CABEÇALHO */}
       <View style={styles.topHeader}>
         <View style={styles.brandRow}>
           <View>
@@ -1049,7 +1094,7 @@ export default function App() {
                     )}
                   </View>
                 )}
-              </ScrollView>
+              ScrollView>
             </View>
           )}
         </View>
@@ -1095,7 +1140,7 @@ export default function App() {
           {currentScreen === 'dashboard' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               
-              {/* BANNER INTELIGENTE DE DOWNLOAD / ACESSO */}
+              {/* BANNER DOWNLOAD */}
               {(() => {
                 const isAndroid = Platform.OS === 'android' || (typeof window !== 'undefined' && /android/i.test(navigator.userAgent));
                 
@@ -1394,7 +1439,16 @@ export default function App() {
               <View style={styles.profileHeaderCard}>
                 <Image source={{ uri: viewedUser.avatar }} style={styles.avatarLarge} />
                 <Text style={styles.profileName}>{viewedUser.name} ({viewedUser.nickname})</Text>
-                <Text style={styles.profileMeta}>{viewedUser.age || 34} anos | {viewedUser.gender || 'Masculino'}</Text>
+                
+                <Text style={styles.profileMeta}>
+                  {viewedUser.age ? `${viewedUser.age} anos` : 'Idade não informada'} | {viewedUser.gender || 'Masculino'}
+                </Text>
+
+                {viewedUser.id === currentUser.id && (
+                  <TouchableOpacity style={styles.editProfileBtn} onPress={handleOpenEditProfile}>
+                    <Text style={styles.editProfileBtnText}>✏️ EDITAR PERFIL</Text>
+                  </TouchableOpacity>
+                )}
 
                 <View style={styles.statusBadgeRow}>
                   <Text style={styles.statusActiveTag}>⚡ ATLETA ATIVO</Text>
@@ -1577,7 +1631,74 @@ export default function App() {
         </View>
       </View>
 
-      {/* MODAIS DA APLICAÇÃO */}
+      {/* MODAL DE EDIÇÃO DE PERFIL */}
+      <Modal visible={isEditProfileOpen} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <ScrollView contentContainerStyle={styles.modalContent}>
+            <Text style={styles.modalTitle}>✏️ Editar Perfil do Atleta</Text>
+
+            <Text style={styles.inputLabel}>Apelido (exibido no ranking):</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Digite seu apelido"
+              value={editNickname}
+              onChangeText={setEditNickname}
+            />
+
+            <Text style={styles.inputLabel}>Data de Nascimento (DD/MM/AAAA):</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ex: 08/11/1997"
+              keyboardType="numeric"
+              maxLength={10}
+              value={editBirthDate}
+              onChangeText={(text) => setEditBirthDate(formatBirthDateMask(text))}
+            />
+
+            {editBirthDate.length === 10 && (
+              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#16a34a', marginBottom: 8, textAlign: 'center' }}>
+                🎉 Idade Calculada: {calculateAge(editBirthDate)} anos
+              </Text>
+            )}
+
+            <Text style={styles.inputLabel}>Gênero:</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+              <TouchableOpacity
+                style={[styles.chipBtn, editGender === 'Masculino' && styles.chipBtnActive, { flex: 1, alignItems: 'center' }]}
+                onPress={() => setEditGender('Masculino')}
+              >
+                <Text style={[styles.chipText, editGender === 'Masculino' && styles.chipTextActive]}>Masculino</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.chipBtn, editGender === 'Feminino' && styles.chipBtnActive, { flex: 1, alignItems: 'center' }]}
+                onPress={() => setEditGender('Feminino')}
+              >
+                <Text style={[styles.chipText, editGender === 'Feminino' && styles.chipTextActive]}>Feminino</Text>
+              </TouchableOpacity>
+            </View>
+
+            <MediaPickerField
+              label="URL/Foto de Perfil:"
+              photoState={editAvatar}
+              setPhotoState={setEditAvatar}
+            />
+
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleSaveProfile} disabled={savingProfile}>
+              {savingProfile ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <Text style={styles.primaryBtnText}>SALVAR ALTERAÇÕES</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsEditProfileOpen(false)}>
+              <Text style={styles.cancelBtnText}>CANCELAR</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* DEMAIS MODAIS */}
       <Modal visible={!!selectedStory} animationType="fade" transparent>
         <View style={styles.storyViewerOverlay}>
           <View style={styles.storyViewerHeader}>
@@ -1674,7 +1795,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL REGISTRAR TREINO COM SCROLLVIEW FECHADA CORRETAMENTE */}
       <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={styles.modalContent}>
@@ -1716,7 +1836,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* SELEÇÃO DE DESAFIO CABEÇALHO */}
       <Modal visible={isHeaderSelectOpen} transparent animationType="fade">
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsHeaderSelectOpen(false)}>
           <View style={styles.modalContent}>
@@ -1884,6 +2003,9 @@ const styles = StyleSheet.create({
   avatarLarge: { width: 70, height: 70, borderRadius: 35, marginBottom: 6, borderWidth: 2, borderColor: '#f97316' },
   profileName: { fontSize: 15, fontWeight: 'bold', color: '#0f172a' },
   profileMeta: { fontSize: 10, color: '#64748b', marginBottom: 4 },
+
+  editProfileBtn: { backgroundColor: '#1e3a8a', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, marginVertical: 6 },
+  editProfileBtnText: { color: '#ffffff', fontSize: 10, fontWeight: 'bold' },
 
   perfScopeBox: { width: '100%', marginVertical: 6 },
 
