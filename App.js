@@ -245,7 +245,7 @@ export default function App() {
     }
   }
 
-  // LÓGICA DE LOGIN E CADASTRO CORRIGIDA
+  // LÓGICA DE LOGIN E CADASTRO COM TRATAMENTO DE ERROS COMPLETO
   async function handleAuthAction() {
     if (!emailInput || !passwordInput) {
       Alert.alert('Atenção', 'Preencha E-mail e Senha para continuar.');
@@ -254,88 +254,104 @@ export default function App() {
 
     setAuthSubmitting(true);
 
-    if (isSignUp) {
-      const calculatedAge = calculateAge(birthDateInput);
-
-      let dbBirthDate = null;
-      if (birthDateInput.length === 10) {
-        const [d, m, y] = birthDateInput.split('/');
-        dbBirthDate = `${y}-${m}-${d}`;
-      }
-
-      // 1. REGISTRO NO SUPABASE AUTH PASSANDO OS METADADOS
-      const { data, error } = await supabase.auth.signUp({
-        email: emailInput.trim(),
-        password: passwordInput,
-        options: {
-          data: {
-            full_name: fullNameInput.trim(),
-            nickname: nicknameInput.trim() || fullNameInput.trim(),
-            birth_date: dbBirthDate,
-            age: calculatedAge,
-            gender: genderInput
-          }
+    try {
+      if (isSignUp) {
+        if (!fullNameInput.trim()) {
+          Alert.alert('Campo Obrigatório', 'Por favor, preencha o seu Nome Completo.');
+          setAuthSubmitting(false);
+          return;
         }
-      });
 
-      if (error) {
-        Alert.alert('Erro no Cadastro', error.message);
-        setAuthSubmitting(false);
-        return;
-      }
+        const calculatedAge = calculateAge(birthDateInput);
 
-      if (data.user) {
-        // 2. SALVA O REGISTRO DO PERFIL VIA UPSERT
-        await supabase.from('profiles').upsert([
-          {
-            id: data.user.id,
-            full_name: fullNameInput.trim(),
-            nickname: nicknameInput.trim() || fullNameInput.trim(),
-            birth_date: dbBirthDate,
-            age: calculatedAge,
-            gender: genderInput,
-            updated_at: new Date()
+        let dbBirthDate = null;
+        if (birthDateInput.length === 10) {
+          const [d, m, y] = birthDateInput.split('/');
+          dbBirthDate = `${y}-${m}-${d}`;
+        }
+
+        // 1. REGISTO NO SUPABASE AUTH
+        const { data, error: authError } = await supabase.auth.signUp({
+          email: emailInput.trim(),
+          password: passwordInput,
+          options: {
+            data: {
+              full_name: fullNameInput.trim(),
+              nickname: nicknameInput.trim() || fullNameInput.trim(),
+              birth_date: dbBirthDate,
+              age: calculatedAge || 0,
+              gender: genderInput
+            }
           }
-        ], { onConflict: 'id' });
+        });
 
-        // Desloga qualquer sessão parcial e restaura para a tela de login
-        await supabase.auth.signOut();
-        setSession(null);
+        if (authError) {
+          Alert.alert('Erro no Autenticador', authError.message);
+          setAuthSubmitting(false);
+          return;
+        }
 
-        setIsSignUp(false);
-        setPasswordInput('');
+        if (data?.user) {
+          // 2. INSERÇÃO/UPSERT NA TABELA PROFILES
+          const { error: profileError } = await supabase.from('profiles').upsert([
+            {
+              id: data.user.id,
+              full_name: fullNameInput.trim(),
+              nickname: nicknameInput.trim() || fullNameInput.trim(),
+              birth_date: dbBirthDate,
+              age: calculatedAge || 0,
+              gender: genderInput,
+              updated_at: new Date()
+            }
+          ], { onConflict: 'id' });
 
-        Alert.alert(
-          '🎉 Cadastro Concluído!', 
-          'Conta criada com sucesso! Agora digite a sua senha e toque em ENTRAR NO MUVFIT.'
-        );
-      }
-    } else {
-      // 2. LOGIN NO SUPABASE COM TRATAMENTO DE ERROS E CONFIRMAÇÃO DE EMAIL
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: emailInput.trim(),
-        password: passwordInput,
-      });
+          if (profileError) {
+            console.error('Erro ao salvar no perfil:', profileError);
+            Alert.alert('Aviso de Perfil', `Conta criada no Auth, mas houve um problema ao salvar no perfil: ${profileError.message}`);
+          }
 
-      if (error) {
-        if (error.message.includes('Email not confirmed')) {
+          // Desloga qualquer sessão temporária
+          await supabase.auth.signOut();
+          setSession(null);
+
+          setIsSignUp(false);
+          setPasswordInput('');
+
           Alert.alert(
-            'E-mail Não Confirmado', 
-            'Acesse o painel do Supabase (Authentication -> Providers -> Email) e desative a opção "Confirm email" para autorizar o login direto.'
+            '🎉 Cadastro Concluído!', 
+            'Conta criada com sucesso! Digite a sua senha e toque em ENTRAR NO MUVFIT.'
           );
-        } else if (error.message.includes('Invalid login credentials')) {
-          Alert.alert('Erro de Acesso', 'E-mail ou senha incorretos. Verifique os dados introduzidos.');
-        } else {
-          Alert.alert('Erro no Login', error.message);
         }
-      } else if (data.session) {
-        setSession(data.session);
-        fetchUserProfile(data.session.user.id, data.session.user.email);
-        fetchDataFromSupabase();
-      }
-    }
+      } else {
+        // LOGIN NO SUPABASE
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: emailInput.trim(),
+          password: passwordInput,
+        });
 
-    setAuthSubmitting(false);
+        if (error) {
+          if (error.message.includes('Email not confirmed')) {
+            Alert.alert(
+              'E-mail Não Confirmado', 
+              'Acesse o painel do Supabase (Authentication -> Providers -> Email) e desative a opção "Confirm email".'
+            );
+          } else if (error.message.includes('Invalid login credentials')) {
+            Alert.alert('Erro de Acesso', 'E-mail ou senha incorretos.');
+          } else {
+            Alert.alert('Erro no Login', error.message);
+          }
+        } else if (data.session) {
+          setSession(data.session);
+          fetchUserProfile(data.session.user.id, data.session.user.email);
+          fetchDataFromSupabase();
+        }
+      }
+    } catch (err) {
+      console.error('Erro inesperado na autenticação:', err);
+      Alert.alert('Erro Inesperado', err.message || 'Ocorreu uma falha na ligação com o servidor.');
+    } finally {
+      setAuthSubmitting(false);
+    }
   }
 
   // LOGOUT
