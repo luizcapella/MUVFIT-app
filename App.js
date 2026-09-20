@@ -42,7 +42,7 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
-  // CADASTRO LIMPO
+  // ESTADOS DE AUTENTICAÇÃO
   const [isSignUp, setIsSignUp] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
@@ -238,8 +238,9 @@ export default function App() {
     }
   }
 
+  // AÇÃO DE AUTENTICAÇÃO E CADASTRO CORRIGIDO
   async function handleAuthAction() {
-    if (!emailInput || !passwordInput) {
+    if (!emailInput.trim() || !passwordInput.trim()) {
       Alert.alert('Atenção', 'Preencha E-mail e Senha para continuar.');
       return;
     }
@@ -256,9 +257,10 @@ export default function App() {
 
         const cleanName = fullNameInput.trim();
 
+        // 1. Criar utilizador
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: emailInput.trim(),
-          password: passwordInput,
+          password: passwordInput.trim(),
           options: {
             data: {
               full_name: cleanName,
@@ -275,27 +277,25 @@ export default function App() {
         }
 
         if (authData?.user) {
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .upsert([
-              {
-                id: authData.user.id,
-                full_name: cleanName,
-                nickname: cleanName,
-                gender: genderInput,
-                updated_at: new Date()
-              }
-            ], { onConflict: 'id' });
+          // 2. Salvar tabela de perfil
+          await supabase.from('profiles').upsert([
+            {
+              id: authData.user.id,
+              full_name: cleanName,
+              nickname: cleanName,
+              gender: genderInput,
+              updated_at: new Date()
+            }
+          ], { onConflict: 'id' });
 
-          if (profileError) console.log('Aviso perfil:', profileError.message);
-
+          // 3. Forçar login imediato
           const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
             email: emailInput.trim(),
-            password: passwordInput,
+            password: passwordInput.trim(),
           });
 
           if (loginError) {
-            Alert.alert('Sucesso!', 'Conta criada com sucesso. Por favor clique em Entrar.');
+            Alert.alert('Conta Criada!', 'Por favor clique em "Entrar" com as suas credenciais.');
             setIsSignUp(false);
           } else if (loginData.session) {
             setSession(loginData.session);
@@ -304,17 +304,14 @@ export default function App() {
           }
         }
       } else {
+        // LOGIN
         const { data, error } = await supabase.auth.signInWithPassword({
           email: emailInput.trim(),
-          password: passwordInput,
+          password: passwordInput.trim(),
         });
 
         if (error) {
-          if (error.message.includes('Invalid login credentials')) {
-            Alert.alert('Erro de Acesso', 'E-mail ou senha incorretos.');
-          } else {
-            Alert.alert('Erro no Login', error.message);
-          }
+          Alert.alert('Erro no Login', error.message.includes('Invalid login credentials') ? 'E-mail ou senha incorretos.' : error.message);
         } else if (data.session) {
           setSession(data.session);
           await fetchUserProfile(data.session.user.id, data.session.user.email);
@@ -322,7 +319,6 @@ export default function App() {
         }
       }
     } catch (err) {
-      console.error('Erro na autenticação:', err);
       Alert.alert('Erro Inesperado', err.message || 'Ocorreu um erro ao conectar.');
     } finally {
       setAuthSubmitting(false);
@@ -867,7 +863,7 @@ export default function App() {
     );
   }
 
-  // FORMULÁRIO DE LOGIN / CADASTRO
+  // TELA INICIAL
   if (!session) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#1e3a8a' }}>
@@ -1593,7 +1589,7 @@ export default function App() {
         </View>
       </View>
 
-      {/* MODAL DE EDIÇÃO DE PERFIL COM SINTAXE JSX VÁLIDA E SEGURA */}
+      {/* MODAL DE EDIÇÃO DE PERFIL */}
       <Modal visible={isEditProfileOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={styles.modalContent}>
