@@ -239,7 +239,7 @@ export default function App() {
     }
   }
 
-  // LÓGICA DE LOGIN E CADASTRO
+  // LÓGICA DE LOGIN E CADASTRO SUBSTANTIALMENTE REVISADA
   async function handleAuthAction() {
     if (!emailInput || !passwordInput) {
       Alert.alert('Atenção', 'Preencha E-mail e Senha para continuar.');
@@ -258,6 +258,7 @@ export default function App() {
 
         const calculatedAge = calculateAge(birthDateInput);
 
+        // Converte DD/MM/AAAA para YYYY-MM-DD para aceitação estrita no Postgres/Supabase
         let dbBirthDate = null;
         if (birthDateInput && birthDateInput.length === 10) {
           const parts = birthDateInput.split('/');
@@ -266,7 +267,7 @@ export default function App() {
           }
         }
 
-        const { data, error: authError } = await supabase.auth.signUp({
+        const { data: authData, error: authError } = await supabase.auth.signUp({
           email: emailInput.trim(),
           password: passwordInput,
           options: {
@@ -281,60 +282,63 @@ export default function App() {
         });
 
         if (authError) {
-          Alert.alert('Erro no Autenticador', authError.message);
+          Alert.alert('Erro no Cadastro', authError.message);
           setAuthSubmitting(false);
           return;
         }
 
-        if (data?.user) {
-          const { error: profileError } = await supabase.from('profiles').upsert([
-            {
-              id: data.user.id,
-              full_name: fullNameInput.trim(),
-              nickname: nicknameInput.trim() || fullNameInput.trim(),
-              birth_date: dbBirthDate,
-              age: calculatedAge || 0,
-              gender: genderInput,
-              updated_at: new Date()
-            }
-          ], { onConflict: 'id' });
+        if (authData?.user) {
+          // Insere ou atualiza os dados na tabela 'profiles'
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert([
+              {
+                id: authData.user.id,
+                full_name: fullNameInput.trim(),
+                nickname: nicknameInput.trim() || fullNameInput.trim(),
+                birth_date: dbBirthDate,
+                age: calculatedAge || 0,
+                gender: genderInput,
+                updated_at: new Date()
+              }
+            ], { onConflict: 'id' });
 
           if (profileError) {
             console.log('Aviso ao criar perfil:', profileError.message);
           }
 
-          await supabase.auth.signOut();
-          setSession(null);
+          // Executa o login diretamente para criar a sessão e liberar a entrada
+          const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+            email: emailInput.trim(),
+            password: passwordInput,
+          });
 
-          setIsSignUp(false);
-          setPasswordInput('');
-
-          Alert.alert(
-            '🎉 Cadastro Concluído!', 
-            'Conta criada com sucesso! Digite sua senha novamente e toque em ENTRAR NO MUVFIT.'
-          );
+          if (loginError) {
+            Alert.alert('🎉 Cadastro Realizado!', 'Sua conta foi criada. Faça login para acessar.');
+            setIsSignUp(false);
+          } else if (loginData.session) {
+            setSession(loginData.session);
+            await fetchUserProfile(loginData.session.user.id, loginData.session.user.email);
+            await fetchDataFromSupabase();
+          }
         }
       } else {
+        // LÓGICA DE LOGIN CONVENCIONAL
         const { data, error } = await supabase.auth.signInWithPassword({
           email: emailInput.trim(),
           password: passwordInput,
         });
 
         if (error) {
-          if (error.message.includes('Email not confirmed')) {
-            Alert.alert(
-              'E-mail Não Confirmado', 
-              'Acesse o painel do Supabase (Authentication -> Providers -> Email) e desative a opção "Confirm email".'
-            );
-          } else if (error.message.includes('Invalid login credentials')) {
+          if (error.message.includes('Invalid login credentials')) {
             Alert.alert('Erro de Acesso', 'E-mail ou senha incorretos.');
           } else {
             Alert.alert('Erro no Login', error.message);
           }
         } else if (data.session) {
           setSession(data.session);
-          fetchUserProfile(data.session.user.id, data.session.user.email);
-          fetchDataFromSupabase();
+          await fetchUserProfile(data.session.user.id, data.session.user.email);
+          await fetchDataFromSupabase();
         }
       }
     } catch (err) {
