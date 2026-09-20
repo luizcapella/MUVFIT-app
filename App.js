@@ -1595,51 +1595,6 @@ export default function App() {
                 </TouchableOpacity>
               </View>
             </ScrollView>
-)}
-
-          {currentScreen === 'admin' && isAdminContext && hasUserAnyCommunity && selectedChallenge && (
-            <ScrollView contentContainerStyle={styles.mainContent}>
-              <View style={styles.adminControlCard}>
-                <Text style={styles.adminCardTitle}>🎯 Gerenciando: {selectedChallenge.title}</Text>
-                <Text style={styles.adminCardSub}>Todas as alterações feitas afetam esta liga no Supabase.</Text>
-              </View>
-
-              <View style={styles.adminControlCard}>
-                <Text style={styles.adminCardTitle}>📋 Aprovação de Treinos Pendentes ({currentPendingWorkouts.length})</Text>
-                {currentPendingWorkouts.length === 0 ? (
-                  <Text style={styles.emptyNoticeText}>Nenhum treino aguardando aprovação.</Text>
-                ) : (
-                  currentPendingWorkouts.map((w) => (
-                    <View key={w.id} style={styles.participantRow}>
-                      <Image source={{ uri: w.photo_evidence }} style={styles.avatarMini} />
-                      <View style={{ flex: 1, marginLeft: 8 }}>
-                        <Text style={styles.participantName}>{w.user_name} ({w.activity_type})</Text>
-                        <Text style={styles.participantSub}>{w.caption}</Text>
-                        <Text style={styles.tagActiveText}>Recompensa: +{w.points_to_ranking} pts</Text>
-                      </View>
-                      <View style={{ flexDirection: 'row', gap: 4 }}>
-                        <TouchableOpacity style={styles.approveBtn} onPress={() => handleApproveWorkout(w.id)}>
-                          <Text style={styles.btnMiniText}>✅ APROVAR</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.banBtn} onPress={() => handleRejectWorkout(w.id)}>
-                          <Text style={styles.btnMiniText}>❌ REJEITAR</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  ))
-                )}
-              </View>
-
-              <View style={styles.adminControlCard}>
-                <Text style={styles.adminCardTitle}>🔒 Controle de Inscrições</Text>
-                <Text style={styles.adminCardSub}>Status: {selectedChallenge.registrations_closed ? 'ENCERRADAS' : 'ABERTAS'}</Text>
-                <TouchableOpacity style={styles.toggleRegBtn} onPress={toggleChallengeRegistrations}>
-                  <Text style={styles.toggleRegBtnText}>
-                    {selectedChallenge.registrations_closed ? '🔓 REABRIR CANDIDATURAS' : '🔒 ENCERRAR CANDIDATURA'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
           )}
         </View>
       </View>
