@@ -42,7 +42,7 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
-  // ESTADOS DE AUTENTICAÇÃO
+  // FORMULÁRIO DE AUTENTICAÇÃO
   const [isSignUp, setIsSignUp] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
@@ -50,7 +50,7 @@ export default function App() {
   const [genderInput, setGenderInput] = useState('Masculino');
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
-  // EDIÇÃO DE PERFIL
+  // EDIÇÃO DE PERFIL NA CENTRAL
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editNickname, setEditNickname] = useState('');
   const [editBirthDate, setEditBirthDate] = useState('');
@@ -188,7 +188,7 @@ export default function App() {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (data) {
         let formattedDate = '';
@@ -218,7 +218,7 @@ export default function App() {
         setCurrentUser(loadedUser);
         setViewedUser(loadedUser);
       } else {
-        const fallbackName = userEmail.split('@')[0];
+        const fallbackName = userEmail ? userEmail.split('@')[0] : 'Atleta';
         const loadedUser = {
           id: userId,
           name: fallbackName,
@@ -238,7 +238,7 @@ export default function App() {
     }
   }
 
-  // AÇÃO DE AUTENTICAÇÃO E CADASTRO CORRIGIDO
+  // AÇÃO DE AUTENTICAÇÃO
   async function handleAuthAction() {
     if (!emailInput.trim() || !passwordInput.trim()) {
       Alert.alert('Atenção', 'Preencha E-mail e Senha para continuar.');
@@ -257,7 +257,7 @@ export default function App() {
 
         const cleanName = fullNameInput.trim();
 
-        // 1. Criar utilizador
+        // 1. Criar Utilizador na Auth do Supabase
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: emailInput.trim(),
           password: passwordInput.trim(),
@@ -277,18 +277,22 @@ export default function App() {
         }
 
         if (authData?.user) {
-          // 2. Salvar tabela de perfil
-          await supabase.from('profiles').upsert([
+          // 2. Gravar Perfil na Tabela 'profiles'
+          const { error: profileErr } = await supabase.from('profiles').upsert([
             {
               id: authData.user.id,
               full_name: cleanName,
               nickname: cleanName,
               gender: genderInput,
-              updated_at: new Date()
+              updated_at: new Date().toISOString()
             }
           ], { onConflict: 'id' });
 
-          // 3. Forçar login imediato
+          if (profileErr) {
+            console.log('Aviso perfil:', profileErr.message);
+          }
+
+          // 3. Efetuar Login Imediato
           const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
             email: emailInput.trim(),
             password: passwordInput.trim(),
@@ -362,7 +366,7 @@ export default function App() {
             age: computedAge || 0,
             gender: editGender,
             avatar_url: editAvatar,
-            updated_at: new Date()
+            updated_at: new Date().toISOString()
           }
         ], { onConflict: 'id' });
 
@@ -858,12 +862,12 @@ export default function App() {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1e3a8a' }}>
         <ActivityIndicator size="large" color="#f97316" />
-        <Text style={{ color: '#ffffff', marginTop: 12, fontWeight: 'bold' }}>A carregar MuvFit...</Text>
+        <Text style={{ color: '#ffffff', marginTop: 12, fontWeight: 'bold' }}>Carregando MuvFit...</Text>
       </View>
     );
   }
 
-  // TELA INICIAL
+  // TELA DE AUTENTICAÇÃO
   if (!session) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#1e3a8a' }}>
@@ -939,6 +943,7 @@ export default function App() {
     );
   }
 
+  // TELA PRINCIPAL
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.topHeader}>
