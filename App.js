@@ -225,7 +225,6 @@ export default function App() {
         setCurrentUser(loadedUser);
         setViewedUser(loadedUser);
       } else {
-        // Se a tabela profiles não existir ou não tiver linha, constrói perfil fallback via email
         const fallbackName = userEmail.split('@')[0];
         const loadedUser = {
           id: userId,
@@ -246,7 +245,7 @@ export default function App() {
     }
   }
 
-  // LÓGICA DE LOGIN E CADASTRO ATUALIZADA E RESISTENTE
+  // LÓGICA DE LOGIN E CADASTRO CORRIGIDA
   async function handleAuthAction() {
     if (!emailInput || !passwordInput) {
       Alert.alert('Atenção', 'Preencha E-mail e Senha para continuar.');
@@ -264,7 +263,7 @@ export default function App() {
         dbBirthDate = `${y}-${m}-${d}`;
       }
 
-      // 1. REGISTRO COM PASSE DE DADOS NOS METADADOS DO SUPABASE AUTH
+      // 1. REGISTRO NO SUPABASE AUTH PASSANDO OS METADADOS
       const { data, error } = await supabase.auth.signUp({
         email: emailInput.trim(),
         password: passwordInput,
@@ -286,7 +285,7 @@ export default function App() {
       }
 
       if (data.user) {
-        // Tenta salvar o registro do perfil na tabela `profiles`
+        // 2. SALVA O REGISTRO DO PERFIL VIA UPSERT
         await supabase.from('profiles').upsert([
           {
             id: data.user.id,
@@ -299,21 +298,20 @@ export default function App() {
           }
         ], { onConflict: 'id' });
 
-        // Faz logout para fechar qualquer sessão temporária e alternar o formulário
+        // Desloga qualquer sessão parcial e restaura para a tela de login
         await supabase.auth.signOut();
         setSession(null);
 
-        // Prepara tela para o login
         setIsSignUp(false);
         setPasswordInput('');
 
         Alert.alert(
           '🎉 Cadastro Concluído!', 
-          'Sua conta foi registrada com sucesso no banco de dados! Agora digite sua senha e clique em ENTRAR NO MUVFIT.'
+          'Conta criada com sucesso! Agora digite a sua senha e toque em ENTRAR NO MUVFIT.'
         );
       }
     } else {
-      // 2. TENTATIVA DE LOGIN COM TRATAMENTO DE ERROS CLAROS
+      // 2. LOGIN NO SUPABASE COM TRATAMENTO DE ERROS E CONFIRMAÇÃO DE EMAIL
       const { data, error } = await supabase.auth.signInWithPassword({
         email: emailInput.trim(),
         password: passwordInput,
@@ -323,10 +321,10 @@ export default function App() {
         if (error.message.includes('Email not confirmed')) {
           Alert.alert(
             'E-mail Não Confirmado', 
-            'Acesse as configurações do Supabase (Authentication -> Providers -> Email) e desative "Confirm email" para autorizar o login direto sem verificação por e-mail.'
+            'Acesse o painel do Supabase (Authentication -> Providers -> Email) e desative a opção "Confirm email" para autorizar o login direto.'
           );
         } else if (error.message.includes('Invalid login credentials')) {
-          Alert.alert('Credenciais Inválidas', 'E-mail ou senha incorretos. Verifique se digitou os dados cadastrados.');
+          Alert.alert('Erro de Acesso', 'E-mail ou senha incorretos. Verifique os dados introduzidos.');
         } else {
           Alert.alert('Erro no Login', error.message);
         }
