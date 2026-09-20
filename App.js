@@ -16,7 +16,6 @@ import {
   ActivityIndicator
 } from 'react-native';
 
-// Função para calcular idade a partir da data (DD/MM/AAAA)
 function calculateAge(birthDateString) {
   if (!birthDateString || birthDateString.length < 10) return null;
   const parts = birthDateString.split('/');
@@ -40,11 +39,10 @@ function calculateAge(birthDateString) {
 }
 
 export default function App() {
-  // AUTENTICAÇÃO E SESSÃO
   const [session, setSession] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
-  // ESTADOS DO FORMULÁRIO DE AUTENTICAÇÃO (CADASTRO REDUZIDO)
+  // CADASTRO LIMPO
   const [isSignUp, setIsSignUp] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
@@ -52,7 +50,7 @@ export default function App() {
   const [genderInput, setGenderInput] = useState('Masculino');
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
-  // ESTADOS DE EDIÇÃO DE PERFIL NA CENTRAL DO ATLETA
+  // EDIÇÃO DE PERFIL
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editNickname, setEditNickname] = useState('');
   const [editBirthDate, setEditBirthDate] = useState('');
@@ -60,7 +58,6 @@ export default function App() {
   const [editAvatar, setEditAvatar] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
 
-  // ATLETA CONECTADO
   const [currentUser, setCurrentUser] = useState({
     id: '',
     name: '',
@@ -81,7 +78,6 @@ export default function App() {
   const [viewedUser, setViewedUser] = useState(currentUser);
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   
-  // ESTADOS DA PLATAFORMA
   const [challenges, setChallenges] = useState([]);
   const [memberships, setMemberships] = useState([]);
   const [feedPosts, setFeedPosts] = useState([]);
@@ -89,12 +85,10 @@ export default function App() {
   const [stories, setStories] = useState([]);
   const [pendingInvites, setPendingInvites] = useState([]);
 
-  // PESQUISA
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('all');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  // MODAIS SELETORAS
   const [isHeaderSelectOpen, setIsHeaderSelectOpen] = useState(false);
   const [isPerfScopeSelectOpen, setIsPerfScopeSelectOpen] = useState(false);
 
@@ -102,9 +96,7 @@ export default function App() {
   const [isAdminContext, setIsAdminContext] = useState(true);
 
   const selectedChallenge = challenges.find(c => c.id === activeChallengeId) || challenges[0] || {};
-  const [, setEditingChallengeId] = useState(selectedChallenge.id);
 
-  // FORMULÁRIOS SECUNDÁRIOS
   const [commentInputs, setCommentInputs] = useState({});
   const [evidences] = useState([
     { id: 'e1', title: 'Força / Perna', date: '17/09/2026', image: 'https://picsum.photos/seed/ev1/200/200' },
@@ -123,7 +115,6 @@ export default function App() {
   const [hasCapToggle, setHasCapToggle] = useState(false);
   const [newChallengeCap, setNewChallengeCap] = useState('22000');
 
-  const [, setEditingRules] = useState(selectedChallenge.rules || {});
   const [bonusInquebravelActive] = useState(true);
   const [bonusInquebravelDays] = useState('7');
   const [bonusInquebravelPoints] = useState('5000');
@@ -155,7 +146,6 @@ export default function App() {
   const [selectedStory, setSelectedStory] = useState(null);
   const [storyProgress, setStoryProgress] = useState(0);
 
-  // MÁSCARA DE DATA
   const formatBirthDateMask = (text) => {
     let cleaned = text.replace(/\D/g, '');
     if (cleaned.length > 8) cleaned = cleaned.slice(0, 8);
@@ -168,7 +158,6 @@ export default function App() {
     return cleaned;
   };
 
-  // --- ESCUTAR SESSÃO NO SUPABASE ---
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -193,7 +182,6 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // PERFIL
   async function fetchUserProfile(userId, userEmail) {
     try {
       const { data } = await supabase
@@ -250,7 +238,6 @@ export default function App() {
     }
   }
 
-  // CADASTRO DIRETO E SIMPLIFICADO
   async function handleAuthAction() {
     if (!emailInput || !passwordInput) {
       Alert.alert('Atenção', 'Preencha E-mail e Senha para continuar.');
@@ -269,7 +256,6 @@ export default function App() {
 
         const cleanName = fullNameInput.trim();
 
-        // 1. SignUp no Supabase Auth
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: emailInput.trim(),
           password: passwordInput,
@@ -289,7 +275,6 @@ export default function App() {
         }
 
         if (authData?.user) {
-          // 2. Salvar na tabela profiles sem colunas de data obrigatórias
           const { error: profileError } = await supabase
             .from('profiles')
             .upsert([
@@ -304,7 +289,6 @@ export default function App() {
 
           if (profileError) console.log('Aviso perfil:', profileError.message);
 
-          // 3. Login automático
           const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
             email: emailInput.trim(),
             password: passwordInput,
@@ -320,7 +304,6 @@ export default function App() {
           }
         }
       } else {
-        // LOGIN
         const { data, error } = await supabase.auth.signInWithPassword({
           email: emailInput.trim(),
           password: passwordInput,
@@ -346,7 +329,6 @@ export default function App() {
     }
   }
 
-  // ABRIR EDIÇÃO
   function handleOpenEditProfile() {
     setEditNickname(currentUser.nickname || '');
     setEditBirthDate(currentUser.birth_date || '');
@@ -355,7 +337,6 @@ export default function App() {
     setIsEditProfileOpen(true);
   }
 
-  // SALVAR EDIÇÃO DO PERFIL
   async function handleSaveProfile() {
     if (!editNickname.trim()) {
       Alert.alert('Atenção', 'O apelido não pode ficar vazio.');
@@ -414,13 +395,11 @@ export default function App() {
     }
   }
 
-  // LOGOUT
   async function handleSignOut() {
     await supabase.auth.signOut();
     setSession(null);
   }
 
-  // CARREGAR DADOS
   async function fetchDataFromSupabase() {
     try {
       const { data: challengesData } = await supabase.from('challenges').select('*');
@@ -435,7 +414,6 @@ export default function App() {
         setChallenges(formattedChallenges);
         if (!activeChallengeId) {
           setActiveChallengeId(formattedChallenges[0].id);
-          setEditingRules(formattedChallenges[0].rules || {});
         }
       }
 
@@ -471,7 +449,6 @@ export default function App() {
     }
   }
 
-  // TIMER STORIES
   useEffect(() => {
     let timer = null;
     if (selectedStory) {
@@ -512,7 +489,7 @@ export default function App() {
     const message = 
       `🏃‍♂️ *Convite MuvFit* 🏃‍♀️\n\n` +
       `Você foi convidado para participar da *${challenge.title}*!\n\n` +
-      `Acesse o link abaixo para entrar na liga e baixar o aplicativo:\n${inviteUrl}`;
+      `Acesse o link abaixo para entrar na liga:\n${inviteUrl}`;
 
     try {
       await Share.share({
@@ -528,8 +505,6 @@ export default function App() {
   function selectChallengeContext(challenge, asAdmin) {
     setActiveChallengeId(challenge.id);
     setIsAdminContext(asAdmin);
-    setEditingChallengeId(challenge.id);
-    setEditingRules(JSON.parse(JSON.stringify(challenge.rules || {})));
     setCurrentScreen('feed');
   }
 
@@ -777,7 +752,6 @@ export default function App() {
     Alert.alert('Sucesso', 'Treino enviado para a nuvem! Aguardando aprovação do Admin.');
   }
 
-  // PESQUISA
   const searchResultsAthletes = memberships.filter(m => {
     if (searchFilter === 'challenge') return false;
     const term = searchQuery.toLowerCase().trim();
@@ -884,7 +858,6 @@ export default function App() {
   const currentMemberState = currentChallengeMembers.find(m => m.userId === currentUser.id);
   const userStories = stories.filter(st => st.user_id === viewedUser.id);
 
-  // TELA DE CARREGAMENTO
   if (loadingAuth) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1e3a8a' }}>
@@ -894,7 +867,7 @@ export default function App() {
     );
   }
 
-  // TELA DE LOGIN / CADASTRO (FORMULÁRIO TOTALMENTE LIMPO E SEM APELIDO/DATA)
+  // FORMULÁRIO DE LOGIN / CADASTRO
   if (!session) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#1e3a8a' }}>
@@ -970,10 +943,8 @@ export default function App() {
     );
   }
 
-  // APLICAÇÃO PRINCIPAL LOGADA
   return (
     <SafeAreaView style={styles.container}>
-      {/* CABEÇALHO */}
       <View style={styles.topHeader}>
         <View style={styles.brandRow}>
           <View>
@@ -1094,14 +1065,13 @@ export default function App() {
                     )}
                   </View>
                 )}
-              ScrollView>
+              </ScrollView>
             </View>
           )}
         </View>
       </View>
 
       <View style={{ flex: 1, flexDirection: 'row' }}>
-        {/* BARRA LATERAL DE NAVEGAÇÃO */}
         <View style={styles.sidebar}>
           <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'dashboard' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('dashboard')}>
             <Text style={styles.sidebarIcon}>🏠</Text>
@@ -1136,11 +1106,8 @@ export default function App() {
         </View>
 
         <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
-          {/* TELA 1: DASHBOARD */}
           {currentScreen === 'dashboard' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
-              
-              {/* BANNER DOWNLOAD */}
               {(() => {
                 const isAndroid = Platform.OS === 'android' || (typeof window !== 'undefined' && /android/i.test(navigator.userAgent));
                 
@@ -1279,7 +1246,6 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* TELA 2: FEED */}
           {currentScreen === 'feed' && hasUserAnyCommunity && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -1386,7 +1352,6 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* TELA 3: RANKING */}
           {currentScreen === 'ranking' && hasUserAnyCommunity && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <Text style={styles.pageTitle}>🏆 Ranking — {selectedChallenge.title}</Text>
@@ -1433,7 +1398,6 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* TELA 4: CENTRAL DO ATLETA */}
           {currentScreen === 'athlete_center' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.profileHeaderCard}>
@@ -1488,7 +1452,6 @@ export default function App() {
                   </View>
                 </View>
 
-                {/* CARROSSEL DE STORIES */}
                 <View style={styles.storiesBox}>
                   <Text style={styles.boxTitle}>Stories do Atleta (Clique para abrir)</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginTop: 6 }}>
@@ -1583,7 +1546,6 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* TELA 5: MODERAÇÃO ADMIN */}
           {currentScreen === 'admin' && isAdminContext && hasUserAnyCommunity && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.adminControlCard}>
@@ -1631,7 +1593,7 @@ export default function App() {
         </View>
       </View>
 
-      {/* MODAL DE EDIÇÃO DE PERFIL */}
+      {/* MODAL DE EDIÇÃO DE PERFIL COM SINTAXE JSX VÁLIDA E SEGURA */}
       <Modal visible={isEditProfileOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={styles.modalContent}>
@@ -1677,10 +1639,12 @@ export default function App() {
               </TouchableOpacity>
             </View>
 
-            <MediaPickerField
-              label="URL/Foto de Perfil:"
-              photoState={editAvatar}
-              setPhotoState={setEditAvatar}
+            <Text style={styles.inputLabel}>URL da Foto de Perfil:</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="https://..."
+              value={editAvatar}
+              onChangeText={setEditAvatar}
             />
 
             <TouchableOpacity style={styles.primaryBtn} onPress={handleSaveProfile} disabled={savingProfile}>
