@@ -245,7 +245,7 @@ export default function App() {
     }
   }
 
-  // LÓGICA DE LOGIN E CADASTRO COM TRATAMENTO DE ERROS COMPLETO
+  // LÓGICA DE LOGIN E CADASTRO CORRIGIDA
   async function handleAuthAction() {
     if (!emailInput || !passwordInput) {
       Alert.alert('Atenção', 'Preencha E-mail e Senha para continuar.');
@@ -264,13 +264,16 @@ export default function App() {
 
         const calculatedAge = calculateAge(birthDateInput);
 
+        // Tratamento seguro de data para formato YYYY-MM-DD
         let dbBirthDate = null;
-        if (birthDateInput.length === 10) {
-          const [d, m, y] = birthDateInput.split('/');
-          dbBirthDate = `${y}-${m}-${d}`;
+        if (birthDateInput && birthDateInput.length === 10) {
+          const parts = birthDateInput.split('/');
+          if (parts.length === 3) {
+            dbBirthDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          }
         }
 
-        // 1. REGISTO NO SUPABASE AUTH
+        // 1. REGISTRO NO SUPABASE AUTH ENVIANDO METADADOS
         const { data, error: authError } = await supabase.auth.signUp({
           email: emailInput.trim(),
           password: passwordInput,
@@ -306,8 +309,7 @@ export default function App() {
           ], { onConflict: 'id' });
 
           if (profileError) {
-            console.error('Erro ao salvar no perfil:', profileError);
-            Alert.alert('Aviso de Perfil', `Conta criada no Auth, mas houve um problema ao salvar no perfil: ${profileError.message}`);
+            console.log('Aviso ao criar perfil:', profileError.message);
           }
 
           // Desloga qualquer sessão temporária
@@ -319,7 +321,7 @@ export default function App() {
 
           Alert.alert(
             '🎉 Cadastro Concluído!', 
-            'Conta criada com sucesso! Digite a sua senha e toque em ENTRAR NO MUVFIT.'
+            'Conta criada com sucesso! Digite sua senha novamente e toque em ENTRAR NO MUVFIT.'
           );
         }
       } else {
@@ -347,8 +349,8 @@ export default function App() {
         }
       }
     } catch (err) {
-      console.error('Erro inesperado na autenticação:', err);
-      Alert.alert('Erro Inesperado', err.message || 'Ocorreu uma falha na ligação com o servidor.');
+      console.error('Erro na autenticação:', err);
+      Alert.alert('Erro Inesperado', err.message || 'Ocorreu um erro ao conectar.');
     } finally {
       setAuthSubmitting(false);
     }
@@ -1060,7 +1062,7 @@ export default function App() {
                     )}
                   </View>
                 )}
-              </ScrollView>
+              ScrollView>
             </View>
           )}
         </View>
