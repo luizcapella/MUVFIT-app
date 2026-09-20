@@ -82,7 +82,6 @@ export default function App() {
   const [pendingWorkouts, setPendingWorkouts] = useState([]);
   const [stories, setStories] = useState([]);
   const [pendingInvites, setPendingInvites] = useState([]);
-  const [pendingParticipants, setPendingParticipants] = useState([]);
 
   // ESTADOS DA BARRA DE PESQUISA FUNCIONAL
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,7 +97,7 @@ export default function App() {
   const [isAdminContext, setIsAdminContext] = useState(true);
 
   const selectedChallenge = challenges.find(c => c.id === activeChallengeId) || challenges[0] || {};
-  const [editingChallengeId, setEditingChallengeId] = useState(selectedChallenge.id);
+  const [, setEditingChallengeId] = useState(selectedChallenge.id);
 
   // ESTADOS DOS FORMULÁRIOS
   const [commentInputs, setCommentInputs] = useState({});
@@ -119,27 +118,23 @@ export default function App() {
   const [hasCapToggle, setHasCapToggle] = useState(false);
   const [newChallengeCap, setNewChallengeCap] = useState('22000');
 
-  const [isEditRulesOpen, setIsEditRulesOpen] = useState(false);
+  const [, setEditingRules] = useState(selectedChallenge.rules || {});
+  const [bonusInquebravelActive] = useState(true);
+  const [bonusInquebravelDays] = useState('7');
+  const [bonusInquebravelPoints] = useState('5000');
 
-  const [editingRules, setEditingRules] = useState(selectedChallenge.rules || {});
-  const [bonusInquebravelActive, setBonusInquebravelActive] = useState(true);
-  const [bonusInquebravelDays, setBonusInquebravelDays] = useState('7');
-  const [bonusInquebravelPoints, setBonusInquebravelPoints] = useState('5000');
+  const [bonusDespertaActive] = useState(true);
+  const [bonusDespertaTime] = useState('07:00');
+  const [bonusDespertaPoints] = useState('3000');
 
-  const [bonusDespertaActive, setBonusDespertaActive] = useState(true);
-  const [bonusDespertaTime, setBonusDespertaTime] = useState('07:00');
-  const [bonusDespertaPoints, setBonusDespertaPoints] = useState('3000');
-
-  const [tiebreakersConfig, setTiebreakersConfig] = useState([
+  const [tiebreakersConfig] = useState([
     { id: 'tb1', name: 'Passos Diários', enabled: true },
     { id: 'tb2', name: 'Banco de Pontos', enabled: true },
     { id: 'tb3', name: 'KM Total Percorrido', enabled: false },
     { id: 'tb4', name: 'Dias em Atividade', enabled: false }
   ]);
 
-  const [athletePerfScope, setAthletePerfScope] = useState('overall');
-
-  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [athletePerfScope] = useState('overall');
 
   const [userGoals, setUserGoals] = useState([
     { id: 'g1', title: 'Perder Peso', completed: true },
@@ -147,7 +142,6 @@ export default function App() {
     { id: 'g3', title: 'Correr 10 km', completed: true },
     { id: 'g4', title: 'Participar de Maratona', completed: false },
   ]);
-  const [isAddGoalOpen, setIsAddGoalOpen] = useState(false);
 
   const [isAddStoryOpen, setIsAddStoryOpen] = useState(false);
   const [newStoryMedia, setNewStoryMedia] = useState(null);
@@ -198,7 +192,7 @@ export default function App() {
   // CARREGAR PERFIL DO UTILIZADOR DO SUPABASE
   async function fetchUserProfile(userId, userEmail) {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
@@ -245,7 +239,7 @@ export default function App() {
     }
   }
 
-  // LÓGICA DE LOGIN E CADASTRO CORRIGIDA
+  // LÓGICA DE LOGIN E CADASTRO
   async function handleAuthAction() {
     if (!emailInput || !passwordInput) {
       Alert.alert('Atenção', 'Preencha E-mail e Senha para continuar.');
@@ -264,7 +258,6 @@ export default function App() {
 
         const calculatedAge = calculateAge(birthDateInput);
 
-        // Tratamento seguro de data para formato YYYY-MM-DD
         let dbBirthDate = null;
         if (birthDateInput && birthDateInput.length === 10) {
           const parts = birthDateInput.split('/');
@@ -273,7 +266,6 @@ export default function App() {
           }
         }
 
-        // 1. REGISTRO NO SUPABASE AUTH ENVIANDO METADADOS
         const { data, error: authError } = await supabase.auth.signUp({
           email: emailInput.trim(),
           password: passwordInput,
@@ -295,7 +287,6 @@ export default function App() {
         }
 
         if (data?.user) {
-          // 2. INSERÇÃO/UPSERT NA TABELA PROFILES
           const { error: profileError } = await supabase.from('profiles').upsert([
             {
               id: data.user.id,
@@ -312,7 +303,6 @@ export default function App() {
             console.log('Aviso ao criar perfil:', profileError.message);
           }
 
-          // Desloga qualquer sessão temporária
           await supabase.auth.signOut();
           setSession(null);
 
@@ -325,7 +315,6 @@ export default function App() {
           );
         }
       } else {
-        // LOGIN NO SUPABASE
         const { data, error } = await supabase.auth.signInWithPassword({
           email: emailInput.trim(),
           password: passwordInput,
@@ -365,7 +354,6 @@ export default function App() {
   // --- CARREGAMENTO INICIAL DE DADOS DO SUPABASE ---
   async function fetchDataFromSupabase() {
     try {
-      // 1. Desafios
       const { data: challengesData } = await supabase.from('challenges').select('*');
       if (challengesData && challengesData.length > 0) {
         const formattedChallenges = challengesData.map(c => ({
@@ -382,7 +370,6 @@ export default function App() {
         }
       }
 
-      // 2. Memberships
       const { data: membersData } = await supabase.from('memberships').select('*');
       if (membersData) {
         const formattedMembers = membersData.map(m => ({
@@ -401,15 +388,12 @@ export default function App() {
         setMemberships(formattedMembers);
       }
 
-      // 3. Feed
       const { data: feedData } = await supabase.from('feed_posts').select('*');
       if (feedData) setFeedPosts(feedData);
 
-      // 4. Pending Workouts
       const { data: pendingData } = await supabase.from('pending_workouts').select('*');
       if (pendingData) setPendingWorkouts(pendingData);
 
-      // 5. Stories
       const { data: storiesData } = await supabase.from('stories').select('*');
       if (storiesData) setStories(storiesData);
 
@@ -879,7 +863,6 @@ export default function App() {
                   onChangeText={handleBirthDateChange}
                 />
 
-                {/* Exibição em tempo real da idade calculada */}
                 {birthDateInput.length === 10 && (
                   <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#16a34a', marginBottom: 8, textAlign: 'center' }}>
                     🎉 Idade Calculada: {calculateAge(birthDateInput)} anos
@@ -1062,7 +1045,7 @@ export default function App() {
                     )}
                   </View>
                 )}
-              ScrollView>
+              </ScrollView>
             </View>
           )}
         </View>
@@ -1687,6 +1670,7 @@ export default function App() {
         </View>
       </Modal>
 
+      {/* MODAL REGISTRAR TREINO COM SCROLLVIEW FECHADA CORRETAMENTE */}
       <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={styles.modalContent}>
