@@ -238,7 +238,7 @@ export default function App() {
     }
   }
 
-  // AÇÃO DE AUTENTICAÇÃO E REGISTRO
+  // AÇÃO DE AUTENTICAÇÃO E REGISTRO (AJUSTADO PARA O TRIGGER)
   async function handleAuthAction() {
     if (!emailInput.trim() || !passwordInput.trim()) {
       Alert.alert('Atenção', 'Preencha E-mail e Senha para continuar.');
@@ -257,7 +257,7 @@ export default function App() {
 
         const cleanName = fullNameInput.trim();
 
-        // 1. Criar Usuário na Auth do Supabase
+        // 1. O Trigger do Supabase usará estes metadados em `options.data`
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: emailInput.trim(),
           password: passwordInput.trim(),
@@ -276,8 +276,13 @@ export default function App() {
           return;
         }
 
-        if (authData?.user) {
-          // 2. Gravar Perfil na Tabela 'profiles' (sem travar caso o RLS dê aviso)
+        // 2. Se a sessão retornou direta (sem e-mail de confirmação ativado)
+        if (authData?.session) {
+          setSession(authData.session);
+          await fetchUserProfile(authData.session.user.id, authData.session.user.email);
+          await fetchDataFromSupabase();
+        } else if (authData?.user) {
+          // Tentar inserir manualmente na 'profiles' caso o trigger não esteja ativo (segurança)
           try {
             await supabase.from('profiles').upsert([
               {
@@ -288,8 +293,8 @@ export default function App() {
                 updated_at: new Date().toISOString()
               }
             ], { onConflict: 'id' });
-          } catch (e) {
-            console.log('Aviso ao inserir em profiles:', e);
+          } catch (pErr) {
+            console.log('Aviso ao inserir profiles manualmente:', pErr);
           }
 
           // 3. Efetuar Login Imediato
@@ -299,7 +304,7 @@ export default function App() {
           });
 
           if (loginError) {
-            Alert.alert('Cadastro Criado!', 'Conta criada com sucesso. Clique em Entrar.');
+            Alert.alert('Conta Criada!', 'Sua conta foi cadastrada. Por favor, faça login com seu e-mail e senha.');
             setIsSignUp(false);
           } else if (loginData.session) {
             setSession(loginData.session);
@@ -1546,6 +1551,51 @@ export default function App() {
               ))}
             </ScrollView>
           )}
+
+          {currentScreen === 'admin' && isAdminContext && hasUserAnyCommunity && selectedChallenge && (
+            <ScrollView contentContainerStyle={styles.mainContent}>
+              <View style={styles.adminControlCard}>
+                <Text style={styles.adminCardTitle}>🎯 Gerenciando: {selectedChallenge.title}</Text>
+                <Text style={styles.adminCardSub}>Todas as alterações feitas afetam esta liga no Supabase.</Text>
+              </View>
+
+              <View style={styles.adminControlCard}>
+                <Text style={styles.adminCardTitle}>📋 Aprovação de Treinos Pendentes ({currentPendingWorkouts.length})</Text>
+                {currentPendingWorkouts.length === 0 ? (
+                  <Text style={styles.emptyNoticeText}>Nenhum treino aguardando aprovação.</Text>
+                ) : (
+                  currentPendingWorkouts.map((w) => (
+                    <View key={w.id} style={styles.participantRow}>
+                      <Image source={{ uri: w.photo_evidence }} style={styles.avatarMini} />
+                      <View style={{ flex: 1, marginLeft: 8 }}>
+                        <Text style={styles.participantName}>{w.user_name} ({w.activity_type})</Text>
+                        <Text style={styles.participantSub}>{w.caption}</Text>
+                        <Text style={styles.tagActiveText}>Recompensa: +{w.points_to_ranking} pts</Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: 4 }}>
+                        <TouchableOpacity style={styles.approveBtn} onPress={() => handleApproveWorkout(w.id)}>
+                          <Text style={styles.btnMiniText}>✅ APROVAR</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.banBtn} onPress={() => handleRejectWorkout(w.id)}>
+                          <Text style={styles.btnMiniText}>❌ REJEITAR</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))
+                )}
+              </View>
+
+              <View style={styles.adminControlCard}>
+                <Text style={styles.adminCardTitle}>🔒 Controle de Inscrições</Text>
+                <Text style={styles.adminCardSub}>Status: {selectedChallenge.registrations_closed ? 'ENCERRADAS' : 'ABERTAS'}</Text>
+                <TouchableOpacity style={styles.toggleRegBtn} onPress={toggleChallengeRegistrations}>
+                  <Text style={styles.toggleRegBtnText}>
+                    {selectedChallenge.registrations_closed ? '🔓 REABRIR CANDIDATURAS' : '🔒 ENCERRAR CANDIDATURA'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+)}
 
           {currentScreen === 'admin' && isAdminContext && hasUserAnyCommunity && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
