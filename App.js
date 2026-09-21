@@ -419,6 +419,9 @@ export default function App() {
         if (!activeChallengeId) {
           setActiveChallengeId(formattedChallenges[0].id);
         }
+      } else {
+        setChallenges([]);
+        setActiveChallengeId(null);
       }
 
       const { data: membersData } = await supabase.from('memberships').select('*');
@@ -636,15 +639,41 @@ export default function App() {
     Alert.alert('🎉 Convite Aceito!', `Você entrou no desafio "${ch.title}".`);
   }
 
+  // EXCLUSÃO EM CASCATA COM CONFIRMAÇÃO DO ADMIN
   async function handleDeleteChallenge(challengeId) {
-    if (challenges.length <= 1) {
-      Alert.alert('Atenção', 'Você não pode excluir o único desafio ativo.');
-      return;
-    }
+    const challengeToDelete = challenges.find(c => c.id === challengeId);
+    if (!challengeToDelete) return;
 
-    await supabase.from('challenges').delete().eq('id', challengeId);
-    fetchDataFromSupabase();
-    Alert.alert('Desafio Excluído', 'A liga foi removida com sucesso do Supabase.');
+    const confirmDelete = Platform.OS === 'web'
+      ? window.confirm(`Tem certeza de que deseja EXCLUIR definitivamente a liga "${challengeToDelete.title}"? Esta ação removerá todos os membros e treinos desta liga e não pode ser desfeita.`)
+      : true;
+
+    if (!confirmDelete) return;
+
+    try {
+      // Deleta em cascata dependências para evitar conflito de Chave Estrangeira (Foreign Key)
+      await supabase.from('pending_workouts').delete().eq('challenge_id', challengeId);
+      await supabase.from('feed_posts').delete().eq('challenge_id', challengeId);
+      await supabase.from('memberships').delete().eq('challenge_id', challengeId);
+
+      // Deleta o desafio na tabela principal
+      const { error } = await supabase.from('challenges').delete().eq('id', challengeId);
+
+      if (error) {
+        Alert.alert('Erro ao Excluir', error.message);
+        return;
+      }
+
+      await fetchDataFromSupabase();
+
+      if (Platform.OS === 'web') {
+        window.alert(`Liga "${challengeToDelete.title}" excluída com sucesso!`);
+      } else {
+        Alert.alert('Desafio Excluído', `A liga "${challengeToDelete.title}" foi removida.`);
+      }
+    } catch (err) {
+      Alert.alert('Erro Inesperado', 'Não foi possível excluir o desafio.');
+    }
   }
 
   async function handleFinishChallenge(challengeId) {
@@ -1179,6 +1208,8 @@ export default function App() {
                           <Text style={styles.btnMiniText}>🏆 ENCERRAR</Text>
                         </TouchableOpacity>
                       )}
+
+                      {/* BOTÃO EXCLUIR EXIBIDO PARA ADMINISTRADORES EM TODOS OS STATUS */}
                       <TouchableOpacity style={styles.deleteChallengeBtn} onPress={() => handleDeleteChallenge(c.id)}>
                         <Text style={styles.btnMiniText}>🗑️ EXCLUIR</Text>
                       </TouchableOpacity>
