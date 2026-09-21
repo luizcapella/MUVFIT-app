@@ -132,26 +132,26 @@ export default function App() {
   // MODAL DE CONFIGURAÇÃO AVANÇADA DE PONTOS
   const [isAdvancedRulesModalOpen, setIsAdvancedRulesModalOpen] = useState(false);
   const [selectedConfigChallengeId, setSelectedConfigChallengeId] = useState(null);
-  const [selectedConfigActivity, setSelectedConfigActivity] = useState('Musculação');
+  const [selectedConfigActivity, setSelectedConfigActivity] = useState('💪 Musculação');
   const [isActivityEnabled, setIsActivityEnabled] = useState(true);
-  const [selectedScoringMode, setSelectedScoringMode] = useState('');
 
   const [isConfigChallengeDropdownOpen, setIsConfigChallengeDropdownOpen] = useState(false);
   const [isConfigActivityDropdownOpen, setIsConfigActivityDropdownOpen] = useState(false);
 
   const [athletePerfScope] = useState('overall');
 
+  // LISTA DE MODALIDADES COM EMOJIS
   const modalitiesList = [
-    'Musculação',
-    'Crossfit / Treino Funcional',
-    'Treino Aeróbico',
-    'Corrida',
-    'Caminhada',
-    'Bike',
-    'Esportes Coletivos',
-    'Lutas / Esportes Individuais',
-    'Bônus e Critérios de Desempate',
-    'Passos Diários'
+    { label: '💪 Musculação', value: 'Musculação' },
+    { label: '🏋️ Crossfit / Treino Funcional', value: 'Crossfit / Treino Funcional' },
+    { label: '🫀 Treino Aeróbico', value: 'Treino Aeróbico' },
+    { label: '🏃 Corrida', value: 'Corrida' },
+    { label: '🚶 Caminhada', value: 'Caminhada' },
+    { label: '🚴 Bike', value: 'Bike' },
+    { label: '⚽ Esportes Coletivos', value: 'Esportes Coletivos' },
+    { label: '🥋 Lutas / Esportes Individuais', value: 'Lutas / Esportes Individuais' },
+    { label: '🎁 Bônus e Critérios de Desempate', value: 'Bônus e Critérios de Desempate' },
+    { label: '🚶‍♂️ Passos Diários', value: 'Passos Diários' }
   ];
 
   const formatBirthDateMask = (text) => {
@@ -1541,7 +1541,7 @@ export default function App() {
                     </TouchableOpacity>
 
                     {isAthleteDropdownOpen && (
-                      <View style={styles.dropdownListContainer}>
+                      <View style={styles.floatingDropdownContainer}>
                         {activeMembersInChallenge.map((m) => (
                           <TouchableOpacity
                             key={m.id}
@@ -1567,17 +1567,17 @@ export default function App() {
                     </TouchableOpacity>
 
                     {isActivityDropdownOpen && (
-                      <View style={styles.dropdownListContainer}>
-                        {modalitiesList.map((act) => (
+                      <View style={styles.floatingDropdownContainer}>
+                        {modalitiesList.map((item) => (
                           <TouchableOpacity
-                            key={act}
+                            key={item.value}
                             style={styles.dropdownOptionRow}
                             onPress={() => {
-                              setManualActivity(act);
+                              setManualActivity(item.label);
                               setIsActivityDropdownOpen(false);
                             }}
                           >
-                            <Text style={{ fontSize: 10, fontWeight: 'bold' }}>{act}</Text>
+                            <Text style={{ fontSize: 10, fontWeight: 'bold' }}>{item.label}</Text>
                           </TouchableOpacity>
                         ))}
                       </View>
@@ -1711,32 +1711,37 @@ export default function App() {
               <ScrollView style={{ maxHeight: 450, minWidth: 280 }} keyboardShouldPersistTaps="handled">
                 
                 {/* 1 - SELEÇÃO DO DESAFIO PARA CONFIGURAR */}
-                <Text style={styles.inputLabel}>1 - Selecione o Desafio Para Configurar:</Text>
-                <TouchableOpacity 
-                  style={styles.dropdownSelectBox} 
-                  onPress={() => setIsConfigChallengeDropdownOpen(!isConfigChallengeDropdownOpen)}
-                >
-                  <Text style={styles.dropdownSelectText}>
-                    {configSelectedChallengeObject ? configSelectedChallengeObject.title : 'Selecione um desafio...'} ▼
-                  </Text>
-                </TouchableOpacity>
+                <View style={{ zIndex: 30, position: 'relative', marginBottom: 6 }}>
+                  <Text style={styles.inputLabel}>1 - Selecione o Desafio Para Configurar:</Text>
+                  <TouchableOpacity 
+                    style={styles.dropdownSelectBox} 
+                    onPress={() => {
+                      setIsConfigChallengeDropdownOpen(!isConfigChallengeDropdownOpen);
+                      setIsConfigActivityDropdownOpen(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownSelectText}>
+                      {configSelectedChallengeObject ? configSelectedChallengeObject.title : 'Selecione um desafio...'} ▼
+                    </Text>
+                  </TouchableOpacity>
 
-                {isConfigChallengeDropdownOpen && (
-                  <View style={styles.dropdownListContainer}>
-                    {adminChallenges.map((c) => (
-                      <TouchableOpacity
-                        key={c.id}
-                        style={styles.dropdownOptionRow}
-                        onPress={() => {
-                          setSelectedConfigChallengeId(c.id);
-                          setIsConfigChallengeDropdownOpen(false);
-                        }}
-                      >
-                        <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>{c.title}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
+                  {isConfigChallengeDropdownOpen && (
+                    <View style={styles.floatingDropdownContainer}>
+                      {adminChallenges.map((c) => (
+                        <TouchableOpacity
+                          key={c.id}
+                          style={styles.dropdownOptionRow}
+                          onPress={() => {
+                            setSelectedConfigChallengeId(c.id);
+                            setIsConfigChallengeDropdownOpen(false);
+                          }}
+                        >
+                          <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>{c.title}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
 
                 {/* 2 - AVISO COM SÍMBOLO DE EXCLAMAÇÃO AMARELO */}
                 <View style={styles.warningNoticeBox}>
@@ -1746,31 +1751,38 @@ export default function App() {
                   </Text>
                 </View>
 
-                {/* 3 - SELEÇÃO DA MODALIDADE PARA CONFIGURAR */}
-                <Text style={styles.inputLabel}>3 - Selecione a Modalidade para Configurar:</Text>
-                <TouchableOpacity 
-                  style={styles.dropdownSelectBox} 
-                  onPress={() => setIsConfigActivityDropdownOpen(!isConfigActivityDropdownOpen)}
-                >
-                  <Text style={styles.dropdownSelectText}>{selectedConfigActivity} ▼</Text>
-                </TouchableOpacity>
+                {/* 3 - SELEÇÃO DA MODALIDADE PARA CONFIGURAR COM EMOJIS */}
+                <View style={{ zIndex: 20, position: 'relative', marginBottom: 6 }}>
+                  <Text style={styles.inputLabel}>3 - Selecione a Modalidade para Configurar:</Text>
+                  <TouchableOpacity 
+                    style={styles.dropdownSelectBox} 
+                    onPress={() => {
+                      setIsConfigActivityDropdownOpen(!isConfigActivityDropdownOpen);
+                      setIsConfigChallengeDropdownOpen(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownSelectText}>{selectedConfigActivity} ▼</Text>
+                  </TouchableOpacity>
 
-                {isConfigActivityDropdownOpen && (
-                  <View style={styles.dropdownListContainer}>
-                    {modalitiesList.map((m) => (
-                      <TouchableOpacity
-                        key={m}
-                        style={styles.dropdownOptionRow}
-                        onPress={() => {
-                          setSelectedConfigActivity(m);
-                          setIsConfigActivityDropdownOpen(false);
-                        }}
-                      >
-                        <Text style={{ fontSize: 10, fontWeight: 'bold' }}>{m}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
+                  {isConfigActivityDropdownOpen && (
+                    <View style={styles.floatingDropdownContainer}>
+                      <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                        {modalitiesList.map((item) => (
+                          <TouchableOpacity
+                            key={item.value}
+                            style={styles.dropdownOptionRow}
+                            onPress={() => {
+                              setSelectedConfigActivity(item.label);
+                              setIsConfigActivityDropdownOpen(false);
+                            }}
+                          >
+                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0f172a' }}>{item.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
 
                 {/* 4 - CHECKBOX PARA HABILITAR OU DESABILITAR A MODALIDADE */}
                 <TouchableOpacity 
@@ -2056,10 +2068,27 @@ const styles = StyleSheet.create({
   workoutPendingCard: { backgroundColor: '#f8fafc', borderRadius: 6, padding: 8, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 8 },
   evidenceImagePreview: { width: '100%', height: 140, borderRadius: 6, marginVertical: 6 },
 
-  dropdownSelectBox: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 8, marginBottom: 6 },
+  dropdownSelectBox: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 8, marginBottom: 4 },
   dropdownSelectText: { fontSize: 10, fontWeight: 'bold', color: '#0f172a' },
-  dropdownListContainer: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, marginBottom: 8, maxHeight: 150 },
-  dropdownOptionRow: { flexDirection: 'row', alignItems: 'center', padding: 8, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  
+  // CONTAINER FLUTUANTE PARA SOBREPOR COMPONENTES
+  floatingDropdownContainer: {
+    position: 'absolute',
+    top: 52,
+    left: 0,
+    right: 0,
+    backgroundColor: '#ffffff',
+    borderWidth: 2,
+    borderColor: '#f97316',
+    borderRadius: 6,
+    zIndex: 9999,
+    elevation: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+  },
+  dropdownOptionRow: { flexDirection: 'row', alignItems: 'center', padding: 10, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', backgroundColor: '#ffffff' },
 
   participantRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#fed7aa', marginTop: 6 },
   participantName: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
