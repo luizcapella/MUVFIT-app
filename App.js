@@ -129,7 +129,30 @@ export default function App() {
   const [isAthleteDropdownOpen, setIsAthleteDropdownOpen] = useState(false);
   const [isActivityDropdownOpen, setIsActivityDropdownOpen] = useState(false);
 
+  // MODAL DE CONFIGURAÇÃO AVANÇADA DE PONTOS
+  const [isAdvancedRulesModalOpen, setIsAdvancedRulesModalOpen] = useState(false);
+  const [selectedConfigChallengeId, setSelectedConfigChallengeId] = useState(null);
+  const [selectedConfigActivity, setSelectedConfigActivity] = useState('Musculação');
+  const [isActivityEnabled, setIsActivityEnabled] = useState(true);
+  const [selectedScoringMode, setSelectedScoringMode] = useState('');
+
+  const [isConfigChallengeDropdownOpen, setIsConfigChallengeDropdownOpen] = useState(false);
+  const [isConfigActivityDropdownOpen, setIsConfigActivityDropdownOpen] = useState(false);
+
   const [athletePerfScope] = useState('overall');
+
+  const modalitiesList = [
+    'Musculação',
+    'Crossfit / Treino Funcional',
+    'Treino Aeróbico',
+    'Corrida',
+    'Caminhada',
+    'Bike',
+    'Esportes Coletivos',
+    'Lutas / Esportes Individuais',
+    'Bônus e Critérios de Desempate',
+    'Passos Diários'
+  ];
 
   const formatBirthDateMask = (text) => {
     let cleaned = text.replace(/\D/g, '');
@@ -397,9 +420,13 @@ export default function App() {
         if (!activeChallengeId) {
           setActiveChallengeId(formattedChallenges[0].id);
         }
+        if (!selectedConfigChallengeId) {
+          setSelectedConfigChallengeId(formattedChallenges[0].id);
+        }
       } else {
         setChallenges([]);
         setActiveChallengeId(null);
+        setSelectedConfigChallengeId(null);
       }
 
       const { data: membersData } = await supabase.from('memberships').select('*');
@@ -561,6 +588,7 @@ export default function App() {
     setNewChallengeCode('');
     
     setActiveChallengeId(newId);
+    setSelectedConfigChallengeId(newId);
     setIsAdminContext(true);
     setCurrentScreen('admin');
 
@@ -576,7 +604,7 @@ export default function App() {
       user_id: currentUser.id,
       name: currentUser.name,
       nickname: currentUser.nickname,
-      role: 'pending', // Solicitante entra como pendente até aprovação do admin para Virar Atleta
+      role: 'pending',
       ranking_points: 0,
       bank_points: 0,
       total_steps: 0,
@@ -641,7 +669,6 @@ export default function App() {
     Alert.alert('Desafio Encerrado', 'O pódio foi gerado no Feed.');
   }
 
-  // BOTÃO ALTERAR STATUS DE INSCRIÇÕES NA LIGA (ABERTA / FECHADA)
   async function toggleChallengeRegistrations() {
     const newStatus = !selectedChallenge.registrations_closed;
     await supabase.from('challenges').update({ registrations_closed: newStatus }).eq('id', selectedChallenge.id);
@@ -649,21 +676,18 @@ export default function App() {
     Alert.alert('Status Atualizado', newStatus ? 'Inscrições/Candidaturas ENCERRADAS!' : 'Inscrições/Candidaturas ABERTAS!');
   }
 
-  // APROVAR OU REJEITAR ATLETA ATIVO NO DESAFIO
   async function handleUpdateMemberRole(memberId, newRole) {
     await supabase.from('memberships').update({ role: newRole }).eq('id', memberId);
     fetchDataFromSupabase();
     Alert.alert('Status Atualizado', newRole === 'active' ? 'Atleta aprovado com sucesso!' : 'Participante mantido/definido como Torcedor.');
   }
 
-  // REMOVER MEMBRO DA COMUNIDADE TOTALMENTE
   async function handleRemoveMemberFromCommunity(memberId) {
     await supabase.from('memberships').delete().eq('id', memberId);
     fetchDataFromSupabase();
     Alert.alert('Removido', 'O participante foi removido da comunidade.');
   }
 
-  // LANÇAMENTO MANUAL DE PONTOS / BÔNUS / PASSOS
   async function handleManualPointsSubmit() {
     if (!manualSelectedAthleteId) {
       Alert.alert('Atenção', 'Selecione um Atleta Ativo.');
@@ -696,7 +720,6 @@ export default function App() {
       total_steps: newStepsTotal
     }).eq('id', manualSelectedAthleteId);
 
-    // Se houve atribuição de pontos, gera também publicação no Feed
     const newPost = {
       id: `p_man_${Date.now()}`,
       challenge_id: selectedChallenge.id,
@@ -824,6 +847,11 @@ export default function App() {
     Alert.alert('Sucesso', 'Treino enviado para a nuvem! Aguardando aprovação do Admin.');
   }
 
+  function handleSaveAdvancedRules() {
+    setIsAdvancedRulesModalOpen(false);
+    Alert.alert('Sucesso', 'Configurações de pontuação da modalidade salvas com sucesso!');
+  }
+
   const searchResultsAthletes = memberships.filter(m => {
     if (searchFilter === 'challenge') return false;
     const term = searchQuery.toLowerCase().trim();
@@ -848,6 +876,8 @@ export default function App() {
   
   const currentFeedPosts = feedPosts.filter(p => p.challenge_id === activeChallengeId);
   const currentPendingWorkouts = pendingWorkouts.filter(w => w.challenge_id === activeChallengeId);
+
+  const configSelectedChallengeObject = adminChallenges.find(c => c.id === selectedConfigChallengeId) || adminChallenges[0];
 
   const top3Winners = [...currentChallengeMembers]
     .sort((a, b) => (b.goldMedals || 0) - (a.goldMedals || 0))
@@ -1147,7 +1177,7 @@ export default function App() {
                 )}
               </View>
 
-              {/* BLOC0: CONVITES PENDENTES */}
+              {/* BLOCO: CONVITES PENDENTES */}
               {pendingInvites.length > 0 && (
                 <View style={styles.inviteNoticeBox}>
                   <Text style={styles.inviteNoticeTitle}>📩 Convites Pendentes</Text>
@@ -1426,7 +1456,6 @@ export default function App() {
 
                           <Text style={{ fontSize: 10, color: '#334155', marginBottom: 6 }}>{w.caption}</Text>
 
-                          {/* IMAGEM DE COMPROVAÇÃO */}
                           {w.photo_evidence && (
                             <Image source={{ uri: w.photo_evidence }} style={styles.evidenceImagePreview} />
                           )}
@@ -1495,7 +1524,7 @@ export default function App() {
               {/* ITEM 3 - LANÇAMENTO MANUAL DE PONTOS, BÔNUS & PASSOS */}
               <View style={styles.accordionCard}>
                 <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec3(!expandedSec3)}>
-                  <Text style={styles.accordionTitle}>3. LANÇAMENTO MANUAL DE PONTOS, BÔNUS & PASSOS</Text>
+                  <Text style={styles.accordionTitle}>3. LANÇAMENTO MANUAL DE PONTOS, BÔNUS E PASSOS</Text>
                   <Text style={styles.accordionArrow}>{expandedSec3 ? '▲' : '▼'}</Text>
                 </TouchableOpacity>
 
@@ -1539,7 +1568,7 @@ export default function App() {
 
                     {isActivityDropdownOpen && (
                       <View style={styles.dropdownListContainer}>
-                        {['Musculação', 'Corrida', 'Ciclismo', 'Natação', 'Passos Diários', 'Ajuste do Admin'].map((act) => (
+                        {modalitiesList.map((act) => (
                           <TouchableOpacity
                             key={act}
                             style={styles.dropdownOptionRow}
@@ -1585,7 +1614,6 @@ export default function App() {
                       onChangeText={setManualSteps}
                     />
 
-                    {/* CONCEDER BÔNUS */}
                     <Text style={[styles.inputLabel, { marginTop: 6 }]}>Conceder Bônus:</Text>
                     
                     <TouchableOpacity 
@@ -1659,9 +1687,9 @@ export default function App() {
                 {expandedSec5 && (
                   <View style={styles.accordionBody}>
                     <Text style={{ fontSize: 10, color: '#475569', marginBottom: 8 }}>
-                      Configure limites de pontuação, critérios de desempate e regras detalhadas exibidas para os atletas.
+                      Configurar limites de classificação, critérios de desempate e regras apresentadas para os atletas.
                     </Text>
-                    <TouchableOpacity style={styles.actionBtn} onPress={() => Alert.alert('Regras', 'Regras da liga já estão sincronizadas com o banco de dados.')}>
+                    <TouchableOpacity style={styles.actionBtn} onPress={() => setIsAdvancedRulesModalOpen(true)}>
                       <Text style={styles.actionBtnText}>⚙️ EDITAR REGRAS DETALHADAS DA LIGA</Text>
                     </TouchableOpacity>
                   </View>
@@ -1672,6 +1700,111 @@ export default function App() {
           )}
         </View>
       </View>
+
+      {/* MODAL CONFIGURAÇÃO AVANÇADA DE PONTOS (ITEM 5) */}
+      <Modal visible={isAdvancedRulesModalOpen} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentLarge}>
+            <Text style={styles.modalTitle}>⚙️ Configuração Avançada de Pontos</Text>
+
+            <ScrollView horizontal style={{ flexGrow: 0 }} contentContainerStyle={{ flexGrow: 1 }}>
+              <ScrollView style={{ maxHeight: 450, minWidth: 280 }} keyboardShouldPersistTaps="handled">
+                
+                {/* 1 - SELEÇÃO DO DESAFIO PARA CONFIGURAR */}
+                <Text style={styles.inputLabel}>1 - Selecione o Desafio Para Configurar:</Text>
+                <TouchableOpacity 
+                  style={styles.dropdownSelectBox} 
+                  onPress={() => setIsConfigChallengeDropdownOpen(!isConfigChallengeDropdownOpen)}
+                >
+                  <Text style={styles.dropdownSelectText}>
+                    {configSelectedChallengeObject ? configSelectedChallengeObject.title : 'Selecione um desafio...'} ▼
+                  </Text>
+                </TouchableOpacity>
+
+                {isConfigChallengeDropdownOpen && (
+                  <View style={styles.dropdownListContainer}>
+                    {adminChallenges.map((c) => (
+                      <TouchableOpacity
+                        key={c.id}
+                        style={styles.dropdownOptionRow}
+                        onPress={() => {
+                          setSelectedConfigChallengeId(c.id);
+                          setIsConfigChallengeDropdownOpen(false);
+                        }}
+                      >
+                        <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>{c.title}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+
+                {/* 2 - AVISO COM SÍMBOLO DE EXCLAMAÇÃO AMARELO */}
+                <View style={styles.warningNoticeBox}>
+                  <Text style={styles.warningNoticeIcon}>⚠️</Text>
+                  <Text style={styles.warningNoticeText}>
+                    Escolha 1 único modo de pontuação por modalidade habilitada
+                  </Text>
+                </View>
+
+                {/* 3 - SELEÇÃO DA MODALIDADE PARA CONFIGURAR */}
+                <Text style={styles.inputLabel}>3 - Selecione a Modalidade para Configurar:</Text>
+                <TouchableOpacity 
+                  style={styles.dropdownSelectBox} 
+                  onPress={() => setIsConfigActivityDropdownOpen(!isConfigActivityDropdownOpen)}
+                >
+                  <Text style={styles.dropdownSelectText}>{selectedConfigActivity} ▼</Text>
+                </TouchableOpacity>
+
+                {isConfigActivityDropdownOpen && (
+                  <View style={styles.dropdownListContainer}>
+                    {modalitiesList.map((m) => (
+                      <TouchableOpacity
+                        key={m}
+                        style={styles.dropdownOptionRow}
+                        onPress={() => {
+                          setSelectedConfigActivity(m);
+                          setIsConfigActivityDropdownOpen(false);
+                        }}
+                      >
+                        <Text style={{ fontSize: 10, fontWeight: 'bold' }}>{m}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+
+                {/* 4 - CHECKBOX PARA HABILITAR OU DESABILITAR A MODALIDADE */}
+                <TouchableOpacity 
+                  style={[styles.checkboxRow, { marginTop: 10 }]} 
+                  onPress={() => setIsActivityEnabled(!isActivityEnabled)}
+                >
+                  <View style={[styles.checkboxBox, isActivityEnabled && styles.checkboxBoxActive]}>
+                    {isActivityEnabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                  </View>
+                  <Text style={styles.checkboxLabel}>Habilitar esta modalidade no desafio?</Text>
+                </TouchableOpacity>
+
+                {/* 5 - CONTAINER RESERVADO PARA OS MODOS DE PONTUAÇÃO (PRÓXIMA ETAPA) */}
+                <View style={styles.scoringModeBoxContainer}>
+                  <Text style={styles.inputLabel}>5 - Selecione o Modo de Pontuação:</Text>
+                  <Text style={{ fontSize: 9, color: '#64748b', fontStyle: 'italic', marginTop: 4 }}>
+                    (Os modos de pontuação detalhados serão configurados na próxima etapa)
+                  </Text>
+                </View>
+
+              </ScrollView>
+            </ScrollView>
+
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+              <TouchableOpacity style={[styles.primaryBtn, { flex: 1 }]} onPress={handleSaveAdvancedRules}>
+                <Text style={styles.primaryBtnText}>SALVAR REGRAS</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.cancelBtn, { flex: 1, justifyContent: 'center' }]} onPress={() => setIsAdvancedRulesModalOpen(false)}>
+                <Text style={styles.cancelBtnText}>CANCELAR</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* MODAL EDITAR PERFIL */}
       <Modal visible={isEditProfileOpen} animationType="slide" transparent>
@@ -1914,7 +2047,6 @@ const styles = StyleSheet.create({
   adminCardTitle: { fontSize: 12, fontWeight: 'bold', color: '#c2410c', marginBottom: 4 },
   adminCardSub: { fontSize: 10, color: '#475569', marginBottom: 8 },
 
-  // ESTILOS DE SANFONA / ACCORDION DA CENTRAL DO ADMIN
   accordionCard: { backgroundColor: '#ffffff', borderRadius: 8, borderWidth: 1.5, borderColor: '#cbd5e1', marginBottom: 10, overflow: 'hidden' },
   accordionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc', padding: 12, borderBottomWidth: 1, borderBottomColor: '#e2e8f0' },
   accordionTitle: { fontSize: 11, fontWeight: 'bold', color: '#1e3a8a', flex: 1 },
@@ -2003,9 +2135,16 @@ const styles = StyleSheet.create({
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 14 },
   modalContent: { backgroundColor: '#ffffff', borderRadius: 12, padding: 14, maxHeight: '90%' },
+  modalContentLarge: { backgroundColor: '#ffffff', borderRadius: 12, padding: 14, maxHeight: '95%', width: '95%', alignSelf: 'center' },
   modalTitle: { fontSize: 14, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 10, textAlign: 'center' },
   inputLabel: { fontSize: 10, fontWeight: 'bold', color: '#475569', marginVertical: 4 },
   input: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 6, fontSize: 11, marginBottom: 6 },
+
+  warningNoticeBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fef3c7', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#f59e0b', marginVertical: 8 },
+  warningNoticeIcon: { fontSize: 14, marginRight: 6 },
+  warningNoticeText: { fontSize: 10, fontWeight: 'bold', color: '#b45309', flex: 1 },
+
+  scoringModeBoxContainer: { backgroundColor: '#f8fafc', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', marginTop: 10 },
 
   chipBtn: { backgroundColor: '#f1f5f9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
   chipBtnActive: { backgroundColor: '#f97316' },
