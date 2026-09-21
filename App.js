@@ -98,8 +98,10 @@ export default function App() {
   const [commentInputs, setCommentInputs] = useState({});
 
   const [isWorkoutModalOpen, setIsWorkoutModalOpen] = useState(false);
-  const [selectedActivity, setSelectedActivity] = useState('musculacao');
+  const [selectedActivity, setSelectedActivity] = useState('Musculação');
   const [durationInput, setDurationInput] = useState('');
+  const [kmInput, setKmInput] = useState('');
+  const [stepsInput, setStepsInput] = useState('');
   const [workoutCaption, setWorkoutCaption] = useState('');
   const [photoEvidence, setPhotoEvidence] = useState(null);
 
@@ -135,8 +137,11 @@ export default function App() {
   const [selectedConfigActivity, setSelectedConfigActivity] = useState('💪 Musculação');
   
   // ESTADO MAPEADO DAS MODALIDADES HABILITADAS POR DESAFIO
-  // Formato: { [challengeId]: { [activityKey]: true/false } }
   const [modalitiesConfig, setModalitiesConfig] = useState({});
+
+  // ESTADO DOS MODOS DE PONTUAÇÃO DETALHADOS POR DESAFIO E MODALIDADE
+  // Estrutura: { [challengeId]: { [activityValue]: { selectedOption, minTime, minTimePts, minKm, minKmPts, stepsTime, stepsKm, enableStepsRanking, stepsMultiplier, bonusInquebravel, bonusDesperta, tiebreakers } } }
+  const [scoringRules, setScoringRules] = useState({});
 
   const [athletePerfScope] = useState('overall');
 
@@ -173,6 +178,38 @@ export default function App() {
         [selectedConfigActivity]: !currentVal
       }
     }));
+  };
+
+  // REGRAS DE PONTUAÇÃO DA MODALIDADE ATUALMENTE SELECIONADA
+  const currentRules = (selectedConfigChallengeId && scoringRules[selectedConfigChallengeId] && scoringRules[selectedConfigChallengeId][selectedConfigActivity]) || {
+    selectedOption: null, // 'minTime', 'minKm', 'stepsTime', 'stepsKm'
+    minTime: '30',
+    minTimePts: '5000',
+    minKm: '3',
+    minKmPts: '5000',
+    stepsTime: [{ condition: 'De', time1: '30', time2: '60', points: '5000' }],
+    stepsKm: [{ condition: 'De', km1: '1.5', km2: '4.5', points: '5000' }],
+    enableStepsRanking: false,
+    stepsMultiplier: '0.5',
+    bonusInquebravel: { enabled: true, days: '7', points: '5000' },
+    bonusDesperta: { enabled: true, limitTime: '07:00', points: '3000' },
+    tiebreakers: { kmTotal: true, bankPoints: true, dailySteps: true, activeDays: true }
+  };
+
+  const updateCurrentRuleState = (updater) => {
+    if (!selectedConfigChallengeId) return;
+    setScoringRules(prev => {
+      const challengeObj = prev[selectedConfigChallengeId] || {};
+      const currentActObj = challengeObj[selectedConfigActivity] || currentRules;
+      const updatedActObj = typeof updater === 'function' ? updater(currentActObj) : { ...currentActObj, ...updater };
+      return {
+        ...prev,
+        [selectedConfigChallengeId]: {
+          ...challengeObj,
+          [selectedConfigActivity]: updatedActObj
+        }
+      };
+    });
   };
 
   const formatBirthDateMask = (text) => {
@@ -822,6 +859,7 @@ export default function App() {
     Alert.alert('Treino Rejeitado', 'O registro foi removido.');
   }
 
+  // SUBMETER NOVO TREINO COM TRAVA ANTIDUPLICAÇÃO DIÁRIA (OBS 2)
   async function handleSubmitWorkout() {
     const currentMemberRecord = memberships.find(m => m.challengeId === activeChallengeId && m.userId === currentUser.id);
     if (!currentMemberRecord && selectedChallenge.creator_id !== currentUser.id) {
@@ -831,6 +869,22 @@ export default function App() {
 
     if (!photoEvidence) {
       Alert.alert('Comprovante Obrigatório', 'Envie a foto comprovando a atividade.');
+      return;
+    }
+
+    const cleanActType = selectedActivity.trim().toUpperCase();
+    const todayStr = new Date().toLocaleDateString('pt-BR');
+
+    // TRAVA OBS 2: VERIFICA SE JÁ SUBMETEU OU PUBLICOU ESTA MODALIDADE HOJE
+    const hasAlreadySubmittedToday = 
+      feedPosts.some(p => p.challenge_id === activeChallengeId && p.user_id === currentUser.id && (p.activity_type || '').toUpperCase() === cleanActType && p.created_at.includes(todayStr)) ||
+      pendingWorkouts.some(w => w.challenge_id === activeChallengeId && w.user_id === currentUser.id && (w.activity_type || '').toUpperCase() === cleanActType);
+
+    if (hasAlreadySubmittedToday) {
+      Alert.alert(
+        '🚫 Trava de Treino Diário',
+        `Você já registrou um treino de "${selectedActivity}" hoje! Não é permitido repetir a mesma modalidade no mesmo dia até as 23:59:59.`
+      );
       return;
     }
 
@@ -844,6 +898,9 @@ export default function App() {
       ptsBank = Math.max(0, points - selectedChallenge.daily_cap);
     }
 
+    // REGISTRA A HORA EXATA DO CLIQUE DO ATLETA (PARA O BÔNUS "O DESPERTA")
+    const submissionTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
     const newPendingWorkout = {
       id: `pw_${Date.now()}`,
       challenge_id: activeChallengeId,
@@ -851,18 +908,20 @@ export default function App() {
       user_name: currentUser.name,
       user_nickname: currentUser.nickname,
       user_avatar: currentUser.avatar,
-      activity_type: selectedActivity.toUpperCase(),
+      activity_type: cleanActType,
       caption: workoutCaption || `Atividade de ${selectedActivity}`,
       photo_evidence: photoEvidence,
       points_to_ranking: ptsRanking,
       points_to_bank: ptsBank,
-      created_at: 'Agora'
+      created_at: `${todayStr} às ${submissionTime}`
     };
 
     await supabase.from('pending_workouts').insert([newPendingWorkout]);
     fetchDataFromSupabase();
     setIsWorkoutModalOpen(false);
     setDurationInput('');
+    setKmInput('');
+    setStepsInput('');
     setWorkoutCaption('');
     setPhotoEvidence(null);
     Alert.alert('Sucesso', 'Treino enviado para a nuvem! Aguardando aprovação do Admin.');
@@ -1143,7 +1202,7 @@ export default function App() {
                     )}
                   </View>
                 )}
-              </ScrollView>
+              ScrollView>
             </View>
           )}
         </View>
@@ -1720,14 +1779,14 @@ export default function App() {
         </View>
       </View>
 
-      {/* MODAL CONFIGURAÇÃO AVANÇADA DE PONTOS (ITEM 5) */}
+      {/* MODAL CONFIGURAÇÃO AVANÇADA DE PONTOS (ITEM 5 DILUÍDO E DINÂMICO) */}
       <Modal visible={isAdvancedRulesModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
             <Text style={styles.modalTitle}>⚙️ Configuração Avançada de Pontos</Text>
 
             <ScrollView horizontal style={{ flexGrow: 0 }} contentContainerStyle={{ flexGrow: 1 }}>
-              <ScrollView style={{ maxHeight: 450, minWidth: 280 }} keyboardShouldPersistTaps="handled">
+              <ScrollView style={{ maxHeight: 480, minWidth: 300 }} keyboardShouldPersistTaps="handled">
                 
                 {/* 1 - SELEÇÃO DO DESAFIO PARA CONFIGURAR */}
                 <Text style={styles.inputLabel}>1 - Selecione o Desafio Para Configurar:</Text>
@@ -1780,7 +1839,7 @@ export default function App() {
                   <Text style={styles.checkboxLabel}>Habilitar esta modalidade no desafio?</Text>
                 </TouchableOpacity>
 
-                {/* 5 - CONTAINER DE MODO DE PONTUAÇÃO (FICA CINZA SE DESABILITADO) */}
+                {/* 5 - MODOS DE PONTUAÇÃO DINÂMICOS CONFORME A MODALIDADE */}
                 <View 
                   style={[
                     styles.scoringModeBoxContainer,
@@ -1788,17 +1847,384 @@ export default function App() {
                   ]}
                   pointerEvents={isCurrentActivityEnabled ? 'auto' : 'none'}
                 >
-                  <Text style={[
-                    styles.inputLabel,
-                    !isCurrentActivityEnabled && { color: '#94a3b8' }
-                  ]}>
+                  <Text style={[styles.inputLabel, !isCurrentActivityEnabled && { color: '#94a3b8' }]}>
                     5 - Selecione o Modo de Pontuação:
                   </Text>
-                  <Text style={{ fontSize: 9, color: isCurrentActivityEnabled ? '#64748b' : '#94a3b8', fontStyle: 'italic', marginTop: 4 }}>
-                    {isCurrentActivityEnabled 
-                      ? '(Os modos de detalhes detalhados serão configurados na próxima etapa)' 
-                      : '🔒 Modalidade desabilitada para este desafio.'}
-                  </Text>
+
+                  {!isCurrentActivityEnabled ? (
+                    <Text style={{ fontSize: 9, color: '#94a3b8', fontStyle: 'italic', marginTop: 4 }}>
+                      🔒 Modalidade desabilitada para este desafio.
+                    </Text>
+                  ) : (
+                    <>
+                      {/* GRUPO 1: ATIVIDADES DE TEMPO PURO */}
+                      {['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🥋 Lutas / Esportes Individuais', '⚽ Esportes Coletivos', '🫀 Treino Aeróbico'].includes(selectedConfigActivity) && (
+                        <View style={{ marginTop: 6 }}>
+                          {/* OPÇÃO 1 - TEMPO MÍNIMO */}
+                          <TouchableOpacity 
+                            style={styles.radioOptionRow}
+                            onPress={() => updateCurrentRuleState({ selectedOption: currentRules.selectedOption === 'minTime' ? null : 'minTime' })}
+                          >
+                            <View style={[styles.checkboxBox, currentRules.selectedOption === 'minTime' && styles.checkboxBoxActive]}>
+                              {currentRules.selectedOption === 'minTime' && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                            </View>
+                            <Text style={styles.radioOptionText}>1ª Opção: Pontuação por Tempo Mínimo</Text>
+                          </TouchableOpacity>
+
+                          {currentRules.selectedOption === 'minTime' && (
+                            <View style={styles.nestedFieldsBox}>
+                              <Text style={styles.inputLabelMini}>Tempo Mínimo (Minutos):</Text>
+                              <TextInput
+                                style={styles.inputMini}
+                                keyboardType="numeric"
+                                value={currentRules.minTime}
+                                onChangeText={(txt) => updateCurrentRuleState({ minTime: txt })}
+                              />
+                              <Text style={styles.inputLabelMini}>Pontos Concedidos:</Text>
+                              <TextInput
+                                style={styles.inputMini}
+                                keyboardType="numeric"
+                                value={currentRules.minTimePts}
+                                onChangeText={(txt) => updateCurrentRuleState({ minTimePts: txt })}
+                              />
+                            </View>
+                          )}
+
+                          {/* OPÇÃO 2 - STEPS PROGRESSIVOS DE TEMPO */}
+                          <TouchableOpacity 
+                            style={[styles.radioOptionRow, { marginTop: 8 }]}
+                            onPress={() => updateCurrentRuleState({ selectedOption: currentRules.selectedOption === 'stepsTime' ? null : 'stepsTime' })}
+                          >
+                            <View style={[styles.checkboxBox, currentRules.selectedOption === 'stepsTime' && styles.checkboxBoxActive]}>
+                              {currentRules.selectedOption === 'stepsTime' && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                            </View>
+                            <Text style={styles.radioOptionText}>2ª Opção: Steps Progressivos de Tempo</Text>
+                          </TouchableOpacity>
+
+                          {currentRules.selectedOption === 'stepsTime' && (
+                            <View style={styles.nestedFieldsBox}>
+                              {(currentRules.stepsTime || []).map((step, idx) => (
+                                <View key={idx} style={styles.stepCardRow}>
+                                  <Text style={styles.stepTitle}>Step {idx + 1}:</Text>
+                                  
+                                  <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center', marginVertical: 4 }}>
+                                    <select
+                                      style={styles.htmlNativeSelectMini}
+                                      value={step.condition}
+                                      onChange={(e) => {
+                                        const newSteps = [...currentRules.stepsTime];
+                                        newSteps[idx].condition = e.target.value;
+                                        updateCurrentRuleState({ stepsTime: newSteps });
+                                      }}
+                                    >
+                                      <option value="De">De</option>
+                                      <option value="Acima">Acima de</option>
+                                    </select>
+
+                                    <TextInput
+                                      style={[styles.inputMini, { width: 50 }]}
+                                      keyboardType="numeric"
+                                      value={step.time1}
+                                      onChangeText={(txt) => {
+                                        const newSteps = [...currentRules.stepsTime];
+                                        newSteps[idx].time1 = txt;
+                                        updateCurrentRuleState({ stepsTime: newSteps });
+                                      }}
+                                    />
+
+                                    <Text style={{ fontSize: 9, color: step.condition === 'Acima' ? '#94a3b8' : '#0f172a' }}>Até:</Text>
+                                    <TextInput
+                                      style={[
+                                        styles.inputMini, 
+                                        { width: 50 }, 
+                                        step.condition === 'Acima' && { backgroundColor: '#e2e8f0', color: '#94a3b8' }
+                                      ]}
+                                      keyboardType="numeric"
+                                      editable={step.condition !== 'Acima'}
+                                      value={step.condition === 'Acima' ? '' : step.time2}
+                                      onChangeText={(txt) => {
+                                        const newSteps = [...currentRules.stepsTime];
+                                        newSteps[idx].time2 = txt;
+                                        updateCurrentRuleState({ stepsTime: newSteps });
+                                      }}
+                                    />
+                                    <Text style={{ fontSize: 9 }}>min</Text>
+                                  </View>
+
+                                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <TextInput
+                                      style={[styles.inputMini, { flex: 1, marginRight: 6 }]}
+                                      placeholder="Pontos"
+                                      keyboardType="numeric"
+                                      value={step.points}
+                                      onChangeText={(txt) => {
+                                        const newSteps = [...currentRules.stepsTime];
+                                        newSteps[idx].points = txt;
+                                        updateCurrentRuleState({ stepsTime: newSteps });
+                                      }}
+                                    />
+                                    {currentRules.stepsTime.length > 1 && (
+                                      <TouchableOpacity 
+                                        style={styles.trashBtn}
+                                        onPress={() => {
+                                          const newSteps = currentRules.stepsTime.filter((_, i) => i !== idx);
+                                          updateCurrentRuleState({ stepsTime: newSteps });
+                                        }}
+                                      >
+                                        <Text style={{ fontSize: 12 }}>🗑️</Text>
+                                      </TouchableOpacity>
+                                    )}
+                                  </View>
+                                </View>
+                              ))}
+
+                              <TouchableOpacity 
+                                style={styles.addStepBtn}
+                                onPress={() => {
+                                  const newSteps = [...currentRules.stepsTime, { condition: 'De', time1: '61', time2: '90', points: '10000' }];
+                                  updateCurrentRuleState({ stepsTime: newSteps });
+                                }}
+                              >
+                                <Text style={styles.addStepBtnText}>+ Adicionar Step</Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+                      )}
+
+                      {/* GRUPO 2: CORRIDA, CAMINHADA E BIKE */}
+                      {['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedConfigActivity) && (
+                        <View style={{ marginTop: 6 }}>
+                          {/* OPÇÃO 1 - TEMPO MÍNIMO */}
+                          <TouchableOpacity 
+                            style={styles.radioOptionRow}
+                            onPress={() => updateCurrentRuleState({ selectedOption: currentRules.selectedOption === 'minTime' ? null : 'minTime' })}
+                          >
+                            <View style={[styles.checkboxBox, currentRules.selectedOption === 'minTime' && styles.checkboxBoxActive]}>
+                              {currentRules.selectedOption === 'minTime' && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                            </View>
+                            <Text style={styles.radioOptionText}>1ª Opção: Pontuação por Tempo Mínimo</Text>
+                          </TouchableOpacity>
+
+                          {currentRules.selectedOption === 'minTime' && (
+                            <View style={styles.nestedFieldsBox}>
+                              <Text style={styles.inputLabelMini}>Tempo Mínimo (Minutos):</Text>
+                              <TextInput style={styles.inputMini} keyboardType="numeric" value={currentRules.minTime} onChangeText={(txt) => updateCurrentRuleState({ minTime: txt })} />
+                              <Text style={styles.inputLabelMini}>Pontos Concedidos:</Text>
+                              <TextInput style={styles.inputMini} keyboardType="numeric" value={currentRules.minTimePts} onChangeText={(txt) => updateCurrentRuleState({ minTimePts: txt })} />
+                            </View>
+                          )}
+
+                          {/* OPÇÃO 2 - KM MÍNIMO */}
+                          <TouchableOpacity 
+                            style={[styles.radioOptionRow, { marginTop: 6 }]}
+                            onPress={() => updateCurrentRuleState({ selectedOption: currentRules.selectedOption === 'minKm' ? null : 'minKm' })}
+                          >
+                            <View style={[styles.checkboxBox, currentRules.selectedOption === 'minKm' && styles.checkboxBoxActive]}>
+                              {currentRules.selectedOption === 'minKm' && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                            </View>
+                            <Text style={styles.radioOptionText}>2ª Opção: Pontuação Por KM Mínimo</Text>
+                          </TouchableOpacity>
+
+                          {currentRules.selectedOption === 'minKm' && (
+                            <View style={styles.nestedFieldsBox}>
+                              <Text style={styles.inputLabelMini}>Distância Mínima (KM):</Text>
+                              <TextInput style={styles.inputMini} keyboardType="numeric" value={currentRules.minKm} onChangeText={(txt) => updateCurrentRuleState({ minKm: txt })} />
+                              <Text style={styles.inputLabelMini}>Pontos Concedidos:</Text>
+                              <TextInput style={styles.inputMini} keyboardType="numeric" value={currentRules.minKmPts} onChangeText={(txt) => updateCurrentRuleState({ minKmPts: txt })} />
+                            </View>
+                          )}
+
+                          {/* OPÇÃO 3 - STEPS DE TEMPO */}
+                          <TouchableOpacity 
+                            style={[styles.radioOptionRow, { marginTop: 6 }]}
+                            onPress={() => updateCurrentRuleState({ selectedOption: currentRules.selectedOption === 'stepsTime' ? null : 'stepsTime' })}
+                          >
+                            <View style={[styles.checkboxBox, currentRules.selectedOption === 'stepsTime' && styles.checkboxBoxActive]}>
+                              {currentRules.selectedOption === 'stepsTime' && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                            </View>
+                            <Text style={styles.radioOptionText}>3ª Opção: Steps Progressivos de Tempo</Text>
+                          </TouchableOpacity>
+
+                          {currentRules.selectedOption === 'stepsTime' && (
+                            <View style={styles.nestedFieldsBox}>
+                              {(currentRules.stepsTime || []).map((step, idx) => (
+                                <View key={idx} style={styles.stepCardRow}>
+                                  <Text style={styles.stepTitle}>Step {idx + 1}:</Text>
+                                  <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center', marginVertical: 4 }}>
+                                    <select
+                                      style={styles.htmlNativeSelectMini}
+                                      value={step.condition}
+                                      onChange={(e) => {
+                                        const newSteps = [...currentRules.stepsTime];
+                                        newSteps[idx].condition = e.target.value;
+                                        updateCurrentRuleState({ stepsTime: newSteps });
+                                      }}
+                                    >
+                                      <option value="De">De</option>
+                                      <option value="Acima">Acima de</option>
+                                    </select>
+                                    <TextInput style={[styles.inputMini, { width: 45 }]} keyboardType="numeric" value={step.time1} onChangeText={(txt) => { const n = [...currentRules.stepsTime]; n[idx].time1 = txt; updateCurrentRuleState({ stepsTime: n }); }} />
+                                    <Text style={{ fontSize: 9 }}>Até:</Text>
+                                    <TextInput style={[styles.inputMini, { width: 45 }, step.condition === 'Acima' && { backgroundColor: '#e2e8f0' }]} keyboardType="numeric" editable={step.condition !== 'Acima'} value={step.condition === 'Acima' ? '' : step.time2} onChangeText={(txt) => { const n = [...currentRules.stepsTime]; n[idx].time2 = txt; updateCurrentRuleState({ stepsTime: n }); }} />
+                                  </View>
+                                  <TextInput style={styles.inputMini} placeholder="Pontos" keyboardType="numeric" value={step.points} onChangeText={(txt) => { const n = [...currentRules.stepsTime]; n[idx].points = txt; updateCurrentRuleState({ stepsTime: n }); }} />
+                                </View>
+                              ))}
+                              <TouchableOpacity style={styles.addStepBtn} onPress={() => updateCurrentRuleState({ stepsTime: [...currentRules.stepsTime, { condition: 'De', time1: '61', time2: '90', points: '10000' }] })}>
+                                <Text style={styles.addStepBtnText}>+ Adicionar Step</Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
+
+                          {/* OPÇÃO 4 - STEPS DE KM */}
+                          <TouchableOpacity 
+                            style={[styles.radioOptionRow, { marginTop: 6 }]}
+                            onPress={() => updateCurrentRuleState({ selectedOption: currentRules.selectedOption === 'stepsKm' ? null : 'stepsKm' })}
+                          >
+                            <View style={[styles.checkboxBox, currentRules.selectedOption === 'stepsKm' && styles.checkboxBoxActive]}>
+                              {currentRules.selectedOption === 'stepsKm' && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                            </View>
+                            <Text style={styles.radioOptionText}>4ª Opção: Steps Progressivos de KM</Text>
+                          </TouchableOpacity>
+
+                          {currentRules.selectedOption === 'stepsKm' && (
+                            <View style={styles.nestedFieldsBox}>
+                              {(currentRules.stepsKm || []).map((step, idx) => (
+                                <View key={idx} style={styles.stepCardRow}>
+                                  <Text style={styles.stepTitle}>Step {idx + 1}:</Text>
+                                  <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center', marginVertical: 4 }}>
+                                    <select
+                                      style={styles.htmlNativeSelectMini}
+                                      value={step.condition}
+                                      onChange={(e) => {
+                                        const newSteps = [...currentRules.stepsKm];
+                                        newSteps[idx].condition = e.target.value;
+                                        updateCurrentRuleState({ stepsKm: newSteps });
+                                      }}
+                                    >
+                                      <option value="De">De</option>
+                                      <option value="Acima">Acima de</option>
+                                    </select>
+                                    <TextInput style={[styles.inputMini, { width: 45 }]} keyboardType="numeric" value={step.km1} onChangeText={(txt) => { const n = [...currentRules.stepsKm]; n[idx].km1 = txt; updateCurrentRuleState({ stepsKm: n }); }} />
+                                    <Text style={{ fontSize: 9 }}>Até:</Text>
+                                    <TextInput style={[styles.inputMini, { width: 45 }, step.condition === 'Acima' && { backgroundColor: '#e2e8f0' }]} keyboardType="numeric" editable={step.condition !== 'Acima'} value={step.condition === 'Acima' ? '' : step.km2} onChangeText={(txt) => { const n = [...currentRules.stepsKm]; n[idx].km2 = txt; updateCurrentRuleState({ stepsKm: n }); }} />
+                                  </View>
+                                  <TextInput style={styles.inputMini} placeholder="Pontos" keyboardType="numeric" value={step.points} onChangeText={(txt) => { const n = [...currentRules.stepsKm]; n[idx].points = txt; updateCurrentRuleState({ stepsKm: n }); }} />
+                                </View>
+                              ))}
+                              <TouchableOpacity style={styles.addStepBtn} onPress={() => updateCurrentRuleState({ stepsKm: [...currentRules.stepsKm, { condition: 'De', km1: '4.6', km2: '7.5', points: '10000' }] })}>
+                                <Text style={styles.addStepBtnText}>+ Adicionar Step</Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+                      )}
+
+                      {/* GRUPO 3: BÔNUS E CRITÉRIOS DE DESEMPATE */}
+                      {selectedConfigActivity === '🎁 Bônus e Critérios de Desempate' && (
+                        <View style={{ marginTop: 6 }}>
+                          {/* BÔNUS O INQUEBRÁVEL */}
+                          <View style={styles.bonusBoxCard}>
+                            <TouchableOpacity 
+                              style={styles.checkboxRow}
+                              onPress={() => updateCurrentRuleState({ bonusInquebravel: { ...currentRules.bonusInquebravel, enabled: !currentRules.bonusInquebravel.enabled } })}
+                            >
+                              <View style={[styles.checkboxBox, currentRules.bonusInquebravel.enabled && styles.checkboxBoxActive]}>
+                                {currentRules.bonusInquebravel.enabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                              </View>
+                              <Text style={styles.checkboxLabel}>🪨 Bônus "O Inquebrável"</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.bonusDescText}>Premia X dias consecutivos de atividade.</Text>
+                            
+                            {currentRules.bonusInquebravel.enabled && (
+                              <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
+                                <TextInput style={[styles.inputMini, { flex: 1 }]} placeholder="Dias (Ex: 7)" keyboardType="numeric" value={currentRules.bonusInquebravel.days} onChangeText={(txt) => updateCurrentRuleState({ bonusInquebravel: { ...currentRules.bonusInquebravel, days: txt } })} />
+                                <TextInput style={[styles.inputMini, { flex: 1 }]} placeholder="Pontos" keyboardType="numeric" value={currentRules.bonusInquebravel.points} onChangeText={(txt) => updateCurrentRuleState({ bonusInquebravel: { ...currentRules.bonusInquebravel, points: txt } })} />
+                              </View>
+                            )}
+                          </View>
+
+                          {/* BÔNUS O DESPERTA */}
+                          <View style={[styles.bonusBoxCard, { marginTop: 8 }]}>
+                            <TouchableOpacity 
+                              style={styles.checkboxRow}
+                              onPress={() => updateCurrentRuleState({ bonusDesperta: { ...currentRules.bonusDesperta, enabled: !currentRules.bonusDesperta.enabled } })}
+                            >
+                              <View style={[styles.checkboxBox, currentRules.bonusDesperta.enabled && styles.checkboxBoxActive]}>
+                                {currentRules.bonusDesperta.enabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                              </View>
+                              <Text style={styles.checkboxLabel}>⏰ Bônus "O Desperta"</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.bonusDescText}>Premia comprovante enviado até o horário limite (formato 24h).</Text>
+                            
+                            {currentRules.bonusDesperta.enabled && (
+                              <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
+                                <TextInput style={[styles.inputMini, { flex: 1 }]} placeholder="Horário Limite (Ex: 07:00)" value={currentRules.bonusDesperta.limitTime} onChangeText={(txt) => updateCurrentRuleState({ bonusDesperta: { ...currentRules.bonusDesperta, limitTime: txt } })} />
+                                <TextInput style={[styles.inputMini, { flex: 1 }]} placeholder="Pontos" keyboardType="numeric" value={currentRules.bonusDesperta.points} onChangeText={(txt) => updateCurrentRuleState({ bonusDesperta: { ...currentRules.bonusDesperta, points: txt } })} />
+                              </View>
+                            )}
+                          </View>
+
+                          {/* CRITÉRIOS DE DESEMPATE */}
+                          <Text style={[styles.inputLabel, { marginTop: 10 }]}>Critérios de Desempate Habilitados:</Text>
+                          
+                          <TouchableOpacity style={styles.checkboxRow} onPress={() => updateCurrentRuleState({ tiebreakers: { ...currentRules.tiebreakers, kmTotal: !currentRules.tiebreakers.kmTotal } })}>
+                            <View style={[styles.checkboxBox, currentRules.tiebreakers.kmTotal && styles.checkboxBoxActive]}>{currentRules.tiebreakers.kmTotal && <Text style={styles.checkboxCheckmark}>✓</Text>}</View>
+                            <Text style={styles.checkboxLabel}>1º Critério: KM Total Percorrido (Corrida, Caminhada e Bike)</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity style={styles.checkboxRow} onPress={() => updateCurrentRuleState({ tiebreakers: { ...currentRules.tiebreakers, bankPoints: !currentRules.tiebreakers.bankPoints } })}>
+                            <View style={[styles.checkboxBox, currentRules.tiebreakers.bankPoints && styles.checkboxBoxActive]}>{currentRules.tiebreakers.bankPoints && <Text style={styles.checkboxCheckmark}>✓</Text>}</View>
+                            <Text style={styles.checkboxLabel}>2º Critério: Banco de Pontos (Excedente do teto)</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity style={styles.checkboxRow} onPress={() => updateCurrentRuleState({ tiebreakers: { ...currentRules.tiebreakers, dailySteps: !currentRules.tiebreakers.dailySteps } })}>
+                            <View style={[styles.checkboxBox, currentRules.tiebreakers.dailySteps && styles.checkboxBoxActive]}>{currentRules.tiebreakers.dailySteps && <Text style={styles.checkboxCheckmark}>✓</Text>}</View>
+                            <Text style={styles.checkboxLabel}>3º Critério: Passos Diários Totais</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity style={styles.checkboxRow} onPress={() => updateCurrentRuleState({ tiebreakers: { ...currentRules.tiebreakers, activeDays: !currentRules.tiebreakers.activeDays } })}>
+                            <View style={[styles.checkboxBox, currentRules.tiebreakers.activeDays && styles.checkboxBoxActive]}>{currentRules.tiebreakers.activeDays && <Text style={styles.checkboxCheckmark}>✓</Text>}</View>
+                            <Text style={styles.checkboxLabel}>4º Critério: Dias em Atividade</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+
+                      {/* GRUPO 4: PASSOS DIÁRIOS */}
+                      {selectedConfigActivity === '🚶‍♂️ Passos Diários' && (
+                        <View style={{ marginTop: 6 }}>
+                          <TouchableOpacity 
+                            style={styles.checkboxRow}
+                            onPress={() => updateCurrentRuleState({ enableStepsRanking: !currentRules.enableStepsRanking })}
+                          >
+                            <View style={[styles.checkboxBox, currentRules.enableStepsRanking && styles.checkboxBoxActive]}>
+                              {currentRules.enableStepsRanking && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                            </View>
+                            <Text style={styles.checkboxLabel}>Habilitar Passos Diários para Pontuação do Ranking</Text>
+                          </TouchableOpacity>
+
+                          <Text style={{ fontSize: 9, color: '#475569', marginTop: 4 }}>
+                            Defina o multiplicador de pontuação para cada passo registrado (entre 0,1 e 1,0):
+                          </Text>
+
+                          <View style={{ marginTop: 6 }}>
+                            <TextInput 
+                              style={[
+                                styles.inputMini, 
+                                !currentRules.enableStepsRanking && { backgroundColor: '#e2e8f0', color: '#94a3b8' }
+                              ]} 
+                              keyboardType="numeric" 
+                              editable={currentRules.enableStepsRanking}
+                              value={currentRules.stepsMultiplier} 
+                              onChangeText={(txt) => updateCurrentRuleState({ stepsMultiplier: txt })} 
+                              placeholder="Ex: 0.5 (1.000 passos = 500 pts)"
+                            />
+                          </View>
+                        </View>
+                      )}
+                    </>
+                  )}
                 </View>
 
               </ScrollView>
@@ -1961,6 +2387,32 @@ export default function App() {
               onChangeText={setDurationInput}
             />
 
+            {['Corrida', 'Caminhada', 'Bike'].includes(selectedActivity) && (
+              <>
+                <Text style={styles.inputLabel}>Distância (KM):</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ex: 5.5"
+                  keyboardType="numeric"
+                  value={kmInput}
+                  onChangeText={setKmInput}
+                />
+              </>
+            )}
+
+            {selectedActivity === 'Passos Diários' && (
+              <>
+                <Text style={styles.inputLabel}>Quantidade de Passos:</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ex: 10000"
+                  keyboardType="numeric"
+                  value={stepsInput}
+                  onChangeText={setStepsInput}
+                />
+              </>
+            )}
+
             <Text style={styles.inputLabel}>Legenda / Comentário:</Text>
             <TextInput
               style={styles.input}
@@ -2088,6 +2540,16 @@ const styles = StyleSheet.create({
     outline: 'none',
     cursor: 'pointer'
   },
+  htmlNativeSelectMini: {
+    padding: 4,
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#0f172a',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 4
+  },
   
   floatingDropdownContainer: {
     position: 'absolute',
@@ -2180,7 +2642,9 @@ const styles = StyleSheet.create({
   modalContentLarge: { backgroundColor: '#ffffff', borderRadius: 12, padding: 14, maxHeight: '95%', width: '95%', alignSelf: 'center' },
   modalTitle: { fontSize: 14, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 10, textAlign: 'center' },
   inputLabel: { fontSize: 10, fontWeight: 'bold', color: '#475569', marginVertical: 4 },
+  inputLabelMini: { fontSize: 9, fontWeight: 'bold', color: '#475569', marginVertical: 2 },
   input: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 6, fontSize: 11, marginBottom: 6 },
+  inputMini: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 4, padding: 4, fontSize: 10, marginBottom: 4 },
 
   warningNoticeBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fef3c7', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#f59e0b', marginVertical: 8 },
   warningNoticeIcon: { fontSize: 14, marginRight: 6 },
@@ -2189,15 +2653,28 @@ const styles = StyleSheet.create({
   scoringModeBoxContainer: { backgroundColor: '#f8fafc', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', marginTop: 10 },
   disabledScoringModeBox: { backgroundColor: '#e2e8f0', borderColor: '#cbd5e1', opacity: 0.5 },
 
+  radioOptionRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 4 },
+  radioOptionText: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
+
+  nestedFieldsBox: { backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#e2e8f0', marginLeft: 12, marginTop: 4, marginBottom: 6 },
+  stepCardRow: { backgroundColor: '#f8fafc', padding: 6, borderRadius: 4, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 6 },
+  stepTitle: { fontSize: 9, fontWeight: 'bold', color: '#f97316' },
+  addStepBtn: { backgroundColor: '#1e3a8a', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 4, alignSelf: 'flex-start', marginTop: 4 },
+  addStepBtnText: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
+  trashBtn: { padding: 4 },
+
+  bonusBoxCard: { backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1' },
+  bonusDescText: { fontSize: 8, color: '#64748b', fontStyle: 'italic', marginBottom: 4 },
+
   chipBtn: { backgroundColor: '#f1f5f9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
   chipBtnActive: { backgroundColor: '#f97316' },
   chipText: { fontSize: 9, fontWeight: 'bold', color: '#475569' },
   chipTextActive: { color: '#ffffff' },
 
-  checkboxRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 6, gap: 10 },
-  checkboxBox: { width: 20, height: 20, borderWidth: 2, borderColor: '#1e3a8a', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' },
+  checkboxRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 6, gap: 8 },
+  checkboxBox: { width: 18, height: 18, borderWidth: 2, borderColor: '#1e3a8a', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' },
   checkboxBoxActive: { backgroundColor: '#f97316', borderColor: '#f97316' },
-  checkboxCheckmark: { color: '#ffffff', fontSize: 12, fontWeight: 'bold' },
+  checkboxCheckmark: { color: '#ffffff', fontSize: 10, fontWeight: 'bold' },
   checkboxLabel: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
 
   cancelBtn: { marginTop: 6, paddingVertical: 4, alignItems: 'center' },
