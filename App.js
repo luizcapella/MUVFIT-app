@@ -1490,20 +1490,21 @@ export default function App() {
               onChangeText={setNewChallengeCode}
             />
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 8 }}>
-              <Text style={styles.inputLabel}>Ativar Teto Diário de Pontos?</Text>
-              <TouchableOpacity 
-                style={[styles.chipBtn, hasCapToggle && styles.chipBtnActive]} 
-                onPress={() => setHasCapToggle(!hasCapToggle)}
-              >
-                <Text style={[styles.chipText, hasCapToggle && styles.chipTextActive]}>
-                  {hasCapToggle ? 'SIM' : 'NÃO'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            {/* CAIXA DE SELEÇÃO DO TETO DIÁRIO */}
+            <TouchableOpacity 
+              style={styles.checkboxRow} 
+              onPress={() => setHasCapToggle(!hasCapToggle)}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.checkboxBox, hasCapToggle && styles.checkboxBoxActive]}>
+                {hasCapToggle && <Text style={styles.checkboxCheckmark}>✓</Text>}
+              </View>
+              <Text style={styles.checkboxLabel}>Ativar Teto Diário de Pontos?</Text>
+            </TouchableOpacity>
 
+            {/* RETÂNGULO DE ENTRADA DO LIMITE (EXIBIDO APENAS SE HABILITADO) */}
             {hasCapToggle && (
-              <>
+              <View style={{ marginTop: 2, marginBottom: 8 }}>
                 <Text style={styles.inputLabel}>Limite Diário (Pts):</Text>
                 <TextInput
                   style={styles.input}
@@ -1512,7 +1513,7 @@ export default function App() {
                   value={newChallengeCap}
                   onChangeText={setNewChallengeCap}
                 />
-              </>
+              </View>
             )}
 
             <TouchableOpacity style={styles.primaryBtn} onPress={handleCreateChallenge}>
@@ -1685,6 +1686,12 @@ const styles = StyleSheet.create({
   chipBtnActive: { backgroundColor: '#f97316' },
   chipText: { fontSize: 9, fontWeight: 'bold', color: '#475569' },
   chipTextActive: { color: '#ffffff' },
+
+  checkboxRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 10, gap: 10 },
+  checkboxBox: { width: 22, height: 22, borderWidth: 2, borderColor: '#1e3a8a', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' },
+  checkboxBoxActive: { backgroundColor: '#f97316', borderColor: '#f97316' },
+  checkboxCheckmark: { color: '#ffffff', fontSize: 13, fontWeight: 'bold' },
+  checkboxLabel: { fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' },
 
   cancelBtn: { marginTop: 6, paddingVertical: 4, alignItems: 'center' },
   cancelBtnText: { color: '#64748b', fontSize: 10, fontWeight: 'bold' }
