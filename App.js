@@ -486,14 +486,16 @@ export default function App() {
           ...m,
           challengeId: m.challenge_id,
           userId: m.user_id,
-          rankingPoints: m.ranking_points,
-          bankPoints: m.bank_points,
-          totalSteps: m.total_steps,
-          goldMedals: m.gold_medals,
-          silverMedals: m.silver_medals,
-          bronzeMedals: m.bronze_medals,
-          insigniaInquebravelCount: m.insignia_inquebravel_count,
-          insigniaDespertaCount: m.insignia_desperta_count
+          rankingPoints: m.ranking_points || 0,
+          bankPoints: m.bank_points || 0,
+          totalSteps: m.total_steps || 0,
+          totalKm: m.total_km || 0,
+          activeDays: m.active_days || 0,
+          goldMedals: m.gold_medals || 0,
+          silverMedals: m.silver_medals || 0,
+          bronzeMedals: m.bronze_medals || 0,
+          insigniaInquebravelCount: m.insignia_inquebravel_count || 0,
+          insigniaDespertaCount: m.insignia_desperta_count || 0
         }));
         setMemberships(formattedMembers);
       }
@@ -941,11 +943,55 @@ export default function App() {
   });
 
   const currentChallengeMembers = memberships.filter(m => m.challengeId === activeChallengeId);
+  
+  // SEPARAÇÃO ENTRE ATLETAS ATIVOS E TORCEDORES
   const activeMembersInChallenge = currentChallengeMembers.filter(m => m.role === 'active');
+  const spectatorMembersInChallenge = currentChallengeMembers.filter(m => m.role === 'spectator');
   const pendingMembersInChallenge = currentChallengeMembers.filter(m => m.role === 'pending');
   
   const currentFeedPosts = feedPosts.filter(p => p.challenge_id === activeChallengeId);
   const currentPendingWorkouts = pendingWorkouts.filter(w => w.challenge_id === activeChallengeId);
+
+  // LÓGICA DE ORDENAÇÃO
+  const sortedAthletes = [...activeMembersInChallenge].sort((a, b) => {
+    if ((b.rankingPoints || 0) !== (a.rankingPoints || 0)) {
+      return (b.rankingPoints || 0) - (a.rankingPoints || 0);
+    }
+    if ((b.totalKm || 0) !== (a.totalKm || 0)) {
+      return (b.totalKm || 0) - (a.totalKm || 0);
+    }
+    if ((b.bankPoints || 0) !== (a.bankPoints || 0)) {
+      return (b.bankPoints || 0) - (a.bankPoints || 0);
+    }
+    if ((b.totalSteps || 0) !== (a.totalSteps || 0)) {
+      return (b.totalSteps || 0) - (a.totalSteps || 0);
+    }
+    return (b.activeDays || 0) - (a.activeDays || 0);
+  });
+
+  // VERIFICA SE DOIS ATLETAS ESTÃO COMPLETAMENTE EMPATADOS EM TODOS OS CRITÉRIOS
+  const areAthletesTied = (a, b) => {
+    if (!a || !b) return false;
+    return (
+      (a.rankingPoints || 0) === (b.rankingPoints || 0) &&
+      (a.totalKm || 0) === (b.totalKm || 0) &&
+      (a.bankPoints || 0) === (b.bankPoints || 0) &&
+      (a.totalSteps || 0) === (b.totalSteps || 0) &&
+      (a.activeDays || 0) === (b.activeDays || 0)
+    );
+  };
+
+  // ATRIBUIÇÃO DE POSIÇÕES NO RANKING (SEM PULAR NÚMEROS: Ex: 1º, 1º, 2º)
+  let currentRankPosition = 1;
+  const rankedAthletes = sortedAthletes.map((athlete, index, array) => {
+    if (index > 0 && !areAthletesTied(athlete, array[index - 1])) {
+      currentRankPosition += 1;
+    }
+    return {
+      ...athlete,
+      rankDisplay: `#${currentRankPosition}`
+    };
+  });
 
   const top3Winners = [...currentChallengeMembers]
     .sort((a, b) => (b.goldMedals || 0) - (a.goldMedals || 0))
@@ -1412,6 +1458,7 @@ export default function App() {
             </ScrollView>
           )}
 
+          {/* ABA RANKING REORGANIZADA COM DOIS BLOCOS SEPARADOS */}
           {currentScreen === 'ranking' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <Text style={styles.pageTitle}>🏆 Ranking — {selectedChallenge.title}</Text>
@@ -1423,22 +1470,48 @@ export default function App() {
                 </Text>
               </View>
 
-              {activeMembersInChallenge.sort((a,b) => (b.rankingPoints || 0) - (a.rankingPoints || 0)).map((member, index) => (
-                <TouchableOpacity key={member.userId} style={styles.rankingRowCard} onPress={() => handleOpenUserProfile(member.userId)}>
-                  <Text style={styles.rankingPosNumber}>#{index + 1}</Text>
-                  <Image source={{ uri: member.avatar }} style={styles.avatarMini} />
-                  <View style={{ flex: 1, marginLeft: 8 }}>
-                    <Text style={styles.rankingMemberName}>{member.name} ({member.nickname})</Text>
-                    <Text style={styles.rankingMemberSub}>{(member.totalSteps || 0).toLocaleString()} passos</Text>
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={styles.rankingMemberPts}>{(member.rankingPoints || 0).toLocaleString()} pts</Text>
-                    {selectedChallenge.has_daily_cap && (
-                      <Text style={styles.rankingMemberBank}>Banco: {(member.bankPoints || 0).toLocaleString()} pts</Text>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              ))}
+              {/* BLOCO 1: RANKING DOS ATLETAS ATIVOS */}
+              <Text style={styles.sectionHeaderTitle}>⚡ Atletas Ativos ({rankedAthletes.length})</Text>
+              
+              {rankedAthletes.length === 0 ? (
+                <Text style={styles.emptyNoticeText}>Nenhum atleta ativo inscrito neste desafio.</Text>
+              ) : (
+                rankedAthletes.map((member) => (
+                  <TouchableOpacity key={member.userId} style={styles.rankingRowCard} onPress={() => handleOpenUserProfile(member.userId)}>
+                    <Text style={styles.rankingPosNumber}>{member.rankDisplay}</Text>
+                    <Image source={{ uri: member.avatar }} style={styles.avatarMini} />
+                    <View style={{ flex: 1, marginLeft: 8 }}>
+                      <Text style={styles.rankingMemberName}>{member.name} ({member.nickname})</Text>
+                      <Text style={styles.rankingMemberSub}>{(member.totalSteps || 0).toLocaleString()} passos</Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={styles.rankingMemberPts}>{(member.rankingPoints || 0).toLocaleString()} pts</Text>
+                      {selectedChallenge.has_daily_cap && (
+                        <Text style={styles.rankingMemberBank}>Banco: {(member.bankPoints || 0).toLocaleString()} pts</Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                ))
+              )}
+
+              {/* BLOCO 2: LISTA DE TORCEDORES */}
+              <View style={{ marginTop: 24 }}>
+                <Text style={[styles.sectionHeaderTitle, { color: '#64748b' }]}>👀 Lista de Torcedores ({spectatorMembersInChallenge.length})</Text>
+                {spectatorMembersInChallenge.length === 0 ? (
+                  <Text style={styles.emptyNoticeText}>Nenhum torcedor cadastrado nesta liga.</Text>
+                ) : (
+                  spectatorMembersInChallenge.map((spectator) => (
+                    <TouchableOpacity key={spectator.userId} style={styles.spectatorRowCard} onPress={() => handleOpenUserProfile(spectator.userId)}>
+                      <Image source={{ uri: spectator.avatar }} style={styles.avatarMini} />
+                      <View style={{ flex: 1, marginLeft: 8 }}>
+                        <Text style={styles.rankingMemberName}>{spectator.name} ({spectator.nickname})</Text>
+                        <Text style={{ fontSize: 9, color: '#64748b', fontStyle: 'italic' }}>Acompanhando o desafio</Text>
+                      </View>
+                      <Text style={styles.spectatorBadge}>TORCEDOR</Text>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </View>
             </ScrollView>
           )}
 
@@ -2530,7 +2603,10 @@ const styles = StyleSheet.create({
   btnMiniText: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
 
   rankingRowCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 6 },
-  rankingPosNumber: { fontSize: 14, fontWeight: '900', color: '#f97316', width: 30 },
+  spectatorRowCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f1f5f9', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 4 },
+  spectatorBadge: { fontSize: 8, fontWeight: 'bold', color: '#64748b', backgroundColor: '#e2e8f0', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  
+  rankingPosNumber: { fontSize: 14, fontWeight: '900', color: '#f97316', width: 32 },
   rankingMemberName: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
   rankingMemberSub: { fontSize: 9, color: '#64748b' },
   rankingMemberPts: { fontSize: 12, fontWeight: 'bold', color: '#16a34a' },
