@@ -82,7 +82,6 @@ export default function App() {
   const [memberships, setMemberships] = useState([]);
   const [feedPosts, setFeedPosts] = useState([]);
   const [pendingWorkouts, setPendingWorkouts] = useState([]);
-  const [stories, setStories] = useState([]);
   const [pendingInvites, setPendingInvites] = useState([]);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -111,23 +110,26 @@ export default function App() {
   const [hasCapToggle, setHasCapToggle] = useState(false);
   const [newChallengeCap, setNewChallengeCap] = useState('22000');
 
-  const [bonusInquebravelActive] = useState(true);
-  const [bonusInquebravelDays] = useState('7');
-  const [bonusInquebravelPoints] = useState('5000');
+  // ESTADOS DO PAINEL DO ADMINISTRADOR (EXPANSÃO DE SEÇÕES / SANFONA)
+  const [expandedSec1, setExpandedSec1] = useState(true);
+  const [expandedSec2, setExpandedSec2] = useState(false);
+  const [expandedSec3, setExpandedSec3] = useState(false);
+  const [expandedSec4, setExpandedSec4] = useState(false);
+  const [expandedSec5, setExpandedSec5] = useState(false);
 
-  const [bonusDespertaActive] = useState(true);
-  const [bonusDespertaTime] = useState('07:00');
-  const [bonusDespertaPoints] = useState('3000');
+  // FORMULÁRIO DE LANÇAMENTO MANUAL DO ADMIN
+  const [manualSelectedAthleteId, setManualSelectedAthleteId] = useState('');
+  const [manualActivity, setManualActivity] = useState('Musculação');
+  const [manualRankingPts, setManualRankingPts] = useState('');
+  const [manualBankPts, setManualBankPts] = useState('');
+  const [manualSteps, setManualSteps] = useState('');
+  const [checkBonusInquebravel, setCheckBonusInquebravel] = useState(false);
+  const [checkBonusDesperta, setCheckBonusDesperta] = useState(false);
 
-  const [tiebreakersConfig] = useState([
-    { id: 'tb1', name: 'Passos Diários', enabled: true },
-    { id: 'tb2', name: 'Banco de Pontos', enabled: true },
-    { id: 'tb3', name: 'KM Total Percorrido', enabled: false },
-    { id: 'tb4', name: 'Dias em Atividade', enabled: false }
-  ]);
+  const [isAthleteDropdownOpen, setIsAthleteDropdownOpen] = useState(false);
+  const [isActivityDropdownOpen, setIsActivityDropdownOpen] = useState(false);
 
   const [athletePerfScope] = useState('overall');
-  const [selectedStory, setSelectedStory] = useState(null);
 
   const formatBirthDateMask = (text) => {
     let cleaned = text.replace(/\D/g, '');
@@ -424,9 +426,6 @@ export default function App() {
       const { data: pendingData } = await supabase.from('pending_workouts').select('*');
       if (pendingData) setPendingWorkouts(pendingData);
 
-      const { data: storiesData } = await supabase.from('stories').select('*');
-      if (storiesData) setStories(storiesData);
-
     } catch (err) {
       console.log('Erro ao carregar do Supabase:', err);
     }
@@ -438,7 +437,6 @@ export default function App() {
     return memberships.some(m => m.challengeId === c.id && m.userId === currentUser.id) && c.creator_id !== currentUser.id;
   });
 
-  // VERIFICA SE O USUÁRIO É CRIADOR OU PARTICIPANTE DE QUALQUER COMUNIDADE
   const hasUserAnyCommunity = userMembershipsAll.length > 0 || adminChallenges.length > 0;
 
   const handleShareInvite = async (challenge) => {
@@ -459,7 +457,6 @@ export default function App() {
     }
   };
 
-  // FUNÇÃO CORRIGIDA PARA DIRECIONAR CORRETAMENTE CONFORME O BOTÃO CLICADO
   function selectChallengeContext(challenge, asAdmin) {
     setActiveChallengeId(challenge.id);
     setIsAdminContext(asAdmin);
@@ -529,12 +526,10 @@ export default function App() {
       start_date: '01/10/2026',
       end_date: '31/10/2026',
       tiebreaker_enabled: true,
-      tiebreakers_config: tiebreakersConfig,
       bonuses: {
-        inquebravel: { active: bonusInquebravelActive, days: parseInt(bonusInquebravelDays, 10) || 7, points: parseInt(bonusInquebravelPoints, 10) || 5000 },
-        desperta: { active: bonusDespertaActive, limitTime: bonusDespertaTime, points: parseInt(bonusDespertaPoints, 10) || 3000 }
-      },
-      rules: selectedChallenge.rules || {}
+        inquebravel: { active: true, points: 5000 },
+        desperta: { active: true, points: 3000 }
+      }
     };
 
     await supabase.from('challenges').insert([newObj]);
@@ -565,7 +560,6 @@ export default function App() {
     setNewChallengeTitle('');
     setNewChallengeCode('');
     
-    // DEFINE O NOVO DESAFIO COMO ATIVO E VAI PARA A TELA DE ADMIN
     setActiveChallengeId(newId);
     setIsAdminContext(true);
     setCurrentScreen('admin');
@@ -582,7 +576,7 @@ export default function App() {
       user_id: currentUser.id,
       name: currentUser.name,
       nickname: currentUser.nickname,
-      role: 'active',
+      role: 'pending', // Solicitante entra como pendente até aprovação do admin para Virar Atleta
       ranking_points: 0,
       bank_points: 0,
       total_steps: 0,
@@ -598,7 +592,12 @@ export default function App() {
     setPendingInvites(pendingInvites.filter(inv => inv.id !== invite.id));
     fetchDataFromSupabase();
     selectChallengeContext(ch, false);
-    Alert.alert('🎉 Convite Aceito!', `Você entrou no desafio "${ch.title}".`);
+    Alert.alert('🎉 Convite Aceito!', `Você entrou no desafio "${ch.title}". Aguardando aprovação para Atleta Ativo.`);
+  }
+
+  async function handleRejectDashboardInvite(invite) {
+    setPendingInvites(pendingInvites.filter(inv => inv.id !== invite.id));
+    Alert.alert('Convite Recusado', `Você recusou o convite para a liga "${invite.challengeTitle}".`);
   }
 
   async function handleDeleteChallenge(challengeId) {
@@ -640,6 +639,93 @@ export default function App() {
     await supabase.from('challenges').update({ is_finished: true, registrations_closed: true }).eq('id', challengeId);
     fetchDataFromSupabase();
     Alert.alert('Desafio Encerrado', 'O pódio foi gerado no Feed.');
+  }
+
+  // BOTÃO ALTERAR STATUS DE INSCRIÇÕES NA LIGA (ABERTA / FECHADA)
+  async function toggleChallengeRegistrations() {
+    const newStatus = !selectedChallenge.registrations_closed;
+    await supabase.from('challenges').update({ registrations_closed: newStatus }).eq('id', selectedChallenge.id);
+    fetchDataFromSupabase();
+    Alert.alert('Status Atualizado', newStatus ? 'Inscrições/Candidaturas ENCERRADAS!' : 'Inscrições/Candidaturas ABERTAS!');
+  }
+
+  // APROVAR OU REJEITAR ATLETA ATIVO NO DESAFIO
+  async function handleUpdateMemberRole(memberId, newRole) {
+    await supabase.from('memberships').update({ role: newRole }).eq('id', memberId);
+    fetchDataFromSupabase();
+    Alert.alert('Status Atualizado', newRole === 'active' ? 'Atleta aprovado com sucesso!' : 'Participante mantido/definido como Torcedor.');
+  }
+
+  // REMOVER MEMBRO DA COMUNIDADE TOTALMENTE
+  async function handleRemoveMemberFromCommunity(memberId) {
+    await supabase.from('memberships').delete().eq('id', memberId);
+    fetchDataFromSupabase();
+    Alert.alert('Removido', 'O participante foi removido da comunidade.');
+  }
+
+  // LANÇAMENTO MANUAL DE PONTOS / BÔNUS / PASSOS
+  async function handleManualPointsSubmit() {
+    if (!manualSelectedAthleteId) {
+      Alert.alert('Atenção', 'Selecione um Atleta Ativo.');
+      return;
+    }
+
+    const rPts = parseInt(manualRankingPts, 10) || 0;
+    const bPts = parseInt(manualBankPts, 10) || 0;
+    const sPts = parseInt(manualSteps, 10) || 0;
+
+    let bonusTotal = 0;
+    if (checkBonusInquebravel) bonusTotal += 5000;
+    if (checkBonusDesperta) bonusTotal += 3000;
+
+    if (rPts === 0 && bPts === 0 && sPts === 0 && bonusTotal === 0) {
+      Alert.alert('Preencha ao menos um valor', 'Insira pontos de ranking, banco, passos ou selecione um bônus.');
+      return;
+    }
+
+    const member = memberships.find(m => m.id === manualSelectedAthleteId);
+    if (!member) return;
+
+    const newRankingTotal = (member.rankingPoints || 0) + rPts + bonusTotal;
+    const newBankTotal = (member.bankPoints || 0) + bPts;
+    const newStepsTotal = (member.totalSteps || 0) + sPts;
+
+    await supabase.from('memberships').update({
+      ranking_points: newRankingTotal,
+      bank_points: newBankTotal,
+      total_steps: newStepsTotal
+    }).eq('id', manualSelectedAthleteId);
+
+    // Se houve atribuição de pontos, gera também publicação no Feed
+    const newPost = {
+      id: `p_man_${Date.now()}`,
+      challenge_id: selectedChallenge.id,
+      user_id: member.userId,
+      user_name: member.name,
+      user_nickname: member.nickname,
+      user_avatar: member.avatar,
+      activity_type: manualActivity.toUpperCase(),
+      caption: `Lançamento manual de pontos pelo Administrador (${manualActivity})`,
+      photo_evidence: 'https://picsum.photos/seed/admin/400/300',
+      points_to_ranking: rPts + bonusTotal,
+      points_to_bank: bPts,
+      status: 'approved',
+      created_at: 'Agora',
+      likes: 0,
+      comments: []
+    };
+
+    await supabase.from('feed_posts').insert([newPost]);
+
+    fetchDataFromSupabase();
+
+    setManualRankingPts('');
+    setManualBankPts('');
+    setManualSteps('');
+    setCheckBonusInquebravel(false);
+    setCheckBonusDesperta(false);
+
+    Alert.alert('🎉 Valores Creditados!', `Valores e bônus aplicados com sucesso para ${member.nickname}!`);
   }
 
   async function handleApproveWorkout(workoutId) {
@@ -758,6 +844,8 @@ export default function App() {
 
   const currentChallengeMembers = memberships.filter(m => m.challengeId === activeChallengeId);
   const activeMembersInChallenge = currentChallengeMembers.filter(m => m.role === 'active');
+  const pendingMembersInChallenge = currentChallengeMembers.filter(m => m.role === 'pending');
+  
   const currentFeedPosts = feedPosts.filter(p => p.challenge_id === activeChallengeId);
   const currentPendingWorkouts = pendingWorkouts.filter(w => w.challenge_id === activeChallengeId);
 
@@ -797,7 +885,7 @@ export default function App() {
     }
   }
 
-  const currentMemberState = currentChallengeMembers.find(m => m.userId === currentUser.id);
+  const selectedAthleteObject = activeMembersInChallenge.find(m => m.id === manualSelectedAthleteId);
 
   if (loadingAuth) {
     return (
@@ -1024,7 +1112,6 @@ export default function App() {
             <Text style={[styles.sidebarText, currentScreen === 'athlete_center' && styles.sidebarTextActive]}>Atleta</Text>
           </TouchableOpacity>
 
-          {/* ABAS EXIBIDAS QUANDO EXISTE UM DESAFIO CRIADO OU INSCRITO */}
           {hasUserAnyCommunity && (
             <>
               <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'feed' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('feed')}>
@@ -1037,7 +1124,6 @@ export default function App() {
                 <Text style={[styles.sidebarText, currentScreen === 'ranking' && styles.sidebarTextActive]}>Ranking</Text>
               </TouchableOpacity>
 
-              {/* EXIBE A ABA ADMIN SE O DESAFIO SELECIONADO FOR DO USUÁRIO OU SE ELE TIVER DESAFIOS CRIADOS */}
               {(selectedChallenge.creator_id === currentUser.id || adminChallenges.length > 0) && (
                 <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'admin' && styles.sidebarBtnActive]} onPress={() => { setIsAdminContext(true); setCurrentScreen('admin'); }}>
                   <Text style={styles.sidebarIcon}>⚙️</Text>
@@ -1049,6 +1135,7 @@ export default function App() {
         </View>
 
         <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+          {/* ABA DASHBOARD */}
           {currentScreen === 'dashboard' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -1060,6 +1147,7 @@ export default function App() {
                 )}
               </View>
 
+              {/* BLOC0: CONVITES PENDENTES */}
               {pendingInvites.length > 0 && (
                 <View style={styles.inviteNoticeBox}>
                   <Text style={styles.inviteNoticeTitle}>📩 Convites Pendentes</Text>
@@ -1072,6 +1160,9 @@ export default function App() {
                       <View style={{ flexDirection: 'row', gap: 6 }}>
                         <TouchableOpacity style={styles.acceptInviteBtn} onPress={() => handleAcceptDashboardInvite(inv)}>
                           <Text style={styles.btnMiniText}>✅ ACEITAR</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.banBtn} onPress={() => handleRejectDashboardInvite(inv)}>
+                          <Text style={styles.btnMiniText}>❌ RECUSAR</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -1087,6 +1178,7 @@ export default function App() {
                 </View>
               )}
 
+              {/* BLOCO: LIGAS QUE VOCÊ ADMINISTRA */}
               <Text style={styles.sectionHeaderTitle}>🔑 Ligas que Você Administra</Text>
               {adminChallenges.length === 0 ? (
                 <Text style={styles.emptyNoticeText}>Você ainda não criou nenhum desafio no Supabase.</Text>
@@ -1126,6 +1218,7 @@ export default function App() {
                 ))
               )}
 
+              {/* BLOCO: LIGAS EM QUE VOCÊ É PARTICIPANTE */}
               <Text style={[styles.sectionHeaderTitle, { marginTop: 16 }]}>⚡ Ligas em que Você é Participante</Text>
               {participantChallenges.length === 0 ? (
                 <Text style={styles.emptyNoticeText}>Você não está inscrito em outros desafios.</Text>
@@ -1157,6 +1250,7 @@ export default function App() {
             </ScrollView>
           )}
 
+          {/* ABA FEED */}
           {currentScreen === 'feed' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -1227,6 +1321,7 @@ export default function App() {
             </ScrollView>
           )}
 
+          {/* ABA RANKING */}
           {currentScreen === 'ranking' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <Text style={styles.pageTitle}>🏆 Ranking — {selectedChallenge.title}</Text>
@@ -1257,6 +1352,7 @@ export default function App() {
             </ScrollView>
           )}
 
+          {/* ABA ATLETA */}
           {currentScreen === 'athlete_center' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.profileHeaderCard}>
@@ -1297,38 +1393,281 @@ export default function App() {
             </ScrollView>
           )}
 
+          {/* ABA ADMINISTRADOR REESTRUTURADA EM 5 SEÇÕES SANFONA */}
           {currentScreen === 'admin' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.adminControlCard}>
                 <Text style={styles.adminCardTitle}>🎯 Central do Administrador: {selectedChallenge.title}</Text>
-                <Text style={styles.adminCardSub}>Gerencie membros, aprovações, regras e bónus desta liga.</Text>
+                <Text style={styles.adminCardSub}>Gerencie aprovações, inscrições, lançamento manual, membros e configurações avançadas.</Text>
               </View>
 
-              <View style={styles.adminControlCard}>
-                <Text style={styles.adminCardTitle}>📋 Aprovação de Treinos Pendentes ({currentPendingWorkouts.length})</Text>
-                {currentPendingWorkouts.length === 0 ? (
-                  <Text style={styles.emptyNoticeText}>Nenhum treino aguardando aprovação.</Text>
-                ) : (
-                  currentPendingWorkouts.map((w) => (
-                    <View key={w.id} style={styles.participantRow}>
-                      <Image source={{ uri: w.photo_evidence }} style={styles.avatarMini} />
-                      <View style={{ flex: 1, marginLeft: 8 }}>
-                        <Text style={styles.participantName}>{w.user_name} ({w.activity_type})</Text>
-                        <Text style={styles.participantSub}>{w.caption}</Text>
-                        <Text style={styles.tagActiveText}>Recompensa: +{w.points_to_ranking} pts</Text>
-                      </View>
-                      <View style={{ flexDirection: 'row', gap: 4 }}>
-                        <TouchableOpacity style={styles.approveBtn} onPress={() => handleApproveWorkout(w.id)}>
-                          <Text style={styles.btnMiniText}>✅ APROVAR</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.banBtn} onPress={() => handleRejectWorkout(w.id)}>
-                          <Text style={styles.btnMiniText}>❌ REJEITAR</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  ))
+              {/* ITEM 1 - APROVAÇÃO DE TREINOS PENDENTES */}
+              <View style={styles.accordionCard}>
+                <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec1(!expandedSec1)}>
+                  <Text style={styles.accordionTitle}>1. APROVAÇÃO DE TREINOS PENDENTES ({currentPendingWorkouts.length})</Text>
+                  <Text style={styles.accordionArrow}>{expandedSec1 ? '▲' : '▼'}</Text>
+                </TouchableOpacity>
+
+                {expandedSec1 && (
+                  <View style={styles.accordionBody}>
+                    {currentPendingWorkouts.length === 0 ? (
+                      <Text style={styles.emptyNoticeText}>Nenhum treino aguardando aprovação.</Text>
+                    ) : (
+                      currentPendingWorkouts.map((w) => (
+                        <View key={w.id} style={styles.workoutPendingCard}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                            <Image source={{ uri: w.user_avatar }} style={styles.avatarMini} />
+                            <View style={{ marginLeft: 8, flex: 1 }}>
+                              <Text style={styles.participantName}>{w.user_name} ({w.user_nickname})</Text>
+                              <Text style={styles.participantSub}>Exercício: {w.activity_type}</Text>
+                            </View>
+                            <Text style={styles.tagActiveText}>+{w.points_to_ranking} pts</Text>
+                          </View>
+
+                          <Text style={{ fontSize: 10, color: '#334155', marginBottom: 6 }}>{w.caption}</Text>
+
+                          {/* IMAGEM DE COMPROVAÇÃO */}
+                          {w.photo_evidence && (
+                            <Image source={{ uri: w.photo_evidence }} style={styles.evidenceImagePreview} />
+                          )}
+
+                          <View style={{ flexDirection: 'row', gap: 6, marginTop: 8 }}>
+                            <TouchableOpacity style={[styles.approveBtn, { flex: 1, alignItems: 'center' }]} onPress={() => handleApproveWorkout(w.id)}>
+                              <Text style={styles.btnMiniText}>✅ APROVAR</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.banBtn, { flex: 1, alignItems: 'center' }]} onPress={() => handleRejectWorkout(w.id)}>
+                              <Text style={styles.btnMiniText}>❌ REJEITAR</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ))
+                    )}
+                  </View>
                 )}
               </View>
+
+              {/* ITEM 2 - CONTROLE DE INSCRIÇÕES */}
+              <View style={styles.accordionCard}>
+                <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec2(!expandedSec2)}>
+                  <Text style={styles.accordionTitle}>2. CONTROLE DE INSCRIÇÕES</Text>
+                  <Text style={styles.accordionArrow}>{expandedSec2 ? '▲' : '▼'}</Text>
+                </TouchableOpacity>
+
+                {expandedSec2 && (
+                  <View style={styles.accordionBody}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>
+                        Status das Inscrições: {selectedChallenge.registrations_closed ? '🔒 FECHADO' : '🟢 ABERTO'}
+                      </Text>
+                      <TouchableOpacity style={styles.lockBtn} onPress={toggleChallengeRegistrations}>
+                        <Text style={styles.btnMiniText}>
+                          {selectedChallenge.registrations_closed ? '🔓 INICIAR CANDIDATURAS' : '🔒 ENCERRAR CANDIDATURAS'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <Text style={[styles.inputLabel, { marginTop: 4 }]}>Solicitações para Atleta Ativo ({pendingMembersInChallenge.length}):</Text>
+                    {pendingMembersInChallenge.length === 0 ? (
+                      <Text style={styles.emptyNoticeText}>Nenhuma solicitação de novos atletas pendente.</Text>
+                    ) : (
+                      pendingMembersInChallenge.map((m) => (
+                        <View key={m.id} style={styles.participantRow}>
+                          <Image source={{ uri: m.avatar }} style={styles.avatarMini} />
+                          <View style={{ flex: 1, marginLeft: 8 }}>
+                            <Text style={styles.participantName}>{m.name} ({m.nickname})</Text>
+                            <Text style={{ fontSize: 8, color: '#d97706', fontWeight: 'bold' }}>Aguardando Aprovação do Administrador</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', gap: 4 }}>
+                            <TouchableOpacity style={styles.approveBtn} onPress={() => handleUpdateMemberRole(m.id, 'active')}>
+                              <Text style={styles.btnMiniText}>⚡ ATLETA</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.banBtn} onPress={() => handleUpdateMemberRole(m.id, 'spectator')}>
+                              <Text style={styles.btnMiniText}>👀 TORCEDOR</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ))
+                    )}
+                  </View>
+                )}
+              </View>
+
+              {/* ITEM 3 - LANÇAMENTO MANUAL DE PONTOS, BÔNUS & PASSOS */}
+              <View style={styles.accordionCard}>
+                <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec3(!expandedSec3)}>
+                  <Text style={styles.accordionTitle}>3. LANÇAMENTO MANUAL DE PONTOS, BÔNUS & PASSOS</Text>
+                  <Text style={styles.accordionArrow}>{expandedSec3 ? '▲' : '▼'}</Text>
+                </TouchableOpacity>
+
+                {expandedSec3 && (
+                  <View style={styles.accordionBody}>
+                    <Text style={styles.inputLabel}>Selecionar Atleta Ativo:</Text>
+                    <TouchableOpacity 
+                      style={styles.dropdownSelectBox} 
+                      onPress={() => setIsAthleteDropdownOpen(!isAthleteDropdownOpen)}
+                    >
+                      <Text style={styles.dropdownSelectText}>
+                        {selectedAthleteObject ? `${selectedAthleteObject.name} (${selectedAthleteObject.nickname})` : 'Clique para selecionar um atleta...'} ▼
+                      </Text>
+                    </TouchableOpacity>
+
+                    {isAthleteDropdownOpen && (
+                      <View style={styles.dropdownListContainer}>
+                        {activeMembersInChallenge.map((m) => (
+                          <TouchableOpacity
+                            key={m.id}
+                            style={styles.dropdownOptionRow}
+                            onPress={() => {
+                              setManualSelectedAthleteId(m.id);
+                              setIsAthleteDropdownOpen(false);
+                            }}
+                          >
+                            <Image source={{ uri: m.avatar }} style={styles.avatarMini} />
+                            <Text style={{ fontSize: 10, fontWeight: 'bold', marginLeft: 6 }}>{m.name} ({m.nickname})</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+
+                    <Text style={styles.inputLabel}>Modalidade Realizada:</Text>
+                    <TouchableOpacity 
+                      style={styles.dropdownSelectBox} 
+                      onPress={() => setIsActivityDropdownOpen(!isActivityDropdownOpen)}
+                    >
+                      <Text style={styles.dropdownSelectText}>{manualActivity} ▼</Text>
+                    </TouchableOpacity>
+
+                    {isActivityDropdownOpen && (
+                      <View style={styles.dropdownListContainer}>
+                        {['Musculação', 'Corrida', 'Ciclismo', 'Natação', 'Passos Diários', 'Ajuste do Admin'].map((act) => (
+                          <TouchableOpacity
+                            key={act}
+                            style={styles.dropdownOptionRow}
+                            onPress={() => {
+                              setManualActivity(act);
+                              setIsActivityDropdownOpen(false);
+                            }}
+                          >
+                            <Text style={{ fontSize: 10, fontWeight: 'bold' }}>{act}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+
+                    <Text style={styles.inputLabel}>Pontos Ranking (Geral):</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Ex: 5000"
+                      keyboardType="numeric"
+                      value={manualRankingPts}
+                      onChangeText={setManualRankingPts}
+                    />
+
+                    {selectedChallenge.has_daily_cap && (
+                      <>
+                        <Text style={styles.inputLabel}>Banco de Pontos (Excedente ao Teto):</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Ex: 2000"
+                          keyboardType="numeric"
+                          value={manualBankPts}
+                          onChangeText={setManualBankPts}
+                        />
+                      </>
+                    )}
+
+                    <Text style={styles.inputLabel}>Passos Diários:</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Ex: 10000"
+                      keyboardType="numeric"
+                      value={manualSteps}
+                      onChangeText={setManualSteps}
+                    />
+
+                    {/* CONCEDER BÔNUS */}
+                    <Text style={[styles.inputLabel, { marginTop: 6 }]}>Conceder Bônus:</Text>
+                    
+                    <TouchableOpacity 
+                      style={styles.checkboxRow} 
+                      onPress={() => setCheckBonusInquebravel(!checkBonusInquebravel)}
+                    >
+                      <View style={[styles.checkboxBox, checkBonusInquebravel && styles.checkboxBoxActive]}>
+                        {checkBonusInquebravel && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                      </View>
+                      <Text style={styles.checkboxLabel}>Bônus "O Inquebrável" ( +5.000 pts )</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                      style={styles.checkboxRow} 
+                      onPress={() => setCheckBonusDesperta(!checkBonusDesperta)}
+                    >
+                      <View style={[styles.checkboxBox, checkBonusDesperta && styles.checkboxBoxActive]}>
+                        {checkBonusDesperta && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                      </View>
+                      <Text style={styles.checkboxLabel}>Bônus "O Desperta" ( +3.000 pts )</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={[styles.primaryBtn, { marginTop: 10 }]} onPress={handleManualPointsSubmit}>
+                      <Text style={styles.primaryBtnText}>CREDITAR VALORES AO ATLETA</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+
+              {/* ITEM 4 - GERENCIAMENTO DE MEMBROS */}
+              <View style={styles.accordionCard}>
+                <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec4(!expandedSec4)}>
+                  <Text style={styles.accordionTitle}>4. GERENCIAMENTO DE MEMBROS ({currentChallengeMembers.length})</Text>
+                  <Text style={styles.accordionArrow}>{expandedSec4 ? '▲' : '▼'}</Text>
+                </TouchableOpacity>
+
+                {expandedSec4 && (
+                  <View style={styles.accordionBody}>
+                    {currentChallengeMembers.map((m) => (
+                      <View key={m.id} style={styles.participantRow}>
+                        <Image source={{ uri: m.avatar }} style={styles.avatarMini} />
+                        <View style={{ flex: 1, marginLeft: 8 }}>
+                          <Text style={styles.participantName}>{m.name} ({m.nickname})</Text>
+                          <Text style={m.role === 'active' ? styles.tagActiveText : styles.participantSub}>
+                            {m.role === 'active' ? '⚡ ATLETA ATIVO' : '👀 TORCEDOR'}
+                          </Text>
+                        </View>
+                        <View style={{ flexDirection: 'column', gap: 4 }}>
+                          {m.role === 'active' && (
+                            <TouchableOpacity style={styles.demoteBtn} onPress={() => handleUpdateMemberRole(m.id, 'spectator')}>
+                              <Text style={styles.btnMiniText}>🔻 REMOVER DO DESAFIO</Text>
+                            </TouchableOpacity>
+                          )}
+                          <TouchableOpacity style={styles.banBtn} onPress={() => handleRemoveMemberFromCommunity(m.id)}>
+                            <Text style={styles.btnMiniText}>🗑️ REMOVER DA COMUNIDADE</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              {/* ITEM 5 - CONFIGURAÇÃO AVANÇADA DE PONTOS */}
+              <View style={styles.accordionCard}>
+                <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec5(!expandedSec5)}>
+                  <Text style={styles.accordionTitle}>5. CONFIGURAÇÃO AVANÇADA DE PONTOS</Text>
+                  <Text style={styles.accordionArrow}>{expandedSec5 ? '▲' : '▼'}</Text>
+                </TouchableOpacity>
+
+                {expandedSec5 && (
+                  <View style={styles.accordionBody}>
+                    <Text style={{ fontSize: 10, color: '#475569', marginBottom: 8 }}>
+                      Configure limites de pontuação, critérios de desempate e regras detalhadas exibidas para os atletas.
+                    </Text>
+                    <TouchableOpacity style={styles.actionBtn} onPress={() => Alert.alert('Regras', 'Regras da liga já estão sincronizadas com o banco de dados.')}>
+                      <Text style={styles.actionBtnText}>⚙️ EDITAR REGRAS DETALHADAS DA LIGA</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+
             </ScrollView>
           )}
         </View>
@@ -1575,11 +1914,28 @@ const styles = StyleSheet.create({
   adminCardTitle: { fontSize: 12, fontWeight: 'bold', color: '#c2410c', marginBottom: 4 },
   adminCardSub: { fontSize: 10, color: '#475569', marginBottom: 8 },
 
+  // ESTILOS DE SANFONA / ACCORDION DA CENTRAL DO ADMIN
+  accordionCard: { backgroundColor: '#ffffff', borderRadius: 8, borderWidth: 1.5, borderColor: '#cbd5e1', marginBottom: 10, overflow: 'hidden' },
+  accordionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc', padding: 12, borderBottomWidth: 1, borderBottomColor: '#e2e8f0' },
+  accordionTitle: { fontSize: 11, fontWeight: 'bold', color: '#1e3a8a', flex: 1 },
+  accordionArrow: { fontSize: 12, color: '#f97316', fontWeight: 'bold', marginLeft: 8 },
+  accordionBody: { padding: 12, backgroundColor: '#ffffff' },
+
+  workoutPendingCard: { backgroundColor: '#f8fafc', borderRadius: 6, padding: 8, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 8 },
+  evidenceImagePreview: { width: '100%', height: 140, borderRadius: 6, marginVertical: 6 },
+
+  dropdownSelectBox: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 8, marginBottom: 6 },
+  dropdownSelectText: { fontSize: 10, fontWeight: 'bold', color: '#0f172a' },
+  dropdownListContainer: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, marginBottom: 8, maxHeight: 150 },
+  dropdownOptionRow: { flexDirection: 'row', alignItems: 'center', padding: 8, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+
   participantRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#fed7aa', marginTop: 6 },
   participantName: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
   tagActiveText: { fontSize: 9, color: '#16a34a', fontWeight: 'bold' },
   participantSub: { fontSize: 9, color: '#64748b' },
 
+  lockBtn: { backgroundColor: '#1e3a8a', paddingHorizontal: 8, paddingVertical: 5, borderRadius: 4 },
+  demoteBtn: { backgroundColor: '#d97706', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 4 },
   approveBtn: { backgroundColor: '#16a34a', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 4 },
   banBtn: { backgroundColor: '#dc2626', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 4 },
   inviteBtn: { backgroundColor: '#16a34a', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6, justifyContent: 'center' },
@@ -1656,11 +2012,11 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 9, fontWeight: 'bold', color: '#475569' },
   chipTextActive: { color: '#ffffff' },
 
-  checkboxRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 10, gap: 10 },
-  checkboxBox: { width: 22, height: 22, borderWidth: 2, borderColor: '#1e3a8a', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' },
+  checkboxRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 6, gap: 10 },
+  checkboxBox: { width: 20, height: 20, borderWidth: 2, borderColor: '#1e3a8a', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' },
   checkboxBoxActive: { backgroundColor: '#f97316', borderColor: '#f97316' },
-  checkboxCheckmark: { color: '#ffffff', fontSize: 13, fontWeight: 'bold' },
-  checkboxLabel: { fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' },
+  checkboxCheckmark: { color: '#ffffff', fontSize: 12, fontWeight: 'bold' },
+  checkboxLabel: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
 
   cancelBtn: { marginTop: 6, paddingVertical: 4, alignItems: 'center' },
   cancelBtnText: { color: '#64748b', fontSize: 10, fontWeight: 'bold' }
