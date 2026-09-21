@@ -637,11 +637,6 @@ export default function App() {
   }
 
   async function handleDeleteChallenge(challengeId) {
-    if (challenges.length <= 1) {
-      Alert.alert('Atenção', 'Você não pode excluir o único desafio ativo.');
-      return;
-    }
-
     await supabase.from('challenges').delete().eq('id', challengeId);
     fetchDataFromSupabase();
     Alert.alert('Desafio Excluído', 'A liga foi removida com sucesso do Supabase.');
@@ -1070,7 +1065,7 @@ export default function App() {
                     )}
                   </View>
                 )}
-              </ScrollView>
+              ScrollView>
             </View>
           )}
         </View>
