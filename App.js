@@ -109,6 +109,7 @@ export default function App() {
   const [workoutCaption, setWorkoutCaption] = useState('');
   const [photoEvidence, setPhotoEvidence] = useState(null);
 
+  // CRIAR DESAFIO
   const [isCreateChallengeOpen, setIsCreateChallengeOpen] = useState(false);
   const [newChallengeTitle, setNewChallengeTitle] = useState('');
   const [newChallengeCode, setNewChallengeCode] = useState('');
@@ -292,8 +293,7 @@ export default function App() {
               id: authData.user.id,
               full_name: cleanName,
               nickname: cleanName,
-              gender: genderInput,
-              updated_at: new Date().toISOString()
+              gender: genderInput
             }
           ], { onConflict: 'id' }).catch(err => console.log('Aviso profiles ignorado:', err));
         }
@@ -370,8 +370,7 @@ export default function App() {
             birth_date: dbBirthDate,
             age: computedAge || 0,
             gender: editGender,
-            avatar_url: editAvatar,
-            updated_at: new Date().toISOString()
+            avatar_url: editAvatar
           }
         ], { onConflict: 'id' });
 
@@ -1404,7 +1403,7 @@ export default function App() {
         </View>
       </View>
 
-      {/* MODAIS DO APLICATIVO COM TODAS AS TAGS CORRETAMENTE FECHADAS */}
+      {/* MODAL EDITAR PERFIL */}
       <Modal visible={isEditProfileOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={styles.modalContent}>
@@ -1443,6 +1442,7 @@ export default function App() {
         </View>
       </Modal>
 
+      {/* MODAL SELEÇÃO DE DESAFIO NO HEADER */}
       <Modal visible={isHeaderSelectOpen} transparent animationType="fade">
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsHeaderSelectOpen(false)}>
           <View style={styles.modalContent}>
@@ -1465,6 +1465,65 @@ export default function App() {
             </ScrollView>
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* MODAL CRIAR NOVO DESAFIO */}
+      <Modal visible={isCreateChallengeOpen} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <ScrollView contentContainerStyle={styles.modalContent}>
+            <Text style={styles.modalTitle}>🏆 Criar Novo Desafio / Liga</Text>
+
+            <Text style={styles.inputLabel}>Nome do Desafio:</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ex: Desafio Verão 2026"
+              value={newChallengeTitle}
+              onChangeText={setNewChallengeTitle}
+            />
+
+            <Text style={styles.inputLabel}>Código de Acesso / Convite:</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ex: MUV2026"
+              autoCapitalize="characters"
+              value={newChallengeCode}
+              onChangeText={setNewChallengeCode}
+            />
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 8 }}>
+              <Text style={styles.inputLabel}>Ativar Teto Diário de Pontos?</Text>
+              <TouchableOpacity 
+                style={[styles.chipBtn, hasCapToggle && styles.chipBtnActive]} 
+                onPress={() => setHasCapToggle(!hasCapToggle)}
+              >
+                <Text style={[styles.chipText, hasCapToggle && styles.chipTextActive]}>
+                  {hasCapToggle ? 'SIM' : 'NÃO'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {hasCapToggle && (
+              <>
+                <Text style={styles.inputLabel}>Limite Diário (Pts):</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ex: 22000"
+                  keyboardType="numeric"
+                  value={newChallengeCap}
+                  onChangeText={setNewChallengeCap}
+                />
+              </>
+            )}
+
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleCreateChallenge}>
+              <Text style={styles.primaryBtnText}>CRIAR E SALVAR NA NUVEM</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsCreateChallengeOpen(false)}>
+              <Text style={styles.cancelBtnText}>CANCELAR</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
       </Modal>
 
     </SafeAreaView>
