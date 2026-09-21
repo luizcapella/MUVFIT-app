@@ -238,7 +238,7 @@ export default function App() {
     }
   }
 
-  // AÇÃO DE AUTENTICAÇÃO E REGISTRO (AJUSTADO PARA O TRIGGER)
+  // AUTENTICAÇÃO E CADASTRO
   async function handleAuthAction() {
     if (!emailInput.trim() || !passwordInput.trim()) {
       Alert.alert('Atenção', 'Preencha E-mail e Senha para continuar.');
@@ -257,7 +257,7 @@ export default function App() {
 
         const cleanName = fullNameInput.trim();
 
-        // 1. O Trigger do Supabase usará estes metadados em `options.data`
+        // 1. Registro no Supabase Auth
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: emailInput.trim(),
           password: passwordInput.trim(),
@@ -276,44 +276,44 @@ export default function App() {
           return;
         }
 
-        // 2. Se a sessão retornou direta (sem e-mail de confirmação ativado)
+        // 2. Se o Supabase já retornar sessão no cadastro, entra direto
         if (authData?.session) {
           setSession(authData.session);
           await fetchUserProfile(authData.session.user.id, authData.session.user.email);
           await fetchDataFromSupabase();
-        } else if (authData?.user) {
-          // Tentar inserir manualmente na 'profiles' caso o trigger não esteja ativo (segurança)
-          try {
-            await supabase.from('profiles').upsert([
-              {
-                id: authData.user.id,
-                full_name: cleanName,
-                nickname: cleanName,
-                gender: genderInput,
-                updated_at: new Date().toISOString()
-              }
-            ], { onConflict: 'id' });
-          } catch (pErr) {
-            console.log('Aviso ao inserir profiles manualmente:', pErr);
-          }
+          setAuthSubmitting(false);
+          return;
+        }
 
-          // 3. Efetuar Login Imediato
-          const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-            email: emailInput.trim(),
-            password: passwordInput.trim(),
-          });
+        // 3. Tenta criar a linha na 'profiles' sem travar o código se falhar
+        if (authData?.user) {
+          await supabase.from('profiles').upsert([
+            {
+              id: authData.user.id,
+              full_name: cleanName,
+              nickname: cleanName,
+              gender: genderInput,
+              updated_at: new Date().toISOString()
+            }
+          ], { onConflict: 'id' }).catch(err => console.log('Aviso profiles ignorado:', err));
+        }
 
-          if (loginError) {
-            Alert.alert('Conta Criada!', 'Sua conta foi cadastrada. Por favor, faça login com seu e-mail e senha.');
-            setIsSignUp(false);
-          } else if (loginData.session) {
-            setSession(loginData.session);
-            await fetchUserProfile(loginData.session.user.id, loginData.session.user.email);
-            await fetchDataFromSupabase();
-          }
+        // 4. Executa o Login Imediato
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+          email: emailInput.trim(),
+          password: passwordInput.trim(),
+        });
+
+        if (loginError) {
+          Alert.alert('Conta Criada!', 'Por favor, faça o login com seu e-mail e senha.');
+          setIsSignUp(false);
+        } else if (loginData.session) {
+          setSession(loginData.session);
+          await fetchUserProfile(loginData.session.user.id, loginData.session.user.email);
+          await fetchDataFromSupabase();
         }
       } else {
-        // LOGIN
+        // FLUXO DE LOGIN
         const { data, error } = await supabase.auth.signInWithPassword({
           email: emailInput.trim(),
           password: passwordInput.trim(),
@@ -328,7 +328,7 @@ export default function App() {
         }
       }
     } catch (err) {
-      Alert.alert('Erro Inesperado', err.message || 'Ocorreu um erro ao conectar.');
+      Alert.alert('Erro Inesperado', err.message || 'Ocorreu um erro de conexão.');
     } finally {
       setAuthSubmitting(false);
     }
@@ -948,7 +948,7 @@ export default function App() {
     );
   }
 
-  // TELA PRINCIPAL
+  // TELA PRINCIPAL DO APP
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.topHeader}>
@@ -1114,39 +1114,6 @@ export default function App() {
         <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
           {currentScreen === 'dashboard' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
-              {(() => {
-                const isAndroid = Platform.OS === 'android' || (typeof window !== 'undefined' && /android/i.test(navigator.userAgent));
-                
-                const handleAction = () => {
-                  if (isAndroid) {
-                    Alert.alert('Download', 'Iniciando o download do APK do MuvFit!');
-                  } else {
-                    Alert.alert('Acesso iOS / Web', 'Você está no navegador/iPhone. Use o menu de compartilhar para adicionar à Tela de Início!');
-                  }
-                };
-
-                return (
-                  <View style={{ backgroundColor: '#1e3a8a', padding: 14, borderRadius: 10, marginBottom: 14, borderWidth: 2, borderColor: '#f97316' }}>
-                    <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#ffffff', textAlign: 'center', marginBottom: 4 }}>
-                      {isAndroid ? '📱 Baixar Aplicativo Android (.APK)' : '⚡ Acessar MuvFit Web / iPhone'}
-                    </Text>
-                    <Text style={{ fontSize: 10, color: '#cbd5e1', textAlign: 'center', marginBottom: 10 }}>
-                      {isAndroid 
-                        ? 'Toque abaixo para descarregar a versão oficial em APK.' 
-                        : 'Adicione este site à Tela de Início do seu iPhone para usar como app.'}
-                    </Text>
-                    <TouchableOpacity 
-                      style={{ backgroundColor: isAndroid ? '#16a34a' : '#f97316', padding: 10, borderRadius: 6, alignItems: 'center' }}
-                      onPress={handleAction}
-                    >
-                      <Text style={{ color: '#ffffff', fontSize: 11, fontWeight: 'bold' }}>
-                        {isAndroid ? '⬇️ BAIXAR APK DO ANDROID' : '🚀 USAR NO IPHONE / NAVEGADOR'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                );
-              })()}
-
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <Text style={styles.pageTitle}>Painel Geral de Ligas (Nuvem)</Text>
                 {currentUser.isAdmin && (
@@ -1261,34 +1228,6 @@ export default function App() {
                 </TouchableOpacity>
               </View>
 
-              {selectedChallenge.is_finished && top3Ranked.length >= 3 && (
-                <View style={styles.podiumContainer}>
-                  <Text style={styles.podiumHeaderTitle}>🏆 PÓDIO FINAL DO DESAFIO 🏆</Text>
-                  <View style={styles.podiumRow}>
-                    <View style={styles.podiumCard2nd}>
-                      <Text style={styles.podiumMedal}>🥈 2º LUGAR</Text>
-                      <Image source={{ uri: top3Ranked[1].avatar }} style={styles.avatarMini} />
-                      <Text style={styles.podiumName}>{top3Ranked[1].name}</Text>
-                      <Text style={styles.podiumPts}>{(top3Ranked[1].rankingPoints || 0).toLocaleString()} pts</Text>
-                    </View>
-
-                    <View style={styles.podiumCard1st}>
-                      <Text style={styles.podiumMedal}>🥇 CAMPEÃO</Text>
-                      <Image source={{ uri: top3Ranked[0].avatar }} style={styles.avatarLargePodium} />
-                      <Text style={styles.podiumName1st}>{top3Ranked[0].name}</Text>
-                      <Text style={styles.podiumPts1st}>{(top3Ranked[0].rankingPoints || 0).toLocaleString()} pts</Text>
-                    </View>
-
-                    <View style={styles.podiumCard3rd}>
-                      <Text style={styles.podiumMedal}>🥉 3º LUGAR</Text>
-                      <Image source={{ uri: top3Ranked[2].avatar }} style={styles.avatarMini} />
-                      <Text style={styles.podiumName}>{top3Ranked[2].name}</Text>
-                      <Text style={styles.podiumPts}>{(top3Ranked[2].rankingPoints || 0).toLocaleString()} pts</Text>
-                    </View>
-                  </View>
-                </View>
-              )}
-
               {currentMemberState?.role === 'active' ? (
                 <TouchableOpacity style={styles.actionBtn} onPress={() => setIsWorkoutModalOpen(true)}>
                   <Text style={styles.actionBtnText}>+ REGISTRAR NOVO TREINO / PASSOS</Text>
@@ -1385,22 +1324,6 @@ export default function App() {
                   </View>
                 </TouchableOpacity>
               ))}
-
-              <Text style={[styles.pageTitle, { marginTop: 16 }]}>👀 Torcedores</Text>
-              {spectatorMembersInChallenge.length === 0 ? (
-                <Text style={styles.emptyNoticeText}>Nenhum torcedor cadastrado neste desafio.</Text>
-              ) : (
-                spectatorMembersInChallenge.map((spectator) => (
-                  <TouchableOpacity key={spectator.userId} style={styles.spectatorRowCard} onPress={() => handleOpenUserProfile(spectator.userId)}>
-                    <Image source={{ uri: spectator.avatar }} style={styles.avatarMini} />
-                    <View style={{ flex: 1, marginLeft: 8 }}>
-                      <Text style={styles.spectatorName}>{spectator.name} ({spectator.nickname})</Text>
-                      <Text style={styles.spectatorSub}>Torcedor / Espectador</Text>
-                    </View>
-                    <Text style={styles.spectatorBadge}>👀 Torcedor</Text>
-                  </TouchableOpacity>
-                ))
-              )}
             </ScrollView>
           )}
 
@@ -1424,23 +1347,6 @@ export default function App() {
                   <Text style={styles.statusActiveTag}>⚡ ATLETA ATIVO</Text>
                 </View>
 
-                {hasUserAnyCommunity && (
-                  <View style={styles.perfScopeBox}>
-                    <Text style={styles.inputLabel}>Visualizar Desempenho Por:</Text>
-                    <TouchableOpacity 
-                      style={styles.nativeSelectButton}
-                      onPress={() => setIsPerfScopeSelectOpen(true)}
-                    >
-                      <Text style={styles.nativeSelectButtonText}>
-                        {athletePerfScope === 'overall' 
-                          ? '🌐 Somatório Geral (Todos os Desafios)' 
-                          : `🎯 ${(challenges.find(c => c.id === athletePerfScope) || {}).title || 'Desafio'}`
-                        } ▼
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-
                 <View style={styles.scoreRowContainer}>
                   <View style={styles.scoreBoxItem}>
                     <Text style={styles.scoreNumber}>{displayedPerf.rankingPoints.toLocaleString()}</Text>
@@ -1457,98 +1363,7 @@ export default function App() {
                     <Text style={styles.scoreLabel}>🚶 PASSOS</Text>
                   </View>
                 </View>
-
-                <View style={styles.storiesBox}>
-                  <Text style={styles.boxTitle}>Stories do Atleta (Clique para abrir)</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginTop: 6 }}>
-                    {viewedUser.id === currentUser.id && (
-                      <TouchableOpacity style={styles.addStoryBtn} onPress={() => setIsAddStoryOpen(true)}>
-                        <Text style={{ color: '#ffffff', fontSize: 20, fontWeight: 'bold' }}>+</Text>
-                      </TouchableOpacity>
-                    )}
-                    {userStories.length === 0 ? (
-                      <Text style={{ fontSize: 9, color: '#94a3b8', fontStyle: 'italic', alignSelf: 'center', marginLeft: 6 }}>Nenhum story publicado.</Text>
-                    ) : (
-                      userStories.map((st) => (
-                        <TouchableOpacity key={st.id} onPress={() => setSelectedStory(st)} style={{ position: 'relative' }}>
-                          <Image source={{ uri: st.uri }} style={styles.storyImg} />
-                          {st.type === 'video' && (
-                            <View style={styles.videoBadgeTag}>
-                              <Text style={{ fontSize: 8, color: '#ffffff' }}>▶</Text>
-                            </View>
-                          )}
-                        </TouchableOpacity>
-                      ))
-                    )}
-                  </ScrollView>
-                </View>
               </View>
-
-              <View style={styles.cardBox}>
-                <Text style={styles.boxTitle}>Insígnias de Bônus & Troféus do Pódio</Text>
-                <View style={styles.medalsRow}>
-                  <Text style={styles.medalText}>🥇 {displayedPerf.goldMedals} Ouros</Text>
-                  <Text style={styles.medalText}>🥈 {displayedPerf.silverMedals} Pratas</Text>
-                  <Text style={styles.medalText}>🥉 {displayedPerf.bronzeMedals} Bronzes</Text>
-                </View>
-
-                <View style={{ flexDirection: 'row', gap: 6, justifyContent: 'center', marginTop: 8 }}>
-                  <Text style={styles.insigniaTag}>🪨 O Inquebrável ({displayedPerf.insigniaInquebravelCount}x)</Text>
-                  <Text style={styles.insigniaTagBlue}>⏰ O Desperta ({displayedPerf.insigniaDespertaCount}x)</Text>
-                </View>
-              </View>
-
-              <Text style={styles.pageTitle}>Evolução & Estatísticas do Atleta</Text>
-              <View style={styles.chartsGrid}>
-                <View style={styles.chartCard}>
-                  <Text style={styles.chartTitle}>📊 Evolução de Peso (kg)</Text>
-                  <View style={styles.chartBarMock}><Text style={styles.chartBarText}>82kg ➔ 79kg (Setembro)</Text></View>
-                </View>
-
-                <View style={styles.chartCard}>
-                  <Text style={styles.chartTitle}>📊 Atividades Mais Praticadas</Text>
-                  <Text style={styles.chartSubText}>1º Musculação (45%) | 2º Corrida (35%) | 3º Bike (20%)</Text>
-                </View>
-
-                <View style={styles.chartCard}>
-                  <Text style={styles.chartTitle}>🏃 KM Percorrido Acumulado</Text>
-                  <Text style={styles.chartSubText}>128,5 km totais no MuvFit</Text>
-                </View>
-
-                <View style={styles.chartCard}>
-                  <Text style={styles.chartTitle}>⏱️ Tempo Total em Atividade</Text>
-                  <Text style={styles.chartSubText}>42 horas registradas</Text>
-                </View>
-              </View>
-
-              <Text style={styles.pageTitle}>Últimas Evidências de Atividades</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginBottom: 12 }}>
-                {evidences.map((ev) => (
-                  <View key={ev.id} style={styles.evidenceCard}>
-                    <Image source={{ uri: ev.image }} style={styles.evidenceImg} />
-                    <Text style={styles.evidenceTitle}>{ev.title}</Text>
-                    <Text style={styles.evidenceDate}>{ev.date}</Text>
-                  </View>
-                ))}
-              </ScrollView>
-
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
-                <Text style={styles.pageTitle}>Checklist de Objetivos Pessoais</Text>
-              </View>
-              {userGoals.map((g) => (
-                <TouchableOpacity 
-                  key={g.id} 
-                  style={styles.goalItem}
-                  onPress={() => {
-                    if (viewedUser.id === currentUser.id) {
-                      setUserGoals(userGoals.map(i => i.id === g.id ? { ...i, completed: !i.completed } : i));
-                    }
-                  }}
-                >
-                  <Text style={{ fontSize: 16 }}>{g.completed ? '✅' : '⬜'}</Text>
-                  <Text style={[styles.goalText, g.completed && styles.goalDone]}>{g.title}</Text>
-                </TouchableOpacity>
-              ))}
             </ScrollView>
           )}
 
@@ -1584,22 +1399,12 @@ export default function App() {
                   ))
                 )}
               </View>
-
-              <View style={styles.adminControlCard}>
-                <Text style={styles.adminCardTitle}>🔒 Controle de Inscrições</Text>
-                <Text style={styles.adminCardSub}>Status: {selectedChallenge.registrations_closed ? 'ENCERRADAS' : 'ABERTAS'}</Text>
-                <TouchableOpacity style={styles.toggleRegBtn} onPress={toggleChallengeRegistrations}>
-                  <Text style={styles.toggleRegBtnText}>
-                    {selectedChallenge.registrations_closed ? '🔓 REABRIR CANDIDATURAS' : '🔒 ENCERRAR CANDIDATURA'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
             </ScrollView>
           )}
         </View>
       </View>
 
-      {/* MODAL DE EDIÇÃO DE PERFIL */}
+      {/* MODAIS DO APLICATIVO COM TODAS AS TAGS CORRETAMENTE FECHADAS */}
       <Modal visible={isEditProfileOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={styles.modalContent}>
@@ -1623,36 +1428,6 @@ export default function App() {
               onChangeText={(text) => setEditBirthDate(formatBirthDateMask(text))}
             />
 
-            {editBirthDate.length === 10 && (
-              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#16a34a', marginBottom: 8, textAlign: 'center' }}>
-                🎉 Idade Calculada: {calculateAge(editBirthDate)} anos
-              </Text>
-            )}
-
-            <Text style={styles.inputLabel}>Gênero:</Text>
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-              <TouchableOpacity
-                style={[styles.chipBtn, editGender === 'Masculino' && styles.chipBtnActive, { flex: 1, alignItems: 'center' }]}
-                onPress={() => setEditGender('Masculino')}
-              >
-                <Text style={[styles.chipText, editGender === 'Masculino' && styles.chipTextActive]}>Masculino</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.chipBtn, editGender === 'Feminino' && styles.chipBtnActive, { flex: 1, alignItems: 'center' }]}
-                onPress={() => setEditGender('Feminino')}
-              >
-                <Text style={[styles.chipText, editGender === 'Feminino' && styles.chipTextActive]}>Feminino</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.inputLabel}>URL da Foto de Perfil:</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="https://..."
-              value={editAvatar}
-              onChangeText={setEditAvatar}
-            />
-
             <TouchableOpacity style={styles.primaryBtn} onPress={handleSaveProfile} disabled={savingProfile}>
               {savingProfile ? (
                 <ActivityIndicator color="#ffffff" />
@@ -1668,160 +1443,26 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* DEMAIS MODAIS */}
-      <Modal visible={!!selectedStory} animationType="fade" transparent>
-        <View style={styles.storyViewerOverlay}>
-          <View style={styles.storyViewerHeader}>
-            <View style={styles.storyProgressBarBg}>
-              <View style={[styles.storyProgressBarFill, { width: `${storyProgress}%` }]} />
-            </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Image source={{ uri: viewedUser.avatar }} style={styles.avatarMini} />
-                <Text style={{ color: '#ffffff', fontWeight: 'bold', marginLeft: 8, fontSize: 12 }}>{viewedUser.name}</Text>
-                <Text style={{ color: '#cbd5e1', fontSize: 10, marginLeft: 6 }}>{selectedStory?.timestamp}</Text>
-              </View>
-              <TouchableOpacity onPress={() => setSelectedStory(null)}>
-                <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: 'bold', padding: 4 }}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.storyMediaContainer}>
-            <Image source={{ uri: selectedStory?.uri }} style={styles.storyFullImg} resizeMode="contain" />
-          </View>
-        </View>
-      </Modal>
-
-      <Modal visible={isAddStoryOpen} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Postar Story no MuvFit</Text>
-            <MediaPickerField 
-              label="Selecione Foto ou Vídeo Curto (30s):" 
-              photoState={newStoryMedia} 
-              setPhotoState={setNewStoryMedia} 
-              acceptVideo={true}
-              setMediaType={setNewStoryType}
-            />
-
-            <TouchableOpacity style={styles.primaryBtn} onPress={async () => {
-              if (newStoryMedia) {
-                const newStory = {
-                  id: `st_${Date.now()}`,
-                  user_id: currentUser.id,
-                  type: newStoryType,
-                  uri: newStoryMedia,
-                  timestamp: 'Agora'
-                };
-                await supabase.from('stories').insert([newStory]);
-                fetchDataFromSupabase();
-                setNewStoryMedia(null);
-                setIsAddStoryOpen(false);
-                Alert.alert('Story Publicado!', 'Seu story foi salvo na nuvem.');
-              }
-            }}>
-              <Text style={styles.primaryBtnText}>PUBLICAR STORY</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsAddStoryOpen(false)}>
-              <Text style={styles.cancelBtnText}>CANCELAR</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal visible={isCreateChallengeOpen} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Criar Novo Desafio / Liga</Text>
-            <TextInput style={styles.input} placeholder="Nome do Desafio (Ex: Desafio Outubro 2026)" value={newChallengeTitle} onChangeText={setNewChallengeTitle} />
-            <TextInput style={styles.input} placeholder="Código de Convite (Ex: OUT2026)" value={newChallengeCode} onChangeText={setNewChallengeCode} />
-
-            <TouchableOpacity 
-              style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, gap: 8 }}
-              onPress={() => setHasCapToggle(!hasCapToggle)}
-            >
-              <Text style={{ fontSize: 16 }}>{hasCapToggle ? '☑️' : '⬜'}</Text>
-              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>Ativar Teto Diário de Pontos (Opcional)</Text>
-            </TouchableOpacity>
-
-            {hasCapToggle && (
-              <TextInput 
-                style={styles.input} 
-                placeholder="Teto Diário em Pontos (Ex: 22000)" 
-                keyboardType="numeric" 
-                value={newChallengeCap} 
-                onChangeText={setNewChallengeCap} 
-              />
-            )}
-
-            <TouchableOpacity style={styles.primaryBtn} onPress={handleCreateChallenge}>
-              <Text style={styles.primaryBtnText}>CRIAR DESAFIO</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsCreateChallengeOpen(false)}>
-              <Text style={styles.cancelBtnText}>CANCELAR</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <ScrollView contentContainerStyle={styles.modalContent}>
-            <Text style={styles.modalTitle}>Registrar Treino ({selectedChallenge?.title || 'Desafio'})</Text>
-
-            <Text style={styles.inputLabel}>Selecione a Modalidade:</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-              {[
-                { id: 'musculacao', label: 'Musculação' },
-                { id: 'crossfit', label: 'CrossFit / Funcional' },
-                { id: 'corrida', label: 'Corrida' },
-                { id: 'caminhada', label: 'Caminhada' },
-                { id: 'bike', label: 'Bike' },
-                { id: 'aerobico', label: 'Aeróbico' },
-              ].map((opt) => (
-                <TouchableOpacity
-                  key={opt.id}
-                  style={[styles.chipBtn, selectedActivity === opt.id && styles.chipBtnActive]}
-                  onPress={() => setSelectedActivity(opt.id)}
-                >
-                  <Text style={[styles.chipText, selectedActivity === opt.id && styles.chipTextActive]}>{opt.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <TextInput style={styles.input} placeholder="Duração em minutos (ex: 60)" keyboardType="numeric" value={durationInput} onChangeText={setDurationInput} />
-
-            <MediaPickerField label="Foto Evidência do Treino:" photoState={photoEvidence} setPhotoState={setPhotoEvidence} />
-
-            <TextInput style={styles.inputArea} placeholder="Legenda / Comentário (Opcional)..." multiline value={workoutCaption} onChangeText={setWorkoutCaption} />
-
-            <TouchableOpacity style={styles.primaryBtn} onPress={handleSubmitWorkout}>
-              <Text style={styles.primaryBtnText}>SUBMETER TREINO</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsWorkoutModalOpen(false)}>
-              <Text style={styles.cancelBtnText}>CANCELAR</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </Modal>
-
       <Modal visible={isHeaderSelectOpen} transparent animationType="fade">
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsHeaderSelectOpen(false)}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Selecione o Desafio Ativo</Text>
-            {challenges.map(c => (
-              <TouchableOpacity 
-                key={c.id} 
-                style={styles.selectOptionRow}
-                onPress={() => {
-                  selectChallengeContext(c, c.creator_id === currentUser.id);
-                  setIsHeaderSelectOpen(false);
-                }}
-              >
-                <Text style={styles.selectOptionText}>{c.title} ({c.creator_id === currentUser.id ? '🔑 Admin' : '⚡ Atleta'})</Text>
-              </TouchableOpacity>
-            ))}
+            <ScrollView>
+              {challenges.map(c => (
+                <TouchableOpacity 
+                  key={c.id} 
+                  style={styles.selectOptionRow}
+                  onPress={() => {
+                    selectChallengeContext(c, c.creator_id === currentUser.id);
+                    setIsHeaderSelectOpen(false);
+                  }}
+                >
+                  <Text style={styles.selectOptionText}>
+                    {c.title} ({c.creator_id === currentUser.id ? '🔑 Admin' : '⚡ Atleta'})
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -1890,25 +1531,9 @@ const styles = StyleSheet.create({
   tagOpen: { backgroundColor: '#f0fdf4', color: '#16a34a', fontSize: 9, fontWeight: 'bold', padding: 4, borderRadius: 4 },
   tagClosed: { backgroundColor: '#fef2f2', color: '#dc2626', fontSize: 9, fontWeight: 'bold', padding: 4, borderRadius: 4 },
 
-  podiumContainer: { backgroundColor: '#fff7ed', borderRadius: 10, padding: 12, borderWidth: 2, borderColor: '#f97316', marginBottom: 14, alignItems: 'center' },
-  podiumHeaderTitle: { fontSize: 14, fontWeight: '900', color: '#c2410c', marginBottom: 10 },
-  podiumRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 8, width: '100%' },
-  podiumCard1st: { backgroundColor: '#fef3c7', padding: 10, borderRadius: 8, alignItems: 'center', borderWidth: 2, borderColor: '#d97706', width: '36%' },
-  podiumCard2nd: { backgroundColor: '#f1f5f9', padding: 8, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#94a3b8', width: '30%' },
-  podiumCard3rd: { backgroundColor: '#fff7ed', padding: 8, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#f97316', width: '30%' },
-  podiumMedal: { fontSize: 9, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 4 },
-  avatarLargePodium: { width: 50, height: 50, borderRadius: 25, borderWidth: 2, borderColor: '#d97706', marginBottom: 4 },
-  podiumName1st: { fontSize: 11, fontWeight: 'bold', color: '#92400e' },
-  podiumPts1st: { fontSize: 11, fontWeight: '900', color: '#d97706' },
-  podiumName: { fontSize: 9, fontWeight: 'bold', color: '#334155' },
-  podiumPts: { fontSize: 9, fontWeight: 'bold', color: '#16a34a' },
-
   adminControlCard: { backgroundColor: '#fff7ed', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#f97316', marginBottom: 12 },
   adminCardTitle: { fontSize: 12, fontWeight: 'bold', color: '#c2410c', marginBottom: 4 },
   adminCardSub: { fontSize: 10, color: '#475569', marginBottom: 8 },
-
-  toggleRegBtn: { backgroundColor: '#1e3a8a', paddingVertical: 8, borderRadius: 6, alignItems: 'center' },
-  toggleRegBtnText: { color: '#ffffff', fontSize: 10, fontWeight: 'bold' },
 
   participantRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#fed7aa', marginTop: 6 },
   participantName: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
@@ -1928,11 +1553,6 @@ const styles = StyleSheet.create({
   rankingMemberSub: { fontSize: 9, color: '#64748b' },
   rankingMemberPts: { fontSize: 12, fontWeight: 'bold', color: '#16a34a' },
   rankingMemberBank: { fontSize: 8, color: '#64748b' },
-
-  spectatorRowCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 6 },
-  spectatorName: { fontSize: 10, fontWeight: 'bold', color: '#334155' },
-  spectatorSub: { fontSize: 8, color: '#94a3b8' },
-  spectatorBadge: { backgroundColor: '#eff6ff', color: '#1e3a8a', fontSize: 8, fontWeight: 'bold', padding: 4, borderRadius: 4 },
 
   primaryBtn: { backgroundColor: '#f97316', paddingVertical: 10, borderRadius: 6, alignItems: 'center', marginTop: 6 },
   primaryBtnText: { color: '#ffffff', fontSize: 11, fontWeight: 'bold' },
@@ -1977,8 +1597,6 @@ const styles = StyleSheet.create({
   editProfileBtn: { backgroundColor: '#1e3a8a', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, marginVertical: 6 },
   editProfileBtnText: { color: '#ffffff', fontSize: 10, fontWeight: 'bold' },
 
-  perfScopeBox: { width: '100%', marginVertical: 6 },
-
   statusBadgeRow: { marginBottom: 8 },
   statusActiveTag: { backgroundColor: '#f0fdf4', color: '#16a34a', fontSize: 10, fontWeight: 'bold', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4 },
 
@@ -1986,40 +1604,6 @@ const styles = StyleSheet.create({
   scoreBoxItem: { flex: 1, backgroundColor: '#ffffff', borderRadius: 8, padding: 8, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
   scoreNumber: { fontSize: 14, fontWeight: '900', color: '#f97316' },
   scoreLabel: { fontSize: 8, fontWeight: 'bold', color: '#1e3a8a', marginTop: 2 },
-
-  storiesBox: { width: '100%', borderTopWidth: 1, borderTopColor: '#e2e8f0', paddingTop: 8 },
-  boxTitle: { fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' },
-  addStoryBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#f97316', justifyContent: 'center', alignItems: 'center', marginRight: 8 },
-  storyImg: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: '#f97316', marginRight: 8 },
-  videoBadgeTag: { position: 'absolute', bottom: 2, right: 10, backgroundColor: '#1e3a8a', borderRadius: 8, width: 14, height: 14, justifyContent: 'center', alignItems: 'center' },
-
-  storyViewerOverlay: { flex: 1, backgroundColor: '#000000', justifyContent: 'space-between', paddingVertical: 20 },
-  storyViewerHeader: { paddingHorizontal: 16 },
-  storyProgressBarBg: { width: '100%', height: 3, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 2, overflow: 'hidden' },
-  storyProgressBarFill: { height: '100%', backgroundColor: '#ffffff' },
-  storyMediaContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  storyFullImg: { width: '100%', height: '80%' },
-
-  medalsRow: { flexDirection: 'row', justifyContent: 'space-around', marginVertical: 6 },
-  medalText: { fontSize: 10, fontWeight: 'bold', color: '#334155' },
-  insigniaTag: { backgroundColor: '#fff7ed', color: '#c2410c', fontSize: 9, fontWeight: 'bold', padding: 3, borderRadius: 4 },
-  insigniaTagBlue: { backgroundColor: '#eff6ff', color: '#1e3a8a', fontSize: 9, fontWeight: 'bold', padding: 3, borderRadius: 4 },
-
-  chartsGrid: { gap: 6, marginBottom: 10 },
-  chartCard: { backgroundColor: '#f8fafc', borderRadius: 6, padding: 8, borderWidth: 1, borderColor: '#e2e8f0' },
-  chartTitle: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
-  chartBarMock: { backgroundColor: '#eff6ff', borderRadius: 4, padding: 6, marginTop: 4 },
-  chartBarText: { fontSize: 10, color: '#1e3a8a', fontWeight: 'bold' },
-  chartSubText: { fontSize: 10, color: '#475569', marginTop: 2 },
-
-  evidenceCard: { backgroundColor: '#f8fafc', borderRadius: 6, padding: 6, borderWidth: 1, borderColor: '#e2e8f0', marginRight: 6, width: 100 },
-  evidenceImg: { width: '100%', height: 75, borderRadius: 4, marginBottom: 4 },
-  evidenceTitle: { fontSize: 9, fontWeight: 'bold', color: '#0f172a' },
-  evidenceDate: { fontSize: 8, color: '#94a3b8' },
-
-  goalItem: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 4 },
-  goalText: { fontSize: 10, color: '#0f172a', fontWeight: 'bold' },
-  goalDone: { textDecorationLine: 'line-through', color: '#94a3b8' },
 
   mediaFieldBox: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, padding: 8, marginBottom: 8 },
   mediaLabel: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 6 },
@@ -2037,7 +1621,6 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 14, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 10, textAlign: 'center' },
   inputLabel: { fontSize: 10, fontWeight: 'bold', color: '#475569', marginVertical: 4 },
   input: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 6, fontSize: 11, marginBottom: 6 },
-  inputArea: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 6, fontSize: 11, height: 50, textAlignVertical: 'top', marginBottom: 8 },
 
   chipBtn: { backgroundColor: '#f1f5f9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
   chipBtnActive: { backgroundColor: '#f97316' },
