@@ -90,7 +90,6 @@ export default function App() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const [isHeaderSelectOpen, setIsHeaderSelectOpen] = useState(false);
-  const [isPerfScopeSelectOpen, setIsPerfScopeSelectOpen] = useState(false);
 
   const [activeChallengeId, setActiveChallengeId] = useState(null);
   const [isAdminContext, setIsAdminContext] = useState(true);
@@ -98,10 +97,6 @@ export default function App() {
   const selectedChallenge = challenges.find(c => c.id === activeChallengeId) || challenges[0] || {};
 
   const [commentInputs, setCommentInputs] = useState({});
-  const [evidences] = useState([
-    { id: 'e1', title: 'Força / Perna', date: '17/09/2026', image: 'https://picsum.photos/seed/ev1/200/200' },
-    { id: 'e2', title: 'Corrida 8km', date: '15/09/2026', image: 'https://picsum.photos/seed/ev2/200/200' },
-  ]);
 
   const [isWorkoutModalOpen, setIsWorkoutModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState('musculacao');
@@ -132,20 +127,7 @@ export default function App() {
   ]);
 
   const [athletePerfScope] = useState('overall');
-
-  const [userGoals, setUserGoals] = useState([
-    { id: 'g1', title: 'Perder Peso', completed: true },
-    { id: 'g2', title: 'Ganhar Massa Magra', completed: true },
-    { id: 'g3', title: 'Correr 10 km', completed: true },
-    { id: 'g4', title: 'Participar de Maratona', completed: false },
-  ]);
-
-  const [isAddStoryOpen, setIsAddStoryOpen] = useState(false);
-  const [newStoryMedia, setNewStoryMedia] = useState(null);
-  const [newStoryType, setNewStoryType] = useState('image');
-  
   const [selectedStory, setSelectedStory] = useState(null);
-  const [storyProgress, setStoryProgress] = useState(0);
 
   const formatBirthDateMask = (text) => {
     let cleaned = text.replace(/\D/g, '');
@@ -239,7 +221,6 @@ export default function App() {
     }
   }
 
-  // AUTENTICAÇÃO E CADASTRO
   async function handleAuthAction() {
     if (!emailInput.trim() || !passwordInput.trim()) {
       Alert.alert('Atenção', 'Preencha E-mail e Senha para continuar.');
@@ -258,7 +239,6 @@ export default function App() {
 
         const cleanName = fullNameInput.trim();
 
-        // 1. Registro no Supabase Auth
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: emailInput.trim(),
           password: passwordInput.trim(),
@@ -277,7 +257,6 @@ export default function App() {
           return;
         }
 
-        // 2. Se o Supabase já retornar sessão no cadastro, entra direto
         if (authData?.session) {
           setSession(authData.session);
           await fetchUserProfile(authData.session.user.id, authData.session.user.email);
@@ -286,7 +265,6 @@ export default function App() {
           return;
         }
 
-        // 3. Tenta criar a linha na 'profiles' sem travar o código se falhar
         if (authData?.user) {
           await supabase.from('profiles').upsert([
             {
@@ -298,7 +276,6 @@ export default function App() {
           ], { onConflict: 'id' }).catch(err => console.log('Aviso profiles ignorado:', err));
         }
 
-        // 4. Executa o Login Imediato
         const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
           email: emailInput.trim(),
           password: passwordInput.trim(),
@@ -313,7 +290,6 @@ export default function App() {
           await fetchDataFromSupabase();
         }
       } else {
-        // FLUXO DE LOGIN
         const { data, error } = await supabase.auth.signInWithPassword({
           email: emailInput.trim(),
           password: passwordInput.trim(),
@@ -456,40 +432,14 @@ export default function App() {
     }
   }
 
-  useEffect(() => {
-    let timer = null;
-    if (selectedStory) {
-      setStoryProgress(0);
-      const intervalTime = 100;
-      const totalDuration = 30000;
-      const stepIncrement = (intervalTime / totalDuration) * 100;
-
-      timer = setInterval(() => {
-        setStoryProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(timer);
-            setSelectedStory(null);
-            return 0;
-          }
-          return prev + stepIncrement;
-        });
-      }, intervalTime);
-    } else {
-      setStoryProgress(0);
-    }
-
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [selectedStory]);
-
   const userMembershipsAll = memberships.filter(m => m.userId === currentUser.id);
-  const hasUserAnyCommunity = userMembershipsAll.length > 0;
-
   const adminChallenges = challenges.filter(c => c.creator_id === currentUser.id);
   const participantChallenges = challenges.filter(c => {
     return memberships.some(m => m.challengeId === c.id && m.userId === currentUser.id) && c.creator_id !== currentUser.id;
   });
+
+  // VERIFICA SE O USUÁRIO É CRIADOR OU PARTICIPANTE DE QUALQUER COMUNIDADE
+  const hasUserAnyCommunity = userMembershipsAll.length > 0 || adminChallenges.length > 0;
 
   const handleShareInvite = async (challenge) => {
     const inviteUrl = `https://muvfit.vercel.app/convite?codigo=${challenge.invite_code}`;
@@ -509,10 +459,16 @@ export default function App() {
     }
   };
 
+  // FUNÇÃO CORRIGIDA PARA DIRECIONAR CORRETAMENTE CONFORME O BOTÃO CLICADO
   function selectChallengeContext(challenge, asAdmin) {
     setActiveChallengeId(challenge.id);
     setIsAdminContext(asAdmin);
-    setCurrentScreen('feed');
+    
+    if (asAdmin) {
+      setCurrentScreen('admin');
+    } else {
+      setCurrentScreen('feed');
+    }
   }
 
   function handleOpenUserProfile(userId) {
@@ -608,6 +564,12 @@ export default function App() {
     setIsCreateChallengeOpen(false);
     setNewChallengeTitle('');
     setNewChallengeCode('');
+    
+    // DEFINE O NOVO DESAFIO COMO ATIVO E VAI PARA A TELA DE ADMIN
+    setActiveChallengeId(newId);
+    setIsAdminContext(true);
+    setCurrentScreen('admin');
+
     Alert.alert('Sucesso', 'Novo desafio criado e salvo na nuvem!');
   }
 
@@ -639,7 +601,6 @@ export default function App() {
     Alert.alert('🎉 Convite Aceito!', `Você entrou no desafio "${ch.title}".`);
   }
 
-  // EXCLUSÃO EM CASCATA COM CONFIRMAÇÃO DO ADMIN
   async function handleDeleteChallenge(challengeId) {
     const challengeToDelete = challenges.find(c => c.id === challengeId);
     if (!challengeToDelete) return;
@@ -651,12 +612,10 @@ export default function App() {
     if (!confirmDelete) return;
 
     try {
-      // Deleta em cascata dependências para evitar conflito de Chave Estrangeira (Foreign Key)
       await supabase.from('pending_workouts').delete().eq('challenge_id', challengeId);
       await supabase.from('feed_posts').delete().eq('challenge_id', challengeId);
       await supabase.from('memberships').delete().eq('challenge_id', challengeId);
 
-      // Deleta o desafio na tabela principal
       const { error } = await supabase.from('challenges').delete().eq('id', challengeId);
 
       if (error) {
@@ -665,6 +624,7 @@ export default function App() {
       }
 
       await fetchDataFromSupabase();
+      setCurrentScreen('dashboard');
 
       if (Platform.OS === 'web') {
         window.alert(`Liga "${challengeToDelete.title}" excluída com sucesso!`);
@@ -680,13 +640,6 @@ export default function App() {
     await supabase.from('challenges').update({ is_finished: true, registrations_closed: true }).eq('id', challengeId);
     fetchDataFromSupabase();
     Alert.alert('Desafio Encerrado', 'O pódio foi gerado no Feed.');
-  }
-
-  async function toggleChallengeRegistrations() {
-    const updatedStatus = !selectedChallenge.registrations_closed;
-    await supabase.from('challenges').update({ registrations_closed: updatedStatus }).eq('id', selectedChallenge.id);
-    fetchDataFromSupabase();
-    Alert.alert('Status Atualizado', updatedStatus ? 'Inscrições ENCERRADAS.' : 'Inscrições ABERTAS.');
   }
 
   async function handleApproveWorkout(workoutId) {
@@ -741,7 +694,7 @@ export default function App() {
 
   async function handleSubmitWorkout() {
     const currentMemberRecord = memberships.find(m => m.challengeId === activeChallengeId && m.userId === currentUser.id);
-    if (!currentMemberRecord || currentMemberRecord.role !== 'active') {
+    if (!currentMemberRecord && selectedChallenge.creator_id !== currentUser.id) {
       Alert.alert('Acesso Restrito', 'Apenas Atletas Ativos podem submeter treinos.');
       return;
     }
@@ -803,52 +756,8 @@ export default function App() {
     return (c.title || '').toLowerCase().includes(term) || (c.invite_code || '').toLowerCase().includes(term);
   });
 
-  const MediaPickerField = ({ label, photoState, setPhotoState, acceptVideo = false, setMediaType = null }) => (
-    <View style={styles.mediaFieldBox}>
-      <Text style={styles.mediaLabel}>{label}</Text>
-      <View style={styles.mediaButtonsRow}>
-        <TouchableOpacity 
-          style={styles.cameraBtn} 
-          onPress={() => {
-            const mockUri = 'https://picsum.photos/seed/' + Math.random() + '/400/300';
-            setPhotoState(mockUri);
-            if (setMediaType) setMediaType('image');
-          }}
-        >
-          <Text style={styles.mediaBtnText}>📷 Foto Exemplo</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.galleryBtn} 
-          onPress={() => {
-            const mockUri = 'https://picsum.photos/seed/' + Math.random() + '/400/300';
-            setPhotoState(mockUri);
-            if (setMediaType) setMediaType(acceptVideo ? 'video' : 'image');
-          }}
-        >
-          <Text style={styles.mediaBtnText}>🖼️ Galeria Exemplo</Text>
-        </TouchableOpacity>
-      </View>
-
-      {photoState ? (
-        <View style={styles.previewContainer}>
-          {acceptVideo && newStoryType === 'video' ? (
-            <Text style={{ fontSize: 14, color: '#16a34a', fontWeight: 'bold' }}>🎥 Vídeo Anexado</Text>
-          ) : (
-            <Image source={{ uri: photoState }} style={styles.previewImage} />
-          )}
-          <Text style={styles.previewSuccessText}>✅ Pronto para Enviar</Text>
-        </View>
-      ) : (
-        <Text style={styles.previewPendingText}>Pendente</Text>
-      )}
-    </View>
-  );
-
   const currentChallengeMembers = memberships.filter(m => m.challengeId === activeChallengeId);
   const activeMembersInChallenge = currentChallengeMembers.filter(m => m.role === 'active');
-  const spectatorMembersInChallenge = currentChallengeMembers.filter(m => m.role === 'spectator');
-  const top3Ranked = [...activeMembersInChallenge].sort((a,b) => (b.rankingPoints || 0) - (a.rankingPoints || 0)).slice(0, 3);
   const currentFeedPosts = feedPosts.filter(p => p.challenge_id === activeChallengeId);
   const currentPendingWorkouts = pendingWorkouts.filter(w => w.challenge_id === activeChallengeId);
 
@@ -889,7 +798,6 @@ export default function App() {
   }
 
   const currentMemberState = currentChallengeMembers.find(m => m.userId === currentUser.id);
-  const userStories = stories.filter(st => st.user_id === viewedUser.id);
 
   if (loadingAuth) {
     return (
@@ -1084,7 +992,6 @@ export default function App() {
                           style={styles.searchResultItem}
                           onPress={() => {
                             selectChallengeContext(ch, ch.creator_id === currentUser.id);
-                            setCurrentScreen('ranking');
                             setIsSearchOpen(false);
                             setSearchQuery('');
                           }}
@@ -1092,7 +999,7 @@ export default function App() {
                           <Text style={{ fontSize: 16, marginRight: 6 }}>🏆</Text>
                           <View style={{ flex: 1 }}>
                             <Text style={styles.searchResultTitle}>{ch.title}</Text>
-                            <Text style={styles.searchResultSub}>Código: {ch.invite_code} | Ver Ranking ➔</Text>
+                            <Text style={styles.searchResultSub}>Código: {ch.invite_code} | Acessar Liga ➔</Text>
                           </View>
                         </TouchableOpacity>
                       ))
@@ -1109,7 +1016,7 @@ export default function App() {
         <View style={styles.sidebar}>
           <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'dashboard' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('dashboard')}>
             <Text style={styles.sidebarIcon}>🏠</Text>
-            <Text style={[styles.sidebarText, currentScreen === 'dashboard' && styles.sidebarTextActive]}>Dashboard</Text>
+            <Text style={[styles.sidebarText, currentScreen === 'dashboard' && styles.sidebarTextActive]}>Painel</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'athlete_center' && styles.sidebarBtnActive]} onPress={() => { setViewedUser(currentUser); setCurrentScreen('athlete_center'); }}>
@@ -1117,6 +1024,7 @@ export default function App() {
             <Text style={[styles.sidebarText, currentScreen === 'athlete_center' && styles.sidebarTextActive]}>Atleta</Text>
           </TouchableOpacity>
 
+          {/* ABAS EXIBIDAS QUANDO EXISTE UM DESAFIO CRIADO OU INSCRITO */}
           {hasUserAnyCommunity && (
             <>
               <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'feed' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('feed')}>
@@ -1129,8 +1037,9 @@ export default function App() {
                 <Text style={[styles.sidebarText, currentScreen === 'ranking' && styles.sidebarTextActive]}>Ranking</Text>
               </TouchableOpacity>
 
-              {isAdminContext && (
-                <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'admin' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('admin')}>
+              {/* EXIBE A ABA ADMIN SE O DESAFIO SELECIONADO FOR DO USUÁRIO OU SE ELE TIVER DESAFIOS CRIADOS */}
+              {(selectedChallenge.creator_id === currentUser.id || adminChallenges.length > 0) && (
+                <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'admin' && styles.sidebarBtnActive]} onPress={() => { setIsAdminContext(true); setCurrentScreen('admin'); }}>
                   <Text style={styles.sidebarIcon}>⚙️</Text>
                   <Text style={[styles.sidebarText, currentScreen === 'admin' && styles.sidebarTextActive]}>Admin</Text>
                 </TouchableOpacity>
@@ -1209,7 +1118,6 @@ export default function App() {
                         </TouchableOpacity>
                       )}
 
-                      {/* BOTÃO EXCLUIR EXIBIDO PARA ADMINISTRADORES EM TODOS OS STATUS */}
                       <TouchableOpacity style={styles.deleteChallengeBtn} onPress={() => handleDeleteChallenge(c.id)}>
                         <Text style={styles.btnMiniText}>🗑️ EXCLUIR</Text>
                       </TouchableOpacity>
@@ -1249,7 +1157,7 @@ export default function App() {
             </ScrollView>
           )}
 
-          {currentScreen === 'feed' && hasUserAnyCommunity && selectedChallenge && (
+          {currentScreen === 'feed' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <Text style={styles.pageTitle}>Feed — {selectedChallenge.title}</Text>
@@ -1258,17 +1166,9 @@ export default function App() {
                 </TouchableOpacity>
               </View>
 
-              {currentMemberState?.role === 'active' ? (
-                <TouchableOpacity style={styles.actionBtn} onPress={() => setIsWorkoutModalOpen(true)}>
-                  <Text style={styles.actionBtnText}>+ REGISTRAR NOVO TREINO / PASSOS</Text>
-                </TouchableOpacity>
-              ) : (
-                <View style={styles.restrictedNoticeBox}>
-                  <Text style={styles.restrictedNoticeText}>
-                    👀 Perfil de Torcedor: Modo de leitura.
-                  </Text>
-                </View>
-              )}
+              <TouchableOpacity style={styles.actionBtn} onPress={() => setIsWorkoutModalOpen(true)}>
+                <Text style={styles.actionBtnText}>+ REGISTRAR NOVO TREINO / PASSOS</Text>
+              </TouchableOpacity>
 
               {currentFeedPosts.length === 0 ? (
                 <Text style={styles.emptyNoticeText}>Nenhum treino aprovado no feed ainda.</Text>
@@ -1327,7 +1227,7 @@ export default function App() {
             </ScrollView>
           )}
 
-          {currentScreen === 'ranking' && hasUserAnyCommunity && selectedChallenge && (
+          {currentScreen === 'ranking' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <Text style={styles.pageTitle}>🏆 Ranking — {selectedChallenge.title}</Text>
               
@@ -1397,11 +1297,11 @@ export default function App() {
             </ScrollView>
           )}
 
-          {currentScreen === 'admin' && isAdminContext && hasUserAnyCommunity && selectedChallenge && (
+          {currentScreen === 'admin' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.adminControlCard}>
-                <Text style={styles.adminCardTitle}>🎯 Gerenciando: {selectedChallenge.title}</Text>
-                <Text style={styles.adminCardSub}>Todas as alterações feitas afetam esta liga no Supabase.</Text>
+                <Text style={styles.adminCardTitle}>🎯 Central do Administrador: {selectedChallenge.title}</Text>
+                <Text style={styles.adminCardSub}>Gerencie membros, aprovações, regras e bónus desta liga.</Text>
               </View>
 
               <View style={styles.adminControlCard}>
@@ -1521,7 +1421,6 @@ export default function App() {
               onChangeText={setNewChallengeCode}
             />
 
-            {/* CAIXA DE SELEÇÃO DO TETO DIÁRIO */}
             <TouchableOpacity 
               style={styles.checkboxRow} 
               onPress={() => setHasCapToggle(!hasCapToggle)}
@@ -1533,7 +1432,6 @@ export default function App() {
               <Text style={styles.checkboxLabel}>Ativar Teto Diário de Pontos?</Text>
             </TouchableOpacity>
 
-            {/* RETÂNGULO DE ENTRADA DO LIMITE (EXIBIDO APENAS SE HABILITADO) */}
             {hasCapToggle && (
               <View style={{ marginTop: 2, marginBottom: 8 }}>
                 <Text style={styles.inputLabel}>Limite Diário (Pts):</Text>
@@ -1552,6 +1450,57 @@ export default function App() {
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsCreateChallengeOpen(false)}>
+              <Text style={styles.cancelBtnText}>CANCELAR</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* MODAL REGISTRO DE TREINO */}
+      <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <ScrollView contentContainerStyle={styles.modalContent}>
+            <Text style={styles.modalTitle}>📷 Registrar Novo Treino</Text>
+
+            <Text style={styles.inputLabel}>Tipo de Atividade:</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ex: Musculação, Corrida, Passos"
+              value={selectedActivity}
+              onChangeText={setSelectedActivity}
+            />
+
+            <Text style={styles.inputLabel}>Duração (minutos):</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ex: 60"
+              keyboardType="numeric"
+              value={durationInput}
+              onChangeText={setDurationInput}
+            />
+
+            <Text style={styles.inputLabel}>Legenda / Comentário:</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ex: Treino concluído!"
+              value={workoutCaption}
+              onChangeText={setWorkoutCaption}
+            />
+
+            <TouchableOpacity 
+              style={[styles.primaryBtn, { backgroundColor: '#16a34a', marginBottom: 10 }]} 
+              onPress={() => setPhotoEvidence('https://picsum.photos/seed/' + Math.random() + '/400/300')}
+            >
+              <Text style={styles.primaryBtnText}>
+                {photoEvidence ? '📷 COMPROVANTE ANEXADO' : '📷 ADICIONAR FOTO COMPROVANTE'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleSubmitWorkout}>
+              <Text style={styles.primaryBtnText}>ENVIAR PARA APROVAÇÃO</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsWorkoutModalOpen(false)}>
               <Text style={styles.cancelBtnText}>CANCELAR</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -1695,17 +1644,6 @@ const styles = StyleSheet.create({
   scoreBoxItem: { flex: 1, backgroundColor: '#ffffff', borderRadius: 8, padding: 8, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
   scoreNumber: { fontSize: 14, fontWeight: '900', color: '#f97316' },
   scoreLabel: { fontSize: 8, fontWeight: 'bold', color: '#1e3a8a', marginTop: 2 },
-
-  mediaFieldBox: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, padding: 8, marginBottom: 8 },
-  mediaLabel: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 6 },
-  mediaButtonsRow: { flexDirection: 'row', gap: 8 },
-  cameraBtn: { flex: 1, backgroundColor: '#f97316', paddingVertical: 8, borderRadius: 6, alignItems: 'center' },
-  galleryBtn: { flex: 1, backgroundColor: '#1e3a8a', paddingVertical: 8, borderRadius: 6, alignItems: 'center' },
-  mediaBtnText: { color: '#ffffff', fontSize: 10, fontWeight: 'bold' },
-  previewContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
-  previewImage: { width: 36, height: 36, borderRadius: 6, borderWidth: 1, borderColor: '#16a34a' },
-  previewSuccessText: { color: '#16a34a', fontSize: 9, fontWeight: 'bold' },
-  previewPendingText: { color: '#94a3b8', fontSize: 9, fontStyle: 'italic', marginTop: 4 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 14 },
   modalContent: { backgroundColor: '#ffffff', borderRadius: 12, padding: 14, maxHeight: '90%' },
