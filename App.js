@@ -133,7 +133,10 @@ export default function App() {
   const [isAdvancedRulesModalOpen, setIsAdvancedRulesModalOpen] = useState(false);
   const [selectedConfigChallengeId, setSelectedConfigChallengeId] = useState(null);
   const [selectedConfigActivity, setSelectedConfigActivity] = useState('💪 Musculação');
-  const [isActivityEnabled, setIsActivityEnabled] = useState(true);
+  
+  // ESTADO MAPEADO DAS MODALIDADES HABILITADAS POR DESAFIO
+  // Formato: { [challengeId]: { [activityKey]: true/false } }
+  const [modalitiesConfig, setModalitiesConfig] = useState({});
 
   const [athletePerfScope] = useState('overall');
 
@@ -150,6 +153,27 @@ export default function App() {
     { label: '🎁 Bônus e Critérios de Desempate', value: '🎁 Bônus e Critérios de Desempate' },
     { label: '🚶‍♂️ Passos Diários', value: '🚶‍♂️ Passos Diários' }
   ];
+
+  // OBTÉM OU DEFINE O STATUS DE HABILITADO DA MODALIDADE NO DESAFIO SELECIONADO
+  const isCurrentActivityEnabled = Boolean(
+    selectedConfigChallengeId && 
+    modalitiesConfig[selectedConfigChallengeId] && 
+    modalitiesConfig[selectedConfigChallengeId][selectedConfigActivity] !== undefined
+      ? modalitiesConfig[selectedConfigChallengeId][selectedConfigActivity]
+      : true
+  );
+
+  const handleToggleCurrentActivityEnabled = () => {
+    if (!selectedConfigChallengeId) return;
+    const currentVal = isCurrentActivityEnabled;
+    setModalitiesConfig(prev => ({
+      ...prev,
+      [selectedConfigChallengeId]: {
+        ...(prev[selectedConfigChallengeId] || {}),
+        [selectedConfigActivity]: !currentVal
+      }
+    }));
+  };
 
   const formatBirthDateMask = (text) => {
     let cleaned = text.replace(/\D/g, '');
@@ -1696,7 +1720,7 @@ export default function App() {
         </View>
       </View>
 
-      {/* MODAL CONFIGURAÇÃO AVANÇADA DE PONTOS (ITEM 5) - USANDO SELETORES NATIVOS */}
+      {/* MODAL CONFIGURAÇÃO AVANÇADA DE PONTOS (ITEM 5) */}
       <Modal visible={isAdvancedRulesModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
@@ -1745,22 +1769,35 @@ export default function App() {
                   </select>
                 </View>
 
-                {/* 4 - CHECKBOX PARA HABILITAR OU DESABILITAR A MODALIDADE */}
+                {/* 4 - CHECKBOX REATIVO E INDIVIDUAL POR DESAFIO/MODALIDADE */}
                 <TouchableOpacity 
                   style={[styles.checkboxRow, { marginTop: 10 }]} 
-                  onPress={() => setIsActivityEnabled(!isActivityEnabled)}
+                  onPress={handleToggleCurrentActivityEnabled}
                 >
-                  <View style={[styles.checkboxBox, isActivityEnabled && styles.checkboxBoxActive]}>
-                    {isActivityEnabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                  <View style={[styles.checkboxBox, isCurrentActivityEnabled && styles.checkboxBoxActive]}>
+                    {isCurrentActivityEnabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
                   </View>
                   <Text style={styles.checkboxLabel}>Habilitar esta modalidade no desafio?</Text>
                 </TouchableOpacity>
 
-                {/* 5 - CONTAINER RESERVADO PARA OS MODOS DE PONTUAÇÃO (PRÓXIMA ETAPA) */}
-                <View style={styles.scoringModeBoxContainer}>
-                  <Text style={styles.inputLabel}>5 - Selecione o Modo de Pontuação:</Text>
-                  <Text style={{ fontSize: 9, color: '#64748b', fontStyle: 'italic', marginTop: 4 }}>
-                    (Os modos de pontuação detalhados serão configurados na próxima etapa)
+                {/* 5 - CONTAINER DE MODO DE PONTUAÇÃO (FICA CINZA SE DESABILITADO) */}
+                <View 
+                  style={[
+                    styles.scoringModeBoxContainer,
+                    !isCurrentActivityEnabled && styles.disabledScoringModeBox
+                  ]}
+                  pointerEvents={isCurrentActivityEnabled ? 'auto' : 'none'}
+                >
+                  <Text style={[
+                    styles.inputLabel,
+                    !isCurrentActivityEnabled && { color: '#94a3b8' }
+                  ]}>
+                    5 - Selecione o Modo de Pontuação:
+                  </Text>
+                  <Text style={{ fontSize: 9, color: isCurrentActivityEnabled ? '#64748b' : '#94a3b8', fontStyle: 'italic', marginTop: 4 }}>
+                    {isCurrentActivityEnabled 
+                      ? '(Os modos de detalhes detalhados serão configurados na próxima etapa)' 
+                      : '🔒 Modalidade desabilitada para este desafio.'}
                   </Text>
                 </View>
 
@@ -2032,7 +2069,6 @@ const styles = StyleSheet.create({
   dropdownSelectBox: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 8, marginBottom: 4 },
   dropdownSelectText: { fontSize: 10, fontWeight: 'bold', color: '#0f172a' },
 
-  // ENVOLTÓRIO E ESTILO DO SELETOR NATIVO DE OPÇÕES
   nativeSelectWrapper: {
     backgroundColor: '#f8fafc',
     borderWidth: 1,
@@ -2151,6 +2187,7 @@ const styles = StyleSheet.create({
   warningNoticeText: { fontSize: 10, fontWeight: 'bold', color: '#b45309', flex: 1 },
 
   scoringModeBoxContainer: { backgroundColor: '#f8fafc', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', marginTop: 10 },
+  disabledScoringModeBox: { backgroundColor: '#e2e8f0', borderColor: '#cbd5e1', opacity: 0.5 },
 
   chipBtn: { backgroundColor: '#f1f5f9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
   chipBtnActive: { backgroundColor: '#f97316' },
