@@ -135,23 +135,20 @@ export default function App() {
   const [selectedConfigActivity, setSelectedConfigActivity] = useState('💪 Musculação');
   const [isActivityEnabled, setIsActivityEnabled] = useState(true);
 
-  const [isConfigChallengeDropdownOpen, setIsConfigChallengeDropdownOpen] = useState(false);
-  const [isConfigActivityDropdownOpen, setIsConfigActivityDropdownOpen] = useState(false);
-
   const [athletePerfScope] = useState('overall');
 
   // LISTA DE MODALIDADES COM EMOJIS
   const modalitiesList = [
-    { label: '💪 Musculação', value: 'Musculação' },
-    { label: '🏋️ Crossfit / Treino Funcional', value: 'Crossfit / Treino Funcional' },
-    { label: '🫀 Treino Aeróbico', value: 'Treino Aeróbico' },
-    { label: '🏃 Corrida', value: 'Corrida' },
-    { label: '🚶 Caminhada', value: 'Caminhada' },
-    { label: '🚴 Bike', value: 'Bike' },
-    { label: '⚽ Esportes Coletivos', value: 'Esportes Coletivos' },
-    { label: '🥋 Lutas / Esportes Individuais', value: 'Lutas / Esportes Individuais' },
-    { label: '🎁 Bônus e Critérios de Desempate', value: 'Bônus e Critérios de Desempate' },
-    { label: '🚶‍♂️ Passos Diários', value: 'Passos Diários' }
+    { label: '💪 Musculação', value: '💪 Musculação' },
+    { label: '🏋️ Crossfit / Treino Funcional', value: '🏋️ Crossfit / Treino Funcional' },
+    { label: '🫀 Treino Aeróbico', value: '🫀 Treino Aeróbico' },
+    { label: '🏃 Corrida', value: '🏃 Corrida' },
+    { label: '🚶 Caminhada', value: '🚶 Caminhada' },
+    { label: '🚴 Bike', value: '🚴 Bike' },
+    { label: '⚽ Esportes Coletivos', value: '⚽ Esportes Coletivos' },
+    { label: '🥋 Lutas / Esportes Individuais', value: '🥋 Lutas / Esportes Individuais' },
+    { label: '🎁 Bônus e Critérios de Desempate', value: '🎁 Bônus e Critérios de Desempate' },
+    { label: '🚶‍♂️ Passos Diários', value: '🚶‍♂️ Passos Diários' }
   ];
 
   const formatBirthDateMask = (text) => {
@@ -876,8 +873,6 @@ export default function App() {
   
   const currentFeedPosts = feedPosts.filter(p => p.challenge_id === activeChallengeId);
   const currentPendingWorkouts = pendingWorkouts.filter(w => w.challenge_id === activeChallengeId);
-
-  const configSelectedChallengeObject = adminChallenges.find(c => c.id === selectedConfigChallengeId) || adminChallenges[0];
 
   const top3Winners = [...currentChallengeMembers]
     .sort((a, b) => (b.goldMedals || 0) - (a.goldMedals || 0))
@@ -1701,7 +1696,7 @@ export default function App() {
         </View>
       </View>
 
-      {/* MODAL CONFIGURAÇÃO AVANÇADA DE PONTOS (ITEM 5) */}
+      {/* MODAL CONFIGURAÇÃO AVANÇADA DE PONTOS (ITEM 5) - USANDO SELETORES NATIVOS */}
       <Modal visible={isAdvancedRulesModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
@@ -1711,36 +1706,19 @@ export default function App() {
               <ScrollView style={{ maxHeight: 450, minWidth: 280 }} keyboardShouldPersistTaps="handled">
                 
                 {/* 1 - SELEÇÃO DO DESAFIO PARA CONFIGURAR */}
-                <View style={{ zIndex: 30, position: 'relative', marginBottom: 6 }}>
-                  <Text style={styles.inputLabel}>1 - Selecione o Desafio Para Configurar:</Text>
-                  <TouchableOpacity 
-                    style={styles.dropdownSelectBox} 
-                    onPress={() => {
-                      setIsConfigChallengeDropdownOpen(!isConfigChallengeDropdownOpen);
-                      setIsConfigActivityDropdownOpen(false);
-                    }}
+                <Text style={styles.inputLabel}>1 - Selecione o Desafio Para Configurar:</Text>
+                <View style={styles.nativeSelectWrapper}>
+                  <select
+                    style={styles.htmlNativeSelect}
+                    value={selectedConfigChallengeId || ''}
+                    onChange={(e) => setSelectedConfigChallengeId(e.target.value)}
                   >
-                    <Text style={styles.dropdownSelectText}>
-                      {configSelectedChallengeObject ? configSelectedChallengeObject.title : 'Selecione um desafio...'} ▼
-                    </Text>
-                  </TouchableOpacity>
-
-                  {isConfigChallengeDropdownOpen && (
-                    <View style={styles.floatingDropdownContainer}>
-                      {adminChallenges.map((c) => (
-                        <TouchableOpacity
-                          key={c.id}
-                          style={styles.dropdownOptionRow}
-                          onPress={() => {
-                            setSelectedConfigChallengeId(c.id);
-                            setIsConfigChallengeDropdownOpen(false);
-                          }}
-                        >
-                          <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>{c.title}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
+                    {adminChallenges.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.title}
+                      </option>
+                    ))}
+                  </select>
                 </View>
 
                 {/* 2 - AVISO COM SÍMBOLO DE EXCLAMAÇÃO AMARELO */}
@@ -1752,36 +1730,19 @@ export default function App() {
                 </View>
 
                 {/* 3 - SELEÇÃO DA MODALIDADE PARA CONFIGURAR COM EMOJIS */}
-                <View style={{ zIndex: 20, position: 'relative', marginBottom: 6 }}>
-                  <Text style={styles.inputLabel}>3 - Selecione a Modalidade para Configurar:</Text>
-                  <TouchableOpacity 
-                    style={styles.dropdownSelectBox} 
-                    onPress={() => {
-                      setIsConfigActivityDropdownOpen(!isConfigActivityDropdownOpen);
-                      setIsConfigChallengeDropdownOpen(false);
-                    }}
+                <Text style={styles.inputLabel}>3 - Selecione a Modalidade para Configurar:</Text>
+                <View style={styles.nativeSelectWrapper}>
+                  <select
+                    style={styles.htmlNativeSelect}
+                    value={selectedConfigActivity}
+                    onChange={(e) => setSelectedConfigActivity(e.target.value)}
                   >
-                    <Text style={styles.dropdownSelectText}>{selectedConfigActivity} ▼</Text>
-                  </TouchableOpacity>
-
-                  {isConfigActivityDropdownOpen && (
-                    <View style={styles.floatingDropdownContainer}>
-                      <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled keyboardShouldPersistTaps="handled">
-                        {modalitiesList.map((item) => (
-                          <TouchableOpacity
-                            key={item.value}
-                            style={styles.dropdownOptionRow}
-                            onPress={() => {
-                              setSelectedConfigActivity(item.label);
-                              setIsConfigActivityDropdownOpen(false);
-                            }}
-                          >
-                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0f172a' }}>{item.label}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  )}
+                    {modalitiesList.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
                 </View>
 
                 {/* 4 - CHECKBOX PARA HABILITAR OU DESABILITAR A MODALIDADE */}
@@ -2070,8 +2031,28 @@ const styles = StyleSheet.create({
 
   dropdownSelectBox: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 8, marginBottom: 4 },
   dropdownSelectText: { fontSize: 10, fontWeight: 'bold', color: '#0f172a' },
+
+  // ENVOLTÓRIO E ESTILO DO SELETOR NATIVO DE OPÇÕES
+  nativeSelectWrapper: {
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 6,
+    marginBottom: 6,
+    overflow: 'hidden'
+  },
+  htmlNativeSelect: {
+    width: '100%',
+    padding: 8,
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#0f172a',
+    backgroundColor: 'transparent',
+    border: 'none',
+    outline: 'none',
+    cursor: 'pointer'
+  },
   
-  // CONTAINER FLUTUANTE PARA SOBREPOR COMPONENTES
   floatingDropdownContainer: {
     position: 'absolute',
     top: 52,
@@ -2082,11 +2063,7 @@ const styles = StyleSheet.create({
     borderColor: '#f97316',
     borderRadius: 6,
     zIndex: 9999,
-    elevation: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
+    elevation: 20
   },
   dropdownOptionRow: { flexDirection: 'row', alignItems: 'center', padding: 10, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', backgroundColor: '#ffffff' },
 
