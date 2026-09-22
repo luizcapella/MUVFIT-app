@@ -2446,15 +2446,27 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL DE REGISTRO DE TREINO COM BOTÕES DE SELEÇÃO CLICÁVEIS */}
+      {/* MODAL DE REGISTRO DE TREINO COM NOME DA LIGA E CAIXA DE REGRAS ATIVAS */}
       <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <ScrollView style={{ width: '100%', maxHeight: 540 }} keyboardShouldPersistTaps="handled">
-              <Text style={styles.modalTitle}>📷 Registrar Novo Treino</Text>
+              
+              {/* TÍTULO COM O NOME DO DESAFIO SELECIONADO */}
+              <Text style={styles.modalTitle}>
+                Registrar Treino ({selectedChallenge?.title || 'MuvFit'})
+              </Text>
+
+              {/* CAIXA DE REGRAS ATIVAS */}
+              <View style={styles.rulesCardBox}>
+                <Text style={styles.rulesCardTitle}>📜 Regras Ativas:</Text>
+                <Text style={styles.rulesCardItem}>• Musculação: 30m (5000pts) | 1h+ (10000pts)</Text>
+                <Text style={styles.rulesCardItem}>• Corrida: Mín 3km</Text>
+                <Text style={styles.rulesCardItem}>• Trava: Máximo 1 envio por modalidade ao dia</Text>
+              </View>
 
               {/* 1. SELEÇÃO DE TIPO DE ATIVIDADE COM BOTÕES CLICÁVEIS */}
-              <Text style={styles.inputLabel}>Selecione o Tipo de Atividade:</Text>
+              <Text style={styles.inputLabel}>Selecione a Modalidade:</Text>
               <View style={styles.modalityGridContainer}>
                 {modalitiesList.filter(m => m.value !== '🎁 Bônus e Critérios de Desempate').map((item) => {
                   const isSelected = selectedActivity === item.value;
@@ -2726,7 +2738,12 @@ const styles = StyleSheet.create({
   dropdownSelectBox: { backgroundColor: '#ffffff', borderWidth: 1.5, borderColor: '#f97316', borderRadius: 6, padding: 10, marginBottom: 4 },
   dropdownSelectText: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
 
-  // NOVOS ESTILOS PARA OS BOTÕES DAS MODALIDADES (GRID DE CHIPS)
+  // NOVOS ESTILOS PARA O CARD DE REGRAS ATIVAS
+  rulesCardBox: { backgroundColor: '#fff7ed', borderWidth: 1.5, borderColor: '#f97316', borderRadius: 8, padding: 10, marginBottom: 10 },
+  rulesCardTitle: { fontSize: 11, fontWeight: '900', color: '#c2410c', marginBottom: 4 },
+  rulesCardItem: { fontSize: 9.5, fontWeight: '600', color: '#431407', marginBottom: 2 },
+
+  // ESTILOS PARA OS BOTÕES DAS MODALIDADES (GRID DE CHIPS)
   modalityGridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginVertical: 6 },
   modalityChipBtn: { backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#cbd5e1', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 6, width: '48%' },
   modalityChipBtnActive: { backgroundColor: '#f97316', borderColor: '#c2410c' },
