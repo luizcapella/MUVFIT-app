@@ -608,7 +608,7 @@ export default function App() {
     );
   }
 
-  // CORREÇÃO CRÍTICA DO CLIQUE: SOLICITAR PARTICIPAÇÃO COMO ATLETA ATIVO
+  // SOLICITAR PARTICIPAÇÃO COMO ATLETA ATIVO
   async function handleRequestAthleteActive() {
     if (!activeChallengeId || !selectedChallenge?.id) {
       Alert.alert('Erro', 'Selecione um desafio válido antes de solicitar.');
@@ -804,7 +804,7 @@ export default function App() {
     Alert.alert('Status Atualizado', newStatus ? 'Inscrições/Candidaturas ENCERRADAS!' : 'Inscrições/Candidaturas ABERTAS!');
   }
 
-  // AÇÕES DO ADMIN: APROVAÇÃO NA JANELA "2. CONTROLE DE INSCRIÇÃO"
+  // AÇÕES DO ADMIN: APROVAÇÃO E ALTERAÇÃO DE STATUS DE ATLETA
   async function handleUpdateAthleteStatus(memberId, newRole) {
     await supabase.from('memberships').update({ role: newRole }).eq('id', memberId);
     fetchDataFromSupabase();
@@ -812,7 +812,7 @@ export default function App() {
     if (newRole === 'active') {
       Alert.alert('Aprovação Efetuada', 'O participante agora é um ⚡ Atleta Ativo na liga!');
     } else if (newRole === 'spectator') {
-      Alert.alert('Status Definido', 'O participante foi mantido como 👀 Torcedor.');
+      Alert.alert('Status Atualizado', 'O participante agora é um 👀 Torcedor e foi removido da lista de Atletas Ativos.');
     } else {
       Alert.alert('Solicitação Recusada', 'A candidatura a Atleta Ativo foi rejeitada.');
     }
@@ -1662,25 +1662,20 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* TELA DE RANKING COM OS 3 ESTADOS DO BOTÃO NO TOPO/DIREITA */}
+          {/* RANKING */}
           {currentScreen === 'ranking' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
                 <Text style={styles.pageTitle}>🏆 Ranking — {selectedChallenge.title}</Text>
 
-                {/* 1. ATLETA ATIVO (VERDE #16a34a) */}
                 {currentUserMembershipInActiveChallenge?.role === 'active' || selectedChallenge.creator_id === currentUser.id ? (
                   <View style={styles.activeAthleteBadge}>
                     <Text style={styles.btnMiniText}>Atleta Ativo</Text>
                   </View>
-
-                /* 2. APROVAÇÃO PENDENTE (LARANJA #f97316) */
                 ) : currentUserMembershipInActiveChallenge?.role === 'pending_athlete' ? (
                   <View style={styles.pendingAthleteBadge}>
                     <Text style={styles.btnMiniText}>Aprovação Pendente</Text>
                   </View>
-
-                /* 3. SOLICITAR PARTICIPAÇÃO (AZUL #1e3a8a) - CLIQUE CORRIGIDO */
                 ) : (
                   <TouchableOpacity 
                     style={styles.blueRequestAthleteBtn} 
@@ -1848,10 +1843,10 @@ export default function App() {
                 )}
               </View>
 
-              {/* 2. CONTROLE DE INSCRIÇÃO (JANELA PARA APROVAR SOLICITAÇÕES DE ATLETA ATIVO) */}
+              {/* 2. CONTROLE DE INSCRIÇÃO (SOLICITAÇÕES + LISTA DE ATLETAS ATIVOS) */}
               <View style={styles.accordionCard}>
                 <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec2(!expandedSec2)}>
-                  <Text style={styles.accordionTitle}>2. CONTROLE DE INSCRIÇÃO ({pendingAthleteMembers.length})</Text>
+                  <Text style={styles.accordionTitle}>2. CONTROLE DE INSCRIÇÃO ({pendingAthleteMembers.length + activeMembersInChallenge.length})</Text>
                   <Text style={styles.accordionArrow}>{expandedSec2 ? '▲' : '▼'}</Text>
                 </TouchableOpacity>
 
@@ -1868,7 +1863,8 @@ export default function App() {
                       </TouchableOpacity>
                     </View>
 
-                    <Text style={[styles.inputLabel, { marginTop: 4 }]}>Solicitações para Atleta Ativo ({pendingAthleteMembers.length}):</Text>
+                    {/* SOLICITAÇÕES PENDENTES */}
+                    <Text style={[styles.inputLabel, { marginTop: 4, color: '#d97706' }]}>Solicitações para Atleta Ativo ({pendingAthleteMembers.length}):</Text>
                     {pendingAthleteMembers.length === 0 ? (
                       <Text style={styles.emptyNoticeText}>Nenhuma solicitação de Atleta Ativo pendente.</Text>
                     ) : (
@@ -1890,6 +1886,30 @@ export default function App() {
                               <Text style={styles.btnMiniText}>❌ RECUSAR</Text>
                             </TouchableOpacity>
                           </View>
+                        </View>
+                      ))
+                    )}
+
+                    {/* ATLETAS ATIVOS CADASTRADOS (NOVA FUNCIONALIDADE) */}
+                    <Text style={[styles.inputLabel, { marginTop: 12, color: '#16a34a' }]}>
+                      ⚡ Atletas Ativos na Liga ({activeMembersInChallenge.length}):
+                    </Text>
+                    {activeMembersInChallenge.length === 0 ? (
+                      <Text style={styles.emptyNoticeText}>Nenhum atleta ativo cadastrado nesta liga.</Text>
+                    ) : (
+                      activeMembersInChallenge.map((m) => (
+                        <View key={m.id} style={styles.participantRow}>
+                          <Image source={{ uri: m.avatar }} style={styles.avatarMini} />
+                          <View style={{ flex: 1, marginLeft: 8 }}>
+                            <Text style={styles.participantName}>{m.name} ({m.nickname})</Text>
+                            <Text style={styles.tagActiveText}>⚡ Atleta Ativo</Text>
+                          </View>
+                          <TouchableOpacity 
+                            style={styles.spectatorBtn} 
+                            onPress={() => handleUpdateAthleteStatus(m.id, 'spectator')}
+                          >
+                            <Text style={styles.btnMiniText}>👀 TORNAR TORCEDOR</Text>
+                          </TouchableOpacity>
                         </View>
                       ))
                     )}
@@ -2400,10 +2420,9 @@ const styles = StyleSheet.create({
   requestCommunityBtn: { backgroundColor: '#16a34a', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4 },
   alreadyMemberBtn: { backgroundColor: '#1e3a8a', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4 },
 
-  // ESTILOS EXATOS DOS 3 ESTADOS DO BOTÃO DO RANKING
-  blueRequestAthleteBtn: { backgroundColor: '#1e3a8a', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }, // 1. AZUL
-  pendingAthleteBadge: { backgroundColor: '#f97316', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }, // 2. LARANJA
-  activeAthleteBadge: { backgroundColor: '#16a34a', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }, // 3. VERDE
+  blueRequestAthleteBtn: { backgroundColor: '#1e3a8a', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
+  pendingAthleteBadge: { backgroundColor: '#f97316', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
+  activeAthleteBadge: { backgroundColor: '#16a34a', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
 
   topWinnersBannerBox: { backgroundColor: '#fef3c7', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: '#d97706', marginBottom: 10 },
   topWinnersBannerTitle: { fontSize: 10, fontWeight: '900', color: '#b45309', marginBottom: 2 },
