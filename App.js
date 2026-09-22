@@ -151,7 +151,7 @@ export default function App() {
   const [selectedConfigActivity, setSelectedConfigActivity] = useState('🏛️ Base da Liga');
 
   // CONFIGURAÇÕES AVANÇADAS LOCAIS
-  const [leaguePeriod, setLeaguePeriod] = useState('Monthly'); // 'Weekly', 'Monthly', 'Yearly'
+  const [leaguePeriod, setLeaguePeriod] = useState('Monthly');
   
   // CONFIGURAÇÕES DE PASSOS DIÁRIOS
   const [dailyStepsConfig, setDailyStepsConfig] = useState({
@@ -172,14 +172,14 @@ export default function App() {
   });
 
   const [modalitySettings, setModalitySettings] = useState({
-    '💪 Musculação': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '60', simplePts: '5000', simplePerMin: '30', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '5000' }] },
-    '🏋️ Crossfit / Treino Funcional': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '60', simplePts: '5000', simplePerMin: '30', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '5000' }] },
-    '🫀 Treino Aeróbico': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '60', simplePts: '5000', simplePerMin: '30', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '5000' }] },
-    '⚽ Esportes Coletivos': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '60', simplePts: '5000', simplePerMin: '30', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '5000' }] },
-    '🥋 Lutas / Esportes Individuais': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '60', simplePts: '5000', simplePerMin: '30', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '5000' }] },
-    '🏃 Corrida': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '30', simplePts: '1000', simplePerKm: '1', kmSimplePts: '1000', kmPerX: '1', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '5000' }], kmSteps: [{ modeType: 'De', minKm: '0', maxKm: '5', pts: '5000' }] },
-    '🚶 Caminhada': { enabled: true, scoringMode: 'checkin', checkinPts: '5000', checkinMinTime: '30', simplePts: '500', simplePerKm: '1', kmSimplePts: '500', kmPerX: '1', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '3000' }], kmSteps: [{ modeType: 'De', minKm: '0', maxKm: '3', pts: '3000' }] },
-    '🚴 Bike': { enabled: true, scoringMode: 'checkin', checkinPts: '8000', checkinMinTime: '45', simplePts: '1000', simplePerKm: '5', kmSimplePts: '1000', kmPerX: '5', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '45', pts: '5000' }], kmSteps: [{ modeType: 'De', minKm: '0', maxKm: '15', pts: '8000' }] }
+    '💪 Musculação': { enabled: true, scoringMode: 'simple', simplePts: '10000', simplePerMin: '60', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '5000' }] },
+    '🏋️ Crossfit / Treino Funcional': { enabled: true, scoringMode: 'simple', simplePts: '10000', simplePerMin: '60', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '5000' }] },
+    '🫀 Treino Aeróbico': { enabled: true, scoringMode: 'simple', simplePts: '10000', simplePerMin: '60', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '5000' }] },
+    '⚽ Esportes Coletivos': { enabled: true, scoringMode: 'simple', simplePts: '10000', simplePerMin: '60', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '5000' }] },
+    '🥋 Lutas / Esportes Individuais': { enabled: true, scoringMode: 'simple', simplePts: '10000', simplePerMin: '60', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '5000' }] },
+    '🏃 Corrida': { enabled: true, scoringMode: 'kmSimple', kmSimplePts: '1000', kmPerX: '1', simplePts: '1000', simplePerMin: '30', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '5000' }], kmSteps: [{ modeType: 'De', minKm: '0', maxKm: '5', pts: '5000' }] },
+    '🚶 Caminhada': { enabled: true, scoringMode: 'kmSimple', kmSimplePts: '500', kmPerX: '1', simplePts: '500', simplePerMin: '30', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '3000' }], kmSteps: [{ modeType: 'De', minKm: '0', maxKm: '3', pts: '3000' }] },
+    '🚴 Bike': { enabled: true, scoringMode: 'kmSimple', kmSimplePts: '1000', kmPerX: '5', simplePts: '1000', simplePerMin: '45', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '45', pts: '5000' }], kmSteps: [{ modeType: 'De', minKm: '0', maxKm: '15', pts: '8000' }] }
   });
 
   const [tiebreakers, setTiebreakers] = useState([
@@ -202,6 +202,9 @@ export default function App() {
     { label: '🥋 Lutas / Esportes Individuais', value: '🥋 Lutas / Esportes Individuais' },
     { label: '🎁 Bônus e Critérios de Desempate', value: '🎁 Bônus e Critérios de Desempate' }
   ];
+
+  const hoursArray = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+  const minutesArray = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 
   const formatBirthDateMask = (text) => {
     let cleaned = text.replace(/\D/g, '');
@@ -911,19 +914,26 @@ export default function App() {
 
     await supabase.from('pending_workouts').delete().eq('id', workoutId);
 
-    if (workout.activity_type !== 'PASSOS DIÁRIOS') {
-      const { data: currentMem } = await supabase.from('memberships')
-        .select('ranking_points, bank_points')
-        .eq('challenge_id', workout.challengeId)
-        .eq('user_id', workout.user_id)
-        .single();
+    const isSteps = workout.activity_type === 'PASSOS DIÁRIOS';
+    const parsedKm = parseFloat(workout.distance_km) || 0;
 
-      if (currentMem) {
-        await supabase.from('memberships').update({
-          ranking_points: (currentMem.ranking_points || 0) + workout.points_to_ranking,
-          bank_points: (currentMem.bank_points || 0) + workout.points_to_bank
-        }).eq('challenge_id', workout.challengeId).eq('user_id', workout.user_id);
+    const { data: currentMem } = await supabase.from('memberships')
+      .select('ranking_points, bank_points, total_steps, total_km')
+      .eq('challenge_id', workout.challengeId)
+      .eq('user_id', workout.user_id)
+      .single();
+
+    if (currentMem) {
+      let updatedObj = {
+        ranking_points: (currentMem.ranking_points || 0) + (workout.points_to_ranking || 0),
+        bank_points: (currentMem.bank_points || 0) + (workout.points_to_bank || 0)
+      };
+
+      if (parsedKm > 0) {
+        updatedObj.total_km = (currentMem.total_km || 0) + parsedKm;
       }
+
+      await supabase.from('memberships').update(updatedObj).eq('challenge_id', workout.challengeId).eq('user_id', workout.user_id);
     }
 
     const imagesList = [];
@@ -952,7 +962,7 @@ export default function App() {
 
     await supabase.from('feed_posts').insert([newPost]);
     fetchDataFromSupabase();
-    Alert.alert('Treino Aprovado!', 'O treino com todas as suas imagens foi publicado automaticamente no Feed!');
+    Alert.alert('Treino Aprovado!', 'O treino foi aprovado, pontuação somada e publicado no Feed!');
   }
 
   async function handleRejectWorkout(workoutId) {
@@ -991,22 +1001,69 @@ export default function App() {
     }
   };
 
+  // CÁLCULO DE PONTUAÇÃO DINÂMICA
+  function calculateWorkoutPoints(activity, durationMins, kmDistance) {
+    const config = modalitySettings[activity];
+    if (!config || config.enabled === false) return 0;
+
+    let pts = 0;
+    const mode = config.scoringMode || 'simple';
+
+    if (mode === 'simple') {
+      const reqMin = parseFloat(config.simplePerMin) || 0;
+      const awardPts = parseFloat(config.simplePts) || 0;
+      if (reqMin > 0 && durationMins >= reqMin) {
+        pts = awardPts;
+      }
+    } else if (mode === 'timeSteps') {
+      const steps = config.timeSteps || [];
+      for (let st of steps) {
+        const minT = parseFloat(st.minTime) || 0;
+        const maxT = st.modeType === 'Acima' ? Infinity : (parseFloat(st.maxTime) || Infinity);
+        if (durationMins >= minT && durationMins <= maxT) {
+          pts = parseFloat(st.pts) || 0;
+          break;
+        }
+      }
+    } else if (mode === 'kmSimple') {
+      const reqKm = parseFloat(config.kmPerX) || 0;
+      const awardPts = parseFloat(config.kmSimplePts) || 0;
+      if (reqKm > 0 && kmDistance >= reqKm) {
+        pts = awardPts;
+      }
+    } else if (mode === 'kmSteps') {
+      const steps = config.kmSteps || [];
+      for (let st of steps) {
+        const minK = parseFloat(st.minKm) || 0;
+        const maxK = st.modeType === 'Acima' ? Infinity : (parseFloat(st.maxKm) || Infinity);
+        if (kmDistance >= minK && kmDistance <= maxK) {
+          pts = parseFloat(st.pts) || 0;
+          break;
+        }
+      }
+    }
+
+    return pts;
+  }
+
   async function handleSubmitWorkout() {
     if (!currentUserMembershipInActiveChallenge || currentUserMembershipInActiveChallenge.role !== 'active') {
       Alert.alert('Acesso Restrito', 'Apenas Atletas Ativos com candidatura aprovada podem submeter treinos nesta liga.');
       return;
     }
 
-    const isGymGroup = ['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico'].includes(selectedActivity);
-    
+    const isGymGroup = ['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico', '⚽ Esportes Coletivos', '🥋 Lutas / Esportes Individuais'].includes(selectedActivity);
+    const isKmGroup = ['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedActivity);
+    const isSteps = selectedActivity === '🚶‍♂️ Passos Diários';
+
     if (isGymGroup) {
       if (!photoStart || !photoEvidence || !photoEnd) {
-        Alert.alert('Comprovante Incompleto', 'Envie as 3 fotos obrigatórias: Início, Evidência e Fim.');
+        Alert.alert('Comprovantes Obrigatórios', 'Para este treino, envie as 3 fotos obrigatórias: Foto Horário Inicial, Foto Evidência e Foto Horário Final.');
         return;
       }
     } else {
       if (!photoEvidence) {
-        Alert.alert('Comprovante Obrigatório', 'Adicione a foto de comprovação da atividade.');
+        Alert.alert('Comprovante Obrigatório', 'Adicione a foto/imagem de comprovação da atividade.');
         return;
       }
     }
@@ -1033,37 +1090,54 @@ export default function App() {
       return;
     }
 
-    const startMins = (parseInt(startHour, 10) * 60) + parseInt(startMinute, 10);
-    const endMins = (parseInt(endHour, 10) * 60) + parseInt(endMinute, 10);
-    let dur = endMins - startMins;
-    if (dur <= 0) dur += 1440;
+    let dur = 0;
+    let kmValue = 0;
 
-    let points = dur >= 60 ? 10000 : 5000;
+    if (!isSteps) {
+      const startMins = (parseInt(startHour, 10) * 60) + parseInt(startMinute, 10);
+      const endMins = (parseInt(endHour, 10) * 60) + parseInt(endMinute, 10);
+      dur = endMins - startMins;
+      if (dur <= 0) dur += 1440;
+    }
 
-    // APLICAÇÃO AUTOMÁTICA DOS BÔNUS SE ATENDIDOS
+    if (isKmGroup) {
+      kmValue = parseFloat(kmInput) || 0;
+      if (kmValue <= 0) {
+        Alert.alert('Distância Inválida', 'Insira a distância percorrida em KM.');
+        return;
+      }
+    }
+
+    let calculatedPts = 0;
+    if (isSteps) {
+      calculatedPts = calculatedStepsPoints;
+    } else {
+      calculatedPts = calculateWorkoutPoints(selectedActivity, dur, kmValue);
+    }
+
     let bonusAppliedMsg = '';
     if (bonusConfig.despertaEnabled) {
       const submissionCurrentTime = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
       if (submissionCurrentTime <= bonusConfig.despertaLimitTime) {
-        points += parseInt(bonusConfig.despertaPts, 10) || 3000;
-        bonusAppliedMsg += ' | ⏰ Bônus "O Desperta" aplicado automaticamente!';
+        calculatedPts += parseInt(bonusConfig.despertaPts, 10) || 3000;
+        bonusAppliedMsg += ' | ⏰ Bônus "O Desperta"';
       }
     }
 
     if (bonusConfig.inquebravelEnabled) {
-      points += parseInt(bonusConfig.inquebravelPts, 10) || 5000;
-      bonusAppliedMsg += ' | 🪨 Bônus "O Inquebrável" aplicado automaticamente!';
+      calculatedPts += parseInt(bonusConfig.inquebravelPts, 10) || 5000;
+      bonusAppliedMsg += ' | 🪨 Bônus "O Inquebrável"';
     }
 
-    let ptsRanking = points;
+    let ptsRanking = calculatedPts;
     let ptsBank = 0;
 
     if (selectedChallenge?.has_daily_cap && selectedChallenge?.daily_cap) {
-      ptsRanking = Math.min(points, selectedChallenge.daily_cap);
-      ptsBank = Math.max(0, points - selectedChallenge.daily_cap);
+      ptsRanking = Math.min(calculatedPts, selectedChallenge.daily_cap);
+      ptsBank = Math.max(0, calculatedPts - selectedChallenge.daily_cap);
     }
 
-    const timeWindowStr = `${startHour}:${startMinute} às ${endHour}:${endMinute}`;
+    const timeWindowStr = !isSteps ? `${startHour}:${startMinute} às ${endHour}:${endMinute}` : '';
 
     const newPendingWorkout = {
       id: `pw_${Date.now()}`,
@@ -1073,13 +1147,16 @@ export default function App() {
       user_nickname: currentUser.nickname,
       user_avatar: currentUser.avatar,
       activity_type: cleanActType,
-      caption: (workoutCaption || `Atividade de ${selectedActivity} (${dur} min)`) + bonusAppliedMsg,
+      caption: (workoutCaption || `Atividade de ${selectedActivity}`) + bonusAppliedMsg,
       photo_start: photoStart,
       photo_evidence: photoEvidence,
       photo_end: photoEnd,
+      duration_minutes: dur,
+      distance_km: kmValue,
+      workout_date: formattedDateStr,
       points_to_ranking: ptsRanking,
       points_to_bank: ptsBank,
-      created_at: `${formattedDateStr} (${timeWindowStr})`
+      created_at: `${formattedDateStr} ${timeWindowStr ? `(${timeWindowStr})` : ''}`
     };
 
     await supabase.from('pending_workouts').insert([newPendingWorkout]);
@@ -1093,7 +1170,7 @@ export default function App() {
     setPhotoEvidence(null);
     setPhotoEnd(null);
     
-    Alert.alert('Sucesso', 'Treino enviado para a nuvem com verificação automática de bônus! Aguardando aprovação do Admin.');
+    Alert.alert('Sucesso', 'Treino enviado com sucesso! Aguardando aprovação do Administrador para ser creditado e exibido no feed.');
   }
 
   async function handleSaveAdvancedRules() {
@@ -1176,7 +1253,7 @@ export default function App() {
 
   const getDynamicActiveRulesText = () => {
     const ruleLines = [];
-    ruleLines.push(`• ${selectedActivity}: Modalidade Padrão`);
+    ruleLines.push(`• ${selectedActivity}: Modalidade Selecionada`);
 
     if (selectedChallenge?.has_daily_cap && selectedChallenge?.daily_cap) {
       ruleLines.push(`• Teto Diário de Pontos: Máximo ${selectedChallenge.daily_cap.toLocaleString()} pts/dia`);
@@ -1251,7 +1328,6 @@ export default function App() {
 
   const selectedAthleteObject = activeMembersInChallenge.find(m => m.id === manualSelectedAthleteId);
 
-  // CÁLCULO DINÂMICO DE PONTOS DOS PASSOS DIÁRIOS
   const calculatedStepsPoints = Math.round(
     (parseFloat(dailyStepsConfig.manualStepsInput) || 0) * (parseFloat(dailyStepsConfig.multiplier) || 0)
   );
@@ -1339,6 +1415,10 @@ export default function App() {
       </SafeAreaView>
     );
   }
+
+  const isGymGroupActive = ['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico', '⚽ Esportes Coletivos', '🥋 Lutas / Esportes Individuais'].includes(selectedActivity);
+  const isKmGroupActive = ['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedActivity);
+  const isStepsActive = selectedActivity === '🚶‍♂️ Passos Diários';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -1559,7 +1639,7 @@ export default function App() {
                       <Text style={styles.primaryBtnText}>ENTRAR COMO ADMIN ➔</Text>
                     </TouchableOpacity>
 
-                    {/* BOTÕES SECUNDÁRIOS ALINHADOS E EM FORMATO DE PILHA/UNIFORME */}
+                    {/* BOTÕES SECUNDÁRIOS ALINHADOS EM PILHA/UNIFORME */}
                     <View style={{ flexDirection: 'column', gap: 6, marginTop: 4 }}>
                       <TouchableOpacity style={styles.dashboardActionBtnGreen} onPress={() => handleShareInvite(c)}>
                         <Text style={styles.dashboardActionBtnText}>🔗 CONVIDAR</Text>
@@ -1743,7 +1823,7 @@ export default function App() {
                     <Image source={{ uri: member.avatar }} style={styles.avatarMini} />
                     <View style={{ flex: 1, marginLeft: 8 }}>
                       <Text style={styles.rankingMemberName}>{member.name} ({member.nickname})</Text>
-                      <Text style={styles.rankingMemberSub}>{(member.totalSteps || 0).toLocaleString()} passos</Text>
+                      <Text style={styles.rankingMemberSub}>{(member.totalSteps || 0).toLocaleString()} passos | {(member.totalKm || 0).toFixed(1)} km</Text>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
                       <Text style={styles.rankingMemberPts}>{(member.rankingPoints || 0).toLocaleString()} pts</Text>
@@ -1838,7 +1918,7 @@ export default function App() {
                 <Text style={styles.adminCardSub}>Gerencie aprovações, inscrições de atletas ativos, lançamento manual, membros e configurações avançadas.</Text>
               </View>
 
-              {/* 1. APROVAÇÃO DE TREINOS */}
+              {/* 1. APROVAÇÃO DE TREINOS PENDENTES */}
               <View style={styles.accordionCard}>
                 <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec1(!expandedSec1)}>
                   <Text style={styles.accordionTitle}>1. APROVAÇÃO DE TREINOS PENDENTES ({currentPendingWorkouts.length})</Text>
@@ -1850,33 +1930,65 @@ export default function App() {
                     {currentPendingWorkouts.length === 0 ? (
                       <Text style={styles.emptyNoticeText}>Nenhum treino aguardando aprovação.</Text>
                     ) : (
-                      currentPendingWorkouts.map((w) => (
-                        <View key={w.id} style={styles.workoutPendingCard}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                            <Image source={{ uri: w.user_avatar }} style={styles.avatarMini} />
-                            <View style={{ marginLeft: 8, flex: 1 }}>
-                              <Text style={styles.participantName}>{w.user_name} ({w.user_nickname})</Text>
-                              <Text style={styles.participantSub}>Exercício: {w.activity_type}</Text>
+                      currentPendingWorkouts.map((w) => {
+                        const pendingImages = [];
+                        if (w.photo_start) pendingImages.push({ title: 'Foto Início', uri: w.photo_start });
+                        if (w.photo_evidence) pendingImages.push({ title: 'Foto Evidência', uri: w.photo_evidence });
+                        if (w.photo_end) pendingImages.push({ title: 'Foto Fim', uri: w.photo_end });
+
+                        return (
+                          <View key={w.id} style={styles.workoutPendingCard}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                              <Image source={{ uri: w.user_avatar }} style={styles.avatarMini} />
+                              <View style={{ marginLeft: 8, flex: 1 }}>
+                                <Text style={styles.participantName}>{w.user_nickname} ({w.user_name})</Text>
+                                <Text style={styles.participantSub}>Modalidade: {w.activity_type}</Text>
+                                <Text style={{ fontSize: 9, color: '#1e3a8a', fontWeight: 'bold' }}>Data do Treino: {w.workout_date || w.created_at}</Text>
+                              </View>
+                              <Text style={styles.tagActiveText}>+{w.points_to_ranking} pts</Text>
                             </View>
-                            <Text style={styles.tagActiveText}>+{w.points_to_ranking} pts</Text>
+
+                            {/* EXIBIÇÃO DE TEMPO E DISTÂNCIA SE APLICÁVEL */}
+                            <View style={{ backgroundColor: '#eff6ff', padding: 6, borderRadius: 6, marginVertical: 4 }}>
+                              {w.duration_minutes > 0 && (
+                                <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>
+                                  ⏱️ Tempo de Execução: {w.duration_minutes} minutos
+                                </Text>
+                              )}
+                              {w.distance_km > 0 && (
+                                <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>
+                                  🏃 Distância Percorrida: {w.distance_km} KM
+                                </Text>
+                              )}
+                              {w.caption ? (
+                                <Text style={{ fontSize: 10, color: '#334155', marginTop: 2, fontStyle: 'italic' }}>
+                                  💬 Comentário: "{w.caption}"
+                                </Text>
+                              ) : null}
+                            </View>
+
+                            {/* ANEXOS DE FOTOS ENVIADAS PELO ATLETA */}
+                            <Text style={[styles.inputLabelMini, { marginTop: 4 }]}>Imagens de Comprovação Anexadas:</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 4 }}>
+                              {pendingImages.map((imgObj, idx) => (
+                                <View key={idx} style={{ marginRight: 8, alignItems: 'center' }}>
+                                  <Image source={{ uri: imgObj.uri }} style={{ width: 110, height: 110, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1' }} />
+                                  <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#475569', marginTop: 2 }}>{imgObj.title}</Text>
+                                </View>
+                              ))}
+                            </ScrollView>
+
+                            <View style={{ flexDirection: 'row', gap: 6, marginTop: 8 }}>
+                              <TouchableOpacity style={[styles.approveBtn, { flex: 1, alignItems: 'center' }]} onPress={() => handleApproveWorkout(w.id)}>
+                                <Text style={styles.btnMiniText}>✅ APROVAR</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity style={[styles.banBtn, { flex: 1, alignItems: 'center' }]} onPress={() => handleRejectWorkout(w.id)}>
+                                <Text style={styles.btnMiniText}>❌ REJEITAR</Text>
+                              </TouchableOpacity>
+                            </View>
                           </View>
-
-                          <Text style={{ fontSize: 10, color: '#334155', marginBottom: 6 }}>{w.caption}</Text>
-
-                          {w.photo_evidence && (
-                            <Image source={{ uri: w.photo_evidence }} style={styles.evidenceImagePreview} />
-                          )}
-
-                          <View style={{ flexDirection: 'row', gap: 6, marginTop: 8 }}>
-                            <TouchableOpacity style={[styles.approveBtn, { flex: 1, alignItems: 'center' }]} onPress={() => handleApproveWorkout(w.id)}>
-                              <Text style={styles.btnMiniText}>✅ APROVAR</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.banBtn, { flex: 1, alignItems: 'center' }]} onPress={() => handleRejectWorkout(w.id)}>
-                              <Text style={styles.btnMiniText}>❌ REJEITAR</Text>
-                            </TouchableOpacity>
-                          </View>
-                        </View>
-                      ))
+                        );
+                      })
                     )}
                   </View>
                 )}
@@ -1902,7 +2014,6 @@ export default function App() {
                       </TouchableOpacity>
                     </View>
 
-                    {/* SOLICITAÇÕES PENDENTES */}
                     <Text style={[styles.inputLabel, { marginTop: 4, color: '#d97706' }]}>Solicitações para Atleta Ativo ({pendingAthleteMembers.length}):</Text>
                     {pendingAthleteMembers.length === 0 ? (
                       <Text style={styles.emptyNoticeText}>Nenhuma solicitação de Atleta Ativo pendente.</Text>
@@ -1929,7 +2040,6 @@ export default function App() {
                       ))
                     )}
 
-                    {/* ATLETAS ATIVOS CADASTRADOS */}
                     <Text style={[styles.inputLabel, { marginTop: 12, color: '#16a34a' }]}>
                       ⚡ Atletas Ativos na Liga ({activeMembersInChallenge.length}):
                     </Text>
@@ -2149,7 +2259,7 @@ export default function App() {
         </View>
       </View>
 
-      {/* MODAL CONFIGURAÇÃO AVANÇADA DE PONTOS E REGRAS DA LIGA */}
+      {/* MODAL CONFIGURAÇÃO AVANÇADA DE PONTOS */}
       <Modal visible={isAdvancedRulesModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
@@ -2187,7 +2297,7 @@ export default function App() {
                 </select>
               </View>
 
-              {/* 1. BASE DA LIGA */}
+              {/* BASE DA LIGA */}
               {selectedConfigActivity === '🏛️ Base da Liga' && (
                 <View style={styles.scoringModeBoxContainer}>
                   <Text style={styles.sectionHeaderTitle}>🏛️ Configurações Gerais da Liga</Text>
@@ -2203,7 +2313,6 @@ export default function App() {
 
                   <Text style={[styles.inputLabel, { marginTop: 6 }]}>Período de Duração da Liga:</Text>
                   
-                  {/* BARRA DE ROLAGEM HORIZONTAL E OPÇÕES VERTICAIS (UMA EMBAIXO DA OUTRA) */}
                   <ScrollView horizontal showsHorizontalScrollIndicator={true} style={{ marginVertical: 4 }}>
                     <View style={{ minWidth: 260, gap: 8 }}>
                       <TouchableOpacity 
@@ -2273,7 +2382,6 @@ export default function App() {
                 <View style={styles.scoringModeBoxContainer}>
                   <Text style={styles.sectionHeaderTitle}>🚶‍♂️ Configuração de Passos Diários</Text>
 
-                  {/* CHECKBOX 1: HABILITAR MODALIDADE */}
                   <TouchableOpacity 
                     style={styles.checkboxRow} 
                     onPress={() => setDailyStepsConfig({ ...dailyStepsConfig, enabled: !dailyStepsConfig.enabled })}
@@ -2288,7 +2396,6 @@ export default function App() {
 
                   {dailyStepsConfig.enabled && (
                     <>
-                      {/* CHECKBOX 2: USAR NO PLACAR GERAL (RANKING) */}
                       <TouchableOpacity 
                         style={[styles.checkboxRow, { marginTop: 10 }]} 
                         onPress={() => setDailyStepsConfig({ ...dailyStepsConfig, enableRankingScore: !dailyStepsConfig.enableRankingScore })}
@@ -2299,7 +2406,6 @@ export default function App() {
                         <Text style={styles.checkboxLabel}>Usar pontos da modalidade no Placar Geral (Ranking)</Text>
                       </TouchableOpacity>
 
-                      {/* CAMPOS SE HABILITADO PARA O PLACAR GERAL */}
                       {dailyStepsConfig.enableRankingScore && (
                         <View style={{ backgroundColor: '#ffffff', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#cbd5e1', marginTop: 10 }}>
                           <Text style={[styles.inputLabel, { color: '#1e3a8a', fontWeight: 'bold' }]}>Inserção Manual de Passos Diários:</Text>
@@ -2337,11 +2443,11 @@ export default function App() {
                 </View>
               )}
 
-              {/* 1 - TREINOS SEM KM (Musculação, Crossfit, Aeróbico, Coletivos, Lutas) */}
+              {/* TREINOS COM TEMPO (Musculação, Crossfit, Aeróbico, Coletivos, Lutas) */}
               {['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico', '⚽ Esportes Coletivos', '🥋 Lutas / Esportes Individuais'].includes(selectedConfigActivity) && (() => {
                 const currentMod = modalitySettings[selectedConfigActivity] || {};
                 const isEnabled = currentMod.enabled !== false;
-                const scoringMode = currentMod.scoringMode || 'checkin';
+                const scoringMode = currentMod.scoringMode || 'simple';
 
                 return (
                   <View style={styles.scoringModeBoxContainer}>
@@ -2362,7 +2468,6 @@ export default function App() {
 
                     {isEnabled && (
                       <>
-                        {/* OPÇÃO 1: TAXA SIMPLES */}
                         <TouchableOpacity 
                           style={styles.checkboxRow} 
                           onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'simple')}
@@ -2392,7 +2497,6 @@ export default function App() {
                           </View>
                         )}
 
-                        {/* OPÇÃO 2: STEP DE TEMPO */}
                         <TouchableOpacity 
                           style={styles.checkboxRow} 
                           onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'timeSteps')}
@@ -2445,7 +2549,7 @@ export default function App() {
                                             handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
                                           }} 
                                         />
-                                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#64748b' }}>until</Text>
+                                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#64748b' }}>até</Text>
                                         <TextInput 
                                           style={[styles.stepMiniInput, { backgroundColor: isAcima ? '#e2e8f0' : '#ffffff' }]} 
                                           placeholder="Até" 
@@ -2488,11 +2592,11 @@ export default function App() {
                 );
               })()}
 
-              {/* 2 - TREINOS COM KM (Corrida, Caminhada, Bike) */}
+              {/* TREINOS COM KM (Corrida, Caminhada, Bike) */}
               {['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedConfigActivity) && (() => {
                 const currentMod = modalitySettings[selectedConfigActivity] || {};
                 const isEnabled = currentMod.enabled !== false;
-                const scoringMode = currentMod.scoringMode || 'checkin';
+                const scoringMode = currentMod.scoringMode || 'kmSimple';
 
                 return (
                   <View style={styles.scoringModeBoxContainer}>
@@ -2513,37 +2617,6 @@ export default function App() {
 
                     {isEnabled && (
                       <>
-                        {/* OPÇÃO 1: TAXA SIMPLES TEMPO */}
-                        <TouchableOpacity 
-                          style={styles.checkboxRow} 
-                          onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'simple')}
-                        >
-                          <View style={[styles.checkboxBoxCircle, scoringMode === 'simple' && styles.checkboxBoxCircleActive]}>
-                            {scoringMode === 'simple' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                          </View>
-                          <Text style={styles.checkboxLabel}>Opção 1: Por Taxa Simples (Tempo Mínimo em minutos)</Text>
-                        </TouchableOpacity>
-
-                        {scoringMode === 'simple' && (
-                          <View style={{ paddingLeft: 24, marginBottom: 10 }}>
-                            <Text style={styles.inputLabel}>Pontos Concedidos:</Text>
-                            <TextInput 
-                              style={styles.input} 
-                              keyboardType="numeric" 
-                              value={currentMod.simplePts || ''} 
-                              onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'simplePts', v)} 
-                            />
-                            <Text style={styles.inputLabel}>A cada Quantos Minutos (em minutos):</Text>
-                            <TextInput 
-                              style={styles.input} 
-                              keyboardType="numeric" 
-                              value={currentMod.simplePerMin || ''} 
-                              onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'simplePerMin', v)} 
-                            />
-                          </View>
-                        )}
-
-                        {/* OPÇÃO 2: POR DISTÂNCIA MÍNIMA PERCORRIDA (KM) */}
                         <TouchableOpacity 
                           style={styles.checkboxRow} 
                           onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'kmSimple')}
@@ -2551,7 +2624,7 @@ export default function App() {
                           <View style={[styles.checkboxBoxCircle, scoringMode === 'kmSimple' && styles.checkboxBoxCircleActive]}>
                             {scoringMode === 'kmSimple' && <Text style={styles.checkboxCheckmark}>✓</Text>}
                           </View>
-                          <Text style={styles.checkboxLabel}>Opção 2: Por Distância mínima percorrida (em Km)</Text>
+                          <Text style={styles.checkboxLabel}>Opção 1: Por Distância mínima percorrida (em Km)</Text>
                         </TouchableOpacity>
 
                         {scoringMode === 'kmSimple' && (
@@ -2573,98 +2646,35 @@ export default function App() {
                           </View>
                         )}
 
-                        {/* OPÇÃO 3: STEP DE TEMPO */}
                         <TouchableOpacity 
                           style={styles.checkboxRow} 
-                          onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'timeSteps')}
+                          onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'simple')}
                         >
-                          <View style={[styles.checkboxBoxCircle, scoringMode === 'timeSteps' && styles.checkboxBoxCircleActive]}>
-                            {scoringMode === 'timeSteps' && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                          <View style={[styles.checkboxBoxCircle, scoringMode === 'simple' && styles.checkboxBoxCircleActive]}>
+                            {scoringMode === 'simple' && <Text style={styles.checkboxCheckmark}>✓</Text>}
                           </View>
-                          <Text style={styles.checkboxLabel}>Opção 3: Por Step de tempo (em minutos)</Text>
+                          <Text style={styles.checkboxLabel}>Opção 2: Por Taxa Simples (Tempo Mínimo em minutos)</Text>
                         </TouchableOpacity>
 
-                        {scoringMode === 'timeSteps' && (
+                        {scoringMode === 'simple' && (
                           <View style={{ paddingLeft: 24, marginBottom: 10 }}>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={true} style={{ paddingBottom: 6 }}>
-                              <View style={{ minWidth: 280 }}>
-                                {(currentMod.timeSteps || []).map((st, idx) => {
-                                  const isAcima = st.modeType === 'Acima';
-                                  return (
-                                    <View key={idx} style={{ backgroundColor: '#f1f5f9', padding: 8, borderRadius: 6, marginBottom: 6, borderWidth: 1, borderColor: '#cbd5e1' }}>
-                                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1e3a8a' }}>Step {idx + 1}</Text>
-                                        <TouchableOpacity onPress={() => handleRemoveTimeStep(selectedConfigActivity, idx)}>
-                                          <Text style={{ color: '#dc2626', fontSize: 10, fontWeight: 'bold' }}>Remover Step ✕</Text>
-                                        </TouchableOpacity>
-                                      </View>
-
-                                      <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center', marginBottom: 4 }}>
-                                        <View style={styles.nativeSelectWrapperSmall}>
-                                          <select
-                                            style={styles.htmlNativeSelectSmall}
-                                            value={st.modeType || 'De'}
-                                            onChange={(e) => {
-                                              const newArr = [...currentMod.timeSteps];
-                                              newArr[idx].modeType = e.target.value;
-                                              handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
-                                            }}
-                                          >
-                                            <option value="De">De</option>
-                                            <option value="Acima">Acima</option>
-                                          </select>
-                                        </View>
-
-                                        <TextInput 
-                                          style={styles.stepMiniInput} 
-                                          placeholder="Min" 
-                                          keyboardType="numeric" 
-                                          value={st.minTime} 
-                                          onChangeText={(v) => {
-                                            const newArr = [...currentMod.timeSteps];
-                                            newArr[idx].minTime = v;
-                                            handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
-                                          }} 
-                                        />
-                                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#64748b' }}>until</Text>
-                                        <TextInput 
-                                          style={[styles.stepMiniInput, { backgroundColor: isAcima ? '#e2e8f0' : '#ffffff' }]} 
-                                          placeholder="Até" 
-                                          keyboardType="numeric" 
-                                          editable={!isAcima}
-                                          value={isAcima ? '' : st.maxTime} 
-                                          onChangeText={(v) => {
-                                            const newArr = [...currentMod.timeSteps];
-                                            newArr[idx].maxTime = v;
-                                            handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
-                                          }} 
-                                        />
-                                      </View>
-
-                                      <Text style={styles.inputLabelMini}>Pontos deste Step:</Text>
-                                      <TextInput 
-                                        style={[styles.input, { marginBottom: 0 }]} 
-                                        placeholder="Quanto valerá o Step (pts)" 
-                                        keyboardType="numeric" 
-                                        value={st.pts} 
-                                        onChangeText={(v) => {
-                                          const newArr = [...currentMod.timeSteps];
-                                          newArr[idx].pts = v;
-                                          handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
-                                        }} 
-                                      />
-                                    </View>
-                                  );
-                                })}
-                              </View>
-                            </ScrollView>
-                            <TouchableOpacity style={[styles.primaryBtn, { paddingVertical: 6, marginTop: 4, backgroundColor: '#16a34a' }]} onPress={() => handleAddTimeStep(selectedConfigActivity)}>
-                              <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold' }}>+ Step</Text>
-                            </TouchableOpacity>
+                            <Text style={styles.inputLabel}>Pontos Concedidos:</Text>
+                            <TextInput 
+                              style={styles.input} 
+                              keyboardType="numeric" 
+                              value={currentMod.simplePts || ''} 
+                              onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'simplePts', v)} 
+                            />
+                            <Text style={styles.inputLabel}>A cada Quantos Minutos (em minutos):</Text>
+                            <TextInput 
+                              style={styles.input} 
+                              keyboardType="numeric" 
+                              value={currentMod.simplePerMin || ''} 
+                              onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'simplePerMin', v)} 
+                            />
                           </View>
                         )}
 
-                        {/* OPÇÃO 4: STEP DE DISTÂNCIA PERCORRIDA (KM) */}
                         <TouchableOpacity 
                           style={styles.checkboxRow} 
                           onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'kmSteps')}
@@ -2672,7 +2682,7 @@ export default function App() {
                           <View style={[styles.checkboxBoxCircle, scoringMode === 'kmSteps' && styles.checkboxBoxCircleActive]}>
                             {scoringMode === 'kmSteps' && <Text style={styles.checkboxCheckmark}>✓</Text>}
                           </View>
-                          <Text style={styles.checkboxLabel}>Opção 4: Por Step de Distância Percorrida (em KM)</Text>
+                          <Text style={styles.checkboxLabel}>Opção 3: Por Step de Distância Percorrida (em KM)</Text>
                         </TouchableOpacity>
 
                         {scoringMode === 'kmSteps' && (
@@ -2717,7 +2727,7 @@ export default function App() {
                                             handleUpdateModalityProp(selectedConfigActivity, 'kmSteps', newArr);
                                           }} 
                                         />
-                                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#64748b' }}>until</Text>
+                                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#64748b' }}>até</Text>
                                         <TextInput 
                                           style={[styles.stepMiniInput, { backgroundColor: isAcima ? '#e2e8f0' : '#ffffff' }]} 
                                           placeholder="Até" 
@@ -2760,12 +2770,11 @@ export default function App() {
                 );
               })()}
 
-              {/* 3. BÔNUS E CRITÉRIOS DE DESEMPATE */}
+              {/* BÔNUS E CRITÉRIOS DE DESEMPATE */}
               {selectedConfigActivity === '🎁 Bônus e Critérios de Desempate' && (
                 <View style={styles.scoringModeBoxContainer}>
                   <Text style={styles.sectionHeaderTitle}>🎁 Bônus e Critérios de Desempate</Text>
 
-                  {/* BÔNUS O INQUEBRÁVEL */}
                   <TouchableOpacity 
                     style={styles.checkboxRow} 
                     onPress={() => setBonusConfig({ ...bonusConfig, inquebravelEnabled: !bonusConfig.inquebravelEnabled })}
@@ -2795,7 +2804,6 @@ export default function App() {
                     </View>
                   )}
 
-                  {/* BÔNUS O DESPERTA */}
                   <TouchableOpacity 
                     style={styles.checkboxRow} 
                     onPress={() => setBonusConfig({ ...bonusConfig, despertaEnabled: !bonusConfig.despertaEnabled })}
@@ -2966,7 +2974,7 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL REGISTRO TREINO */}
+      {/* MODAL REGISTRO TREINO RECONSTRUÍDO COM REGRAS ESPECÍFICAS */}
       <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -2975,7 +2983,7 @@ export default function App() {
               <Text style={styles.modalTitle}>Registrar Treino ({selectedChallenge?.title || 'MuvFit'})</Text>
 
               <View style={styles.rulesCardBox}>
-                <Text style={styles.rulesCardTitle}>📜 Regras Ativas & Bônus Automáticos:</Text>
+                <Text style={styles.rulesCardTitle}>📜 Regras Ativas da Modalidade:</Text>
                 {getDynamicActiveRulesText().map((ruleText, idx) => (
                   <Text key={idx} style={styles.rulesCardItem}>{ruleText}</Text>
                 ))}
@@ -2999,22 +3007,183 @@ export default function App() {
                 })}
               </View>
 
-              <Text style={styles.inputLabel}>Legenda / Comentário (Opcional):</Text>
-              <TextInput style={[styles.input, { height: 60, textAlignVertical: 'top' }]} placeholder="Escreva algo sobre o treino..." multiline value={workoutCaption} onChangeText={setWorkoutCaption} />
-
-              <View style={{ marginVertical: 8 }}>
-                <Text style={styles.inputLabelMini}>Comprovante de Treino (Foto / Print):</Text>
-                <View style={styles.photoUploadBox}>
-                  {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
-                  <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-                    <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setPhotoEvidence)}>
-                      <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setPhotoEvidence)}>
-                      <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
-                    </TouchableOpacity>
-                  </View>
+              {/* 1. SELETOR DE DATA COM ÍCONE DE CALENDÁRIO */}
+              <View style={{ marginVertical: 6 }}>
+                <Text style={styles.inputLabel}>📅 Data do Treino:</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <input
+                    type="date"
+                    value={workoutDate}
+                    onChange={(e) => setWorkoutDate(e.target.value)}
+                    style={{
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '6px',
+                      padding: '8px',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      color: '#0f172a',
+                      flex: 1,
+                      cursor: 'pointer'
+                    }}
+                  />
                 </View>
+              </View>
+
+              {/* 2. HORÁRIOS INÍCIO E FIM (PARA TODAS EXCETO PASSOS DIÁRIOS) */}
+              {!isStepsActive && (
+                <View style={{ backgroundColor: '#f8fafc', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginVertical: 6 }}>
+                  <Text style={[styles.inputLabel, { color: '#1e3a8a', fontWeight: 'bold' }]}>⏱️ Horário de Início e Fim da Atividade:</Text>
+                  
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+                    {/* INÍCIO */}
+                    <View style={{ flex: 1, minWidth: 120 }}>
+                      <Text style={styles.inputLabelMini}>Horário Início:</Text>
+                      <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
+                        <select
+                          style={styles.timeSelectNative}
+                          value={startHour}
+                          onChange={(e) => setStartHour(e.target.value)}
+                        >
+                          {hoursArray.map(h => <option key={h} value={h}>{h} h</option>)}
+                        </select>
+                        <Text style={{ fontWeight: 'bold', color: '#1e3a8a' }}>:</Text>
+                        <select
+                          style={styles.timeSelectNative}
+                          value={startMinute}
+                          onChange={(e) => setStartMinute(e.target.value)}
+                        >
+                          {minutesArray.map(m => <option key={m} value={m}>{m} min</option>)}
+                        </select>
+                      </View>
+                    </View>
+
+                    {/* FIM */}
+                    <View style={{ flex: 1, minWidth: 120 }}>
+                      <Text style={styles.inputLabelMini}>Horário Término:</Text>
+                      <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
+                        <select
+                          style={styles.timeSelectNative}
+                          value={endHour}
+                          onChange={(e) => setEndHour(e.target.value)}
+                        >
+                          {hoursArray.map(h => <option key={h} value={h}>{h} h</option>)}
+                        </select>
+                        <Text style={{ fontWeight: 'bold', color: '#1e3a8a' }}>:</Text>
+                        <select
+                          style={styles.timeSelectNative}
+                          value={endMinute}
+                          onChange={(e) => setEndMinute(e.target.value)}
+                        >
+                          {minutesArray.map(m => <option key={m} value={m}>{m} min</option>)}
+                        </select>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* CÁLCULO DE TEMPO ESTIMADO */}
+                  {(() => {
+                    const startM = (parseInt(startHour, 10) * 60) + parseInt(startMinute, 10);
+                    const endM = (parseInt(endHour, 10) * 60) + parseInt(endMinute, 10);
+                    let diff = endM - startM;
+                    if (diff <= 0) diff += 1440;
+                    return (
+                      <Text style={{ fontSize: 9.5, fontWeight: 'bold', color: '#16a34a', marginTop: 6 }}>
+                        ⏳ Tempo Total Calculado: {diff} minutos
+                      </Text>
+                    );
+                  })()}
+                </View>
+              )}
+
+              {/* 3. CAMPO DE DISTÂNCIA EM KM (CORRIDA, CAMINHADA E BIKE) */}
+              {isKmGroupActive && (
+                <View style={{ marginVertical: 4 }}>
+                  <Text style={styles.inputLabel}>🏃 Distância Percorrida (em KM):</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: 5.5"
+                    keyboardType="decimal-pad"
+                    value={kmInput}
+                    onChangeText={setKmInput}
+                  />
+                </View>
+              )}
+
+              {/* LEGENDA / COMENTÁRIO */}
+              <Text style={styles.inputLabel}>Legenda / Comentário (Opcional):</Text>
+              <TextInput 
+                style={[styles.input, { height: 60, textAlignVertical: 'top' }]} 
+                placeholder="Escreva algo sobre o treino..." 
+                multiline 
+                value={workoutCaption} 
+                onChangeText={setWorkoutCaption} 
+              />
+
+              {/* 4. JANELAS DE FOTO / EVIDÊNCIAS DE IMAGEM */}
+              <View style={{ marginVertical: 8 }}>
+                <Text style={[styles.inputLabel, { color: '#1e3a8a' }]}>📷 Comprovante(s) em Foto da Atividade:</Text>
+
+                {/* PARA MUSCULAÇÃO, CROSSFIT, AERÓBICO, LUTAS, COLETIVOS: 3 JANELAS */}
+                {isGymGroupActive ? (
+                  <View style={{ gap: 10 }}>
+                    {/* FOTO 1: HORÁRIO INICIAL */}
+                    <View style={styles.photoUploadBox}>
+                      <Text style={styles.inputLabelMini}>1. Foto Horário Inicial (Obrigatória):</Text>
+                      {photoStart && <Image source={{ uri: photoStart }} style={styles.photoPreviewMini} />}
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setPhotoStart)}>
+                          <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setPhotoStart)}>
+                          <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* FOTO 2: EVIDÊNCIA DE TREINO */}
+                    <View style={styles.photoUploadBox}>
+                      <Text style={styles.inputLabelMini}>2. Foto Evidência do Treino (Obrigatória):</Text>
+                      {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setPhotoEvidence)}>
+                          <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setPhotoEvidence)}>
+                          <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* FOTO 3: HORÁRIO FINAL */}
+                    <View style={styles.photoUploadBox}>
+                      <Text style={styles.inputLabelMini}>3. Foto Horário Final (Obrigatória):</Text>
+                      {photoEnd && <Image source={{ uri: photoEnd }} style={styles.photoPreviewMini} />}
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setPhotoEnd)}>
+                          <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setPhotoEnd)}>
+                          <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                ) : (
+                  /* PARA CORRIDA, CAMINHADA, BIKE E PASSOS DIÁRIOS: 1 JANELA DE FOTO */
+                  <View style={styles.photoUploadBox}>
+                    <Text style={styles.inputLabelMini}>Foto / Print de Comprovação (Obrigatória):</Text>
+                    {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
+                    <View style={{ flexDirection: 'row', gap: 6, justifyContent: 'center' }}>
+                      <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setPhotoEvidence)}>
+                        <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setPhotoEvidence)}>
+                        <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
               </View>
 
               <TouchableOpacity style={styles.primaryBtn} onPress={handleSubmitWorkout}>
@@ -3047,6 +3216,8 @@ const styles = StyleSheet.create({
   nativeSelectButtonText: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
   selectOptionRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   selectOptionText: { fontSize: 12, fontWeight: 'bold', color: '#0f172a' },
+
+  timeSelectNative: { backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '6px', fontSize: '11px', fontWeight: 'bold', color: '#0f172a', flex: 1 },
 
   searchInput: { backgroundColor: '#ffffff', borderRadius: 6, paddingHorizontal: 10, paddingVertical: Platform.OS === 'ios' ? 8 : 4, fontSize: 11, color: '#0f172a', borderWidth: 1, borderColor: '#cbd5e1' },
   
@@ -3116,7 +3287,6 @@ const styles = StyleSheet.create({
   accordionBody: { padding: 12, backgroundColor: '#ffffff' },
 
   workoutPendingCard: { backgroundColor: '#f8fafc', borderRadius: 6, padding: 8, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 8 },
-  evidenceImagePreview: { width: '100%', height: 140, borderRadius: 6, marginVertical: 6 },
 
   dropdownSelectBox: { backgroundColor: '#ffffff', borderWidth: 1.5, borderColor: '#f97316', borderRadius: 6, padding: 10, marginBottom: 4 },
   dropdownSelectText: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
@@ -3131,7 +3301,7 @@ const styles = StyleSheet.create({
   modalityChipText: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center' },
   modalityChipTextActive: { color: '#ffffff' },
 
-  photoUploadBox: { backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', alignItems: 'center' },
+  photoUploadBox: { backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', alignItems: 'center', marginBottom: 6 },
   photoPreviewMini: { width: '100%', height: 90, borderRadius: 4, marginBottom: 6 },
   photoBtn: { backgroundColor: '#16a34a', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 4 },
   photoBtnText: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
