@@ -141,7 +141,7 @@ export default function App() {
 
   // FORMULÁRIO DE LANÇAMENTO MANUAL DO ADMIN
   const [manualSelectedAthleteId, setManualSelectedAthleteId] = useState('');
-  const [manualActivity, setManualActivity] = useState('Musculação');
+  const [manualActivity, setManualActivity] = useState('💪 Musculação');
   const [manualRankingPts, setManualRankingPts] = useState('');
   const [manualBankPts, setManualBankPts] = useState('');
   const [manualSteps, setManualSteps] = useState('');
@@ -828,7 +828,6 @@ export default function App() {
     Alert.alert('🎉 Valores Creditados!', `Valores e bônus aplicados com sucesso para ${member.nickname}!`);
   }
 
-  // APROVAÇÃO E PUBLICAÇÃO AUTOMÁTICA COM TODAS AS IMAGENS NO FEED
   async function handleApproveWorkout(workoutId) {
     const workout = pendingWorkouts.find(w => w.id === workoutId);
     if (!workout) return;
@@ -1088,6 +1087,21 @@ export default function App() {
   }
 
   const selectedAthleteObject = activeMembersInChallenge.find(m => m.id === manualSelectedAthleteId);
+
+  // MANIPULADOR DE SELEÇÃO RÁPIDA E DIRETA
+  const handleSelectModalActivity = (activityLabel) => {
+    setSelectedActivity(activityLabel);
+    setTimeout(() => {
+      setWorkoutActivityDropdownOpen(false);
+    }, 50);
+  };
+
+  const handleSelectAdminActivity = (activityLabel) => {
+    setManualActivity(activityLabel);
+    setTimeout(() => {
+      setIsActivityDropdownOpen(false);
+    }, 50);
+  };
 
   if (loadingAuth) {
     return (
@@ -1717,6 +1731,7 @@ export default function App() {
                 )}
               </View>
 
+              {/* MÓDULO DE LANÇAMENTO MANUAL COM EVENTOS TÁTEIS CORRIGIDOS */}
               <View style={styles.accordionCard}>
                 <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec3(!expandedSec3)}>
                   <Text style={styles.accordionTitle}>3. LANÇAMENTO MANUAL DE PONTOS, BÔNUS E PASSOS</Text>
@@ -1741,6 +1756,11 @@ export default function App() {
                           <TouchableOpacity
                             key={m.id}
                             style={styles.dropdownOptionRow}
+                            activeOpacity={0.7}
+                            onTouchStart={() => {
+                              setManualSelectedAthleteId(m.id);
+                              setTimeout(() => setIsAthleteDropdownOpen(false), 50);
+                            }}
                             onPress={() => {
                               setManualSelectedAthleteId(m.id);
                               setIsAthleteDropdownOpen(false);
@@ -1754,29 +1774,33 @@ export default function App() {
                     )}
 
                     <Text style={styles.inputLabel}>Modalidade Realizada:</Text>
-                    <TouchableOpacity 
-                      style={styles.dropdownSelectBox} 
-                      onPress={() => setIsActivityDropdownOpen(!isActivityDropdownOpen)}
-                    >
-                      <Text style={styles.dropdownSelectText}>{manualActivity} ▼</Text>
-                    </TouchableOpacity>
+                    <View style={{ position: 'relative', zIndex: 9999 }}>
+                      <TouchableOpacity 
+                        style={styles.dropdownSelectBox} 
+                        onPress={() => setIsActivityDropdownOpen(!isActivityDropdownOpen)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.dropdownSelectText}>{manualActivity} ▼</Text>
+                      </TouchableOpacity>
 
-                    {isActivityDropdownOpen && (
-                      <View style={styles.floatingDropdownContainer}>
-                        {modalitiesList.map((item) => (
-                          <TouchableOpacity
-                            key={item.value}
-                            style={styles.dropdownOptionRow}
-                            onPress={() => {
-                              setManualActivity(item.label);
-                              setIsActivityDropdownOpen(false);
-                            }}
-                          >
-                            <Text style={{ fontSize: 10, fontWeight: 'bold' }}>{item.label}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    )}
+                      {isActivityDropdownOpen && (
+                        <View style={styles.floatingDropdownContainer}>
+                          <ScrollView style={{ maxHeight: 220 }} keyboardShouldPersistTaps="always">
+                            {modalitiesList.map((item) => (
+                              <TouchableOpacity
+                                key={item.value}
+                                style={styles.dropdownOptionRow}
+                                activeOpacity={0.7}
+                                onTouchStart={() => handleSelectAdminActivity(item.label)}
+                                onPress={() => handleSelectAdminActivity(item.label)}
+                              >
+                                <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0f172a' }}>{item.label}</Text>
+                              </TouchableOpacity>
+                            ))}
+                          </ScrollView>
+                        </View>
+                      )}
+                    </View>
 
                     <Text style={styles.inputLabel}>Pontos Ranking (Geral):</Text>
                     <TextInput
@@ -2208,7 +2232,7 @@ export default function App() {
                                   </select>
                                   <TextInput style={[styles.inputMini, { width: 45 }]} keyboardType="numeric" value={step.km1} onChangeText={(txt) => { const n = [...currentRules.stepsKm]; n[idx].km1 = txt; updateCurrentRuleState({ stepsKm: n }); }} />
                                   <Text style={{ fontSize: 9 }}>Até:</Text>
-                                  <TextInput style={[styles.inputMini, { width: 45 }, step.condition === 'Acima' && { backgroundColor: '#e2e8f0' }]} keyboardType="numeric" editable={step.condition !== 'Acima'} value={step.condition === 'Acima' ? '' : step.km2} onChangeText={(txt) => { const n = [...currentRules.stepsKm]; n[idx].km2 = txt; updateCurrentRuleState({ stepsKm: n }); }} />
+                                  <TextInput style={[styles.inputMini, { width: 45 }, step.condition === 'Acima' && { backgroundColor: '#e2e8f0' }]} keyboardType="numeric" editable={step.condition !== 'Acima'} value={step.condition === 'Acima' ? '' : step.time2} onChangeText={(txt) => { const n = [...currentRules.stepsKm]; n[idx].time2 = txt; updateCurrentRuleState({ stepsKm: n }); }} />
                                 </View>
                                 <TextInput style={styles.inputMini} placeholder="Pontos" keyboardType="numeric" value={step.points} onChangeText={(txt) => { const n = [...currentRules.stepsKm]; n[idx].points = txt; updateCurrentRuleState({ stepsKm: n }); }} />
                               </View>
@@ -2455,7 +2479,7 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL DE REGISTRO DE TREINO COM CORREÇÃO DE SELEÇÃO E Z-INDEX */}
+      {/* MODAL DE REGISTRO DE TREINO COM SELEÇÃO FLUTUANTE INSTANTÂNEA */}
       <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -2476,16 +2500,14 @@ export default function App() {
 
                   {workoutActivityDropdownOpen && (
                     <View style={styles.floatingDropdownContainer}>
-                      <ScrollView style={{ maxHeight: 200 }} keyboardShouldPersistTaps="always">
+                      <ScrollView style={{ maxHeight: 220 }} keyboardShouldPersistTaps="always">
                         {modalitiesList.filter(m => m.value !== '🎁 Bônus e Critérios de Desempate').map((item) => (
                           <TouchableOpacity
                             key={item.value}
                             style={styles.dropdownOptionRow}
                             activeOpacity={0.7}
-                            onPress={() => {
-                              setSelectedActivity(item.label);
-                              setWorkoutActivityDropdownOpen(false);
-                            }}
+                            onTouchStart={() => handleSelectModalActivity(item.label)}
+                            onPress={() => handleSelectModalActivity(item.label)}
                           >
                             <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0f172a' }}>{item.label}</Text>
                           </TouchableOpacity>
