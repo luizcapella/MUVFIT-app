@@ -882,11 +882,36 @@ export default function App() {
     Alert.alert('Treino Rejeitado', 'O registro foi removido.');
   }
 
-  const handleTriggerPhoto = (type, setter) => {
-    const randomSeed = Math.floor(Math.random() * 1000);
-    const mockUrl = `https://picsum.photos/seed/${type}_${randomSeed}/400/300`;
-    setter(mockUrl);
-    Alert.alert('📸 Imagem Selecionada', `Foto (${type}) capturada/anexada com sucesso!`);
+  // FUNÇÃO ATUALIZADA: CAPTURA REAL DA CÂMERA OU GALERIA
+  const handleTriggerPhoto = (mode, setter) => {
+    if (Platform.OS === 'web') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      
+      // Se a opção for 'camera', solicita a captura nativa da câmera
+      if (mode === 'camera') {
+        input.capture = 'environment';
+      }
+
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            setter(reader.result);
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+
+      input.click();
+    } else {
+      Alert.alert(
+        '📷 Seleção de Imagem',
+        'Abra a câmera ou galeria do seu dispositivo para selecionar o comprovante.'
+      );
+    }
   };
 
   async function handleSubmitWorkout() {
@@ -1714,7 +1739,6 @@ export default function App() {
                 )}
               </View>
 
-              {/* MÓDULO DE LANÇAMENTO MANUAL COM BOTÕES CLICÁVEIS */}
               <View style={styles.accordionCard}>
                 <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec3(!expandedSec3)}>
                   <Text style={styles.accordionTitle}>3. LANÇAMENTO MANUAL DE PONTOS, BÔNUS E PASSOS</Text>
@@ -2446,18 +2470,16 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL DE REGISTRO DE TREINO COM NOME DA LIGA E CAIXA DE REGRAS ATIVAS */}
+      {/* MODAL DE REGISTRO DE TREINO COM CÂMERA E GALERIA REAIS */}
       <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <ScrollView style={{ width: '100%', maxHeight: 540 }} keyboardShouldPersistTaps="handled">
               
-              {/* TÍTULO COM O NOME DO DESAFIO SELECIONADO */}
               <Text style={styles.modalTitle}>
                 Registrar Treino ({selectedChallenge?.title || 'MuvFit'})
               </Text>
 
-              {/* CAIXA DE REGRAS ATIVAS */}
               <View style={styles.rulesCardBox}>
                 <Text style={styles.rulesCardTitle}>📜 Regras Ativas:</Text>
                 <Text style={styles.rulesCardItem}>• Musculação: 30m (5000pts) | 1h+ (10000pts)</Text>
@@ -2465,7 +2487,6 @@ export default function App() {
                 <Text style={styles.rulesCardItem}>• Trava: Máximo 1 envio por modalidade ao dia</Text>
               </View>
 
-              {/* 1. SELEÇÃO DE TIPO DE ATIVIDADE COM BOTÕES CLICÁVEIS */}
               <Text style={styles.inputLabel}>Selecione a Modalidade:</Text>
               <View style={styles.modalityGridContainer}>
                 {modalitiesList.filter(m => m.value !== '🎁 Bônus e Critérios de Desempate').map((item) => {
@@ -2484,7 +2505,6 @@ export default function App() {
                 })}
               </View>
 
-              {/* 2. SELEÇÃO DE DATA COM CALENDÁRIO */}
               <Text style={styles.inputLabel}>Data da Atividade:</Text>
               <View style={styles.datePickerRow}>
                 <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0f172a', flex: 1 }}>
@@ -2507,7 +2527,6 @@ export default function App() {
                 )}
               </View>
 
-              {/* 3. HORÁRIOS DE INÍCIO E FIM */}
               <Text style={styles.inputLabel}>Horário do Treino (Início e Fim):</Text>
               <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
                 <View style={{ flex: 1 }}>
@@ -2551,7 +2570,6 @@ export default function App() {
                 </View>
               </View>
 
-              {/* CAMPOS ESPECÍFICOS */}
               {['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedActivity) && (
                 <>
                   <Text style={styles.inputLabel}>Distância Percorrida (KM):</Text>
@@ -2587,17 +2605,17 @@ export default function App() {
                 onChangeText={setWorkoutCaption}
               />
 
-              {/* JANELAS DE FOTOS */}
+              {/* BOTÕES DE CÂMERA E GALERIA CONECTADOS AOS DISPOSITIVOS */}
               {['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico'].includes(selectedActivity) ? (
                 <View style={{ gap: 8, marginVertical: 8 }}>
                   <Text style={styles.inputLabelMini}>1. Foto do Início da Atividade (Obrigatório):</Text>
                   <View style={styles.photoUploadBox}>
                     {photoStart && <Image source={{ uri: photoStart }} style={styles.photoPreviewMini} />}
                     <View style={{ flexDirection: 'row', gap: 6 }}>
-                      <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Inicio', setPhotoStart)}>
+                      <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setPhotoStart)}>
                         <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Inicio_Galeria', setPhotoStart)}>
+                      <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setPhotoStart)}>
                         <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
                       </TouchableOpacity>
                     </View>
@@ -2607,10 +2625,10 @@ export default function App() {
                   <View style={styles.photoUploadBox}>
                     {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
                     <View style={{ flexDirection: 'row', gap: 6 }}>
-                      <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Evidencia', setPhotoEvidence)}>
+                      <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setPhotoEvidence)}>
                         <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Evidencia_Galeria', setPhotoEvidence)}>
+                      <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setPhotoEvidence)}>
                         <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
                       </TouchableOpacity>
                     </View>
@@ -2620,10 +2638,10 @@ export default function App() {
                   <View style={styles.photoUploadBox}>
                     {photoEnd && <Image source={{ uri: photoEnd }} style={styles.photoPreviewMini} />}
                     <View style={{ flexDirection: 'row', gap: 6 }}>
-                      <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Fim', setPhotoEnd)}>
+                      <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setPhotoEnd)}>
                         <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Fim_Galeria', setPhotoEnd)}>
+                      <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setPhotoEnd)}>
                         <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
                       </TouchableOpacity>
                     </View>
@@ -2635,10 +2653,10 @@ export default function App() {
                   <View style={styles.photoUploadBox}>
                     {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
                     <View style={{ flexDirection: 'row', gap: 6 }}>
-                      <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Evidencia', setPhotoEvidence)}>
+                      <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setPhotoEvidence)}>
                         <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Evidencia_Galeria', setPhotoEvidence)}>
+                      <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setPhotoEvidence)}>
                         <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
                       </TouchableOpacity>
                     </View>
@@ -2738,12 +2756,10 @@ const styles = StyleSheet.create({
   dropdownSelectBox: { backgroundColor: '#ffffff', borderWidth: 1.5, borderColor: '#f97316', borderRadius: 6, padding: 10, marginBottom: 4 },
   dropdownSelectText: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
 
-  // NOVOS ESTILOS PARA O CARD DE REGRAS ATIVAS
   rulesCardBox: { backgroundColor: '#fff7ed', borderWidth: 1.5, borderColor: '#f97316', borderRadius: 8, padding: 10, marginBottom: 10 },
   rulesCardTitle: { fontSize: 11, fontWeight: '900', color: '#c2410c', marginBottom: 4 },
   rulesCardItem: { fontSize: 9.5, fontWeight: '600', color: '#431407', marginBottom: 2 },
 
-  // ESTILOS PARA OS BOTÕES DAS MODALIDADES (GRID DE CHIPS)
   modalityGridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginVertical: 6 },
   modalityChipBtn: { backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#cbd5e1', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 6, width: '48%' },
   modalityChipBtnActive: { backgroundColor: '#f97316', borderColor: '#c2410c' },
