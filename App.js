@@ -1554,23 +1554,25 @@ export default function App() {
                       Código: {c.invite_code} | {c.startDate} até {c.endDate}
                     </Text>
 
-                    <View style={{ flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
-                      <TouchableOpacity style={[styles.primaryBtn, { flex: 1 }]} onPress={() => selectChallengeContext(c, true)}>
-                        <Text style={styles.primaryBtnText}>ENTRAR COMO ADMIN ➔</Text>
-                      </TouchableOpacity>
+                    {/* BOTÃO PRINCIPAL DE ENTRAR COMO ADMIN */}
+                    <TouchableOpacity style={[styles.primaryBtn, { marginVertical: 6 }]} onPress={() => selectChallengeContext(c, true)}>
+                      <Text style={styles.primaryBtnText}>ENTRAR COMO ADMIN ➔</Text>
+                    </TouchableOpacity>
 
-                      <TouchableOpacity style={styles.inviteBtn} onPress={() => handleShareInvite(c)}>
-                        <Text style={styles.btnMiniText}>🔗 CONVIDAR</Text>
+                    {/* BOTÕES SECUNDÁRIOS ALINHADOS E EM FORMATO DE PILHA/UNIFORME */}
+                    <View style={{ flexDirection: 'column', gap: 6, marginTop: 4 }}>
+                      <TouchableOpacity style={styles.dashboardActionBtnGreen} onPress={() => handleShareInvite(c)}>
+                        <Text style={styles.dashboardActionBtnText}>🔗 CONVIDAR</Text>
                       </TouchableOpacity>
 
                       {!c.is_finished && (
-                        <TouchableOpacity style={styles.finishChallengeBtn} onPress={() => handleFinishChallenge(c.id)}>
-                          <Text style={styles.btnMiniText}>🏆 ENCERRAR</Text>
+                        <TouchableOpacity style={styles.dashboardActionBtnOrange} onPress={() => handleFinishChallenge(c.id)}>
+                          <Text style={styles.dashboardActionBtnText}>🏆 ENCERRAR</Text>
                         </TouchableOpacity>
                       )}
 
-                      <TouchableOpacity style={styles.deleteChallengeBtn} onPress={() => handleDeleteChallenge(c.id)}>
-                        <Text style={styles.btnMiniText}>🗑️ EXCLUIR</Text>
+                      <TouchableOpacity style={styles.dashboardActionBtnRed} onPress={() => handleDeleteChallenge(c.id)}>
+                        <Text style={styles.dashboardActionBtnText}>🗑️ DELETAR</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -3098,6 +3100,11 @@ const styles = StyleSheet.create({
   tagOpen: { backgroundColor: '#f0fdf4', color: '#16a34a', fontSize: 9, fontWeight: 'bold', padding: 4, borderRadius: 4 },
   tagClosed: { backgroundColor: '#fef2f2', color: '#dc2626', fontSize: 9, fontWeight: 'bold', padding: 4, borderRadius: 4 },
 
+  dashboardActionBtnGreen: { backgroundColor: '#16a34a', paddingVertical: 10, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+  dashboardActionBtnOrange: { backgroundColor: '#d97706', paddingVertical: 10, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+  dashboardActionBtnRed: { backgroundColor: '#dc2626', paddingVertical: 10, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+  dashboardActionBtnText: { color: '#ffffff', fontSize: 10, fontWeight: 'bold' },
+
   adminControlCard: { backgroundColor: '#fff7ed', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#f97316', marginBottom: 12 },
   adminCardTitle: { fontSize: 12, fontWeight: 'bold', color: '#c2410c', marginBottom: 4 },
   adminCardSub: { fontSize: 10, color: '#475569', marginBottom: 8 },
@@ -3152,8 +3159,6 @@ const styles = StyleSheet.create({
   approveBtn: { backgroundColor: '#16a34a', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 4 },
   banBtn: { backgroundColor: '#dc2626', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 4 },
   inviteBtn: { backgroundColor: '#16a34a', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6, justifyContent: 'center' },
-  deleteChallengeBtn: { backgroundColor: '#dc2626', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6, justifyContent: 'center' },
-  finishChallengeBtn: { backgroundColor: '#d97706', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6, justifyContent: 'center' },
   btnMiniText: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
 
   rankingRowCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 6 },
