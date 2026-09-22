@@ -465,12 +465,25 @@ export default function App() {
           tiebreakerEnabled: c.tiebreaker_enabled
         }));
         setChallenges(formattedChallenges);
+        
+        const currentSelectedId = activeChallengeId || formattedChallenges[0].id;
         if (!activeChallengeId) {
           setActiveChallengeId(formattedChallenges[0].id);
         }
         if (!selectedConfigChallengeId) {
           setSelectedConfigChallengeId(formattedChallenges[0].id);
         }
+
+        // CARREGA AS REGRAS SALVAS NO SUPABASE PARA O DESAFIO ATIVO
+        const activeCh = formattedChallenges.find(c => c.id === currentSelectedId) || formattedChallenges[0];
+        if (activeCh && activeCh.rules_config) {
+          if (activeCh.rules_config.modalitySettings) setModalitySettings(activeCh.rules_config.modalitySettings);
+          if (activeCh.rules_config.bonusConfig) setBonusConfig(activeCh.rules_config.bonusConfig);
+          if (activeCh.rules_config.dailyStepsConfig) setDailyStepsConfig(activeCh.rules_config.dailyStepsConfig);
+          if (activeCh.rules_config.tiebreakers) setTiebreakers(activeCh.rules_config.tiebreakers);
+          if (activeCh.rules_config.leaguePeriod) setLeaguePeriod(activeCh.rules_config.leaguePeriod);
+        }
+
       } else {
         setChallenges([]);
         setActiveChallengeId(null);
@@ -540,6 +553,15 @@ export default function App() {
     setActiveChallengeId(challenge.id);
     setIsAdminContext(asAdmin);
     
+    // Carrega as regras gravadas para essa liga ao trocar de contexto
+    if (challenge.rules_config) {
+      if (challenge.rules_config.modalitySettings) setModalitySettings(challenge.rules_config.modalitySettings);
+      if (challenge.rules_config.bonusConfig) setBonusConfig(challenge.rules_config.bonusConfig);
+      if (challenge.rules_config.dailyStepsConfig) setDailyStepsConfig(challenge.rules_config.dailyStepsConfig);
+      if (challenge.rules_config.tiebreakers) setTiebreakers(challenge.rules_config.tiebreakers);
+      if (challenge.rules_config.leaguePeriod) setLeaguePeriod(challenge.rules_config.leaguePeriod);
+    }
+
     if (asAdmin) {
       setCurrentScreen('admin');
     } else {
@@ -697,6 +719,14 @@ export default function App() {
     }
 
     const newId = `c_${Date.now()}`;
+    const initialRulesConfig = {
+      modalitySettings,
+      bonusConfig,
+      dailyStepsConfig,
+      tiebreakers,
+      leaguePeriod
+    };
+
     const newObj = {
       id: newId,
       title: newChallengeTitle.trim(),
@@ -708,7 +738,8 @@ export default function App() {
       is_finished: false,
       start_date: '01/10/2026',
       end_date: '31/10/2026',
-      tiebreaker_enabled: true
+      tiebreaker_enabled: true,
+      rules_config: initialRulesConfig
     };
 
     await supabase.from('challenges').insert([newObj]);
@@ -742,7 +773,7 @@ export default function App() {
     setIsAdminContext(true);
     setCurrentScreen('admin');
 
-    Alert.alert('Sucesso', 'Liga criada com sucesso! Para participar do ranking como atleta, solicite participação no topo da aba Ranking.');
+    Alert.alert('Sucesso', 'Liga criada com sucesso! As regras configuradas foram salvas no Supabase.');
   }
 
   async function handleDeleteChallenge(challengeId) {
@@ -1171,17 +1202,40 @@ export default function App() {
     Alert.alert('Sucesso', 'Treino enviado com sucesso! Aguardando aprovação do Administrador para ser creditado e exibido no feed.');
   }
 
+  // GRAVAÇÃO PERMANENTE DE REGRAS NO SUPABASE (COLUNA rules_config)
   async function handleSaveAdvancedRules() {
-    if (selectedConfigChallengeId && selectedChallenge) {
-      await supabase.from('challenges').update({
-        title: selectedChallenge.title,
-        has_daily_cap: selectedChallenge.has_daily_cap,
-        daily_cap: selectedChallenge.daily_cap
-      }).eq('id', selectedConfigChallengeId);
-    }
+    if (!selectedConfigChallengeId) return;
 
-    setIsAdvancedRulesModalOpen(false);
-    Alert.alert('Sucesso', 'Configurações de Regras salvas com sucesso!');
+    const fullRulesObject = {
+      modalitySettings,
+      bonusConfig,
+      dailyStepsConfig,
+      tiebreakers,
+      leaguePeriod
+    };
+
+    try {
+      const { error } = await supabase
+        .from('challenges')
+        .update({
+          title: selectedChallenge.title,
+          has_daily_cap: selectedChallenge.has_daily_cap,
+          daily_cap: selectedChallenge.daily_cap,
+          rules_config: fullRulesObject
+        })
+        .eq('id', selectedConfigChallengeId);
+
+      if (error) {
+        Alert.alert('Erro ao Salvar no Banco', error.message);
+        return;
+      }
+
+      setIsAdvancedRulesModalOpen(false);
+      fetchDataFromSupabase();
+      Alert.alert('🎉 Sucesso!', 'As regras desta liga foram salvas permanentemente no banco de dados Supabase!');
+    } catch (err) {
+      Alert.alert('Erro Inesperado', err.message || 'Não foi possível gravar as regras.');
+    }
   }
 
   // HELPERS DE MANIPULAÇÃO DE STEPS DAS MODALIDADES
