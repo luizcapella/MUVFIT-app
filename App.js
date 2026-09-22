@@ -97,13 +97,33 @@ export default function App() {
 
   const [commentInputs, setCommentInputs] = useState({});
 
+  // ESTADOS DO FORMULÁRIO DE NOVO TREINO
   const [isWorkoutModalOpen, setIsWorkoutModalOpen] = useState(false);
-  const [selectedActivity, setSelectedActivity] = useState('Musculação');
-  const [durationInput, setDurationInput] = useState('');
+  const [workoutActivityDropdownOpen, setWorkoutActivityDropdownOpen] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState('💪 Musculação');
+  
+  const getTodayISO = () => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const [workoutDate, setWorkoutDate] = useState(getTodayISO());
+  const [startHour, setStartHour] = useState('07');
+  const [startMinute, setStartMinute] = useState('00');
+  const [endHour, setEndHour] = useState('08');
+  const [endMinute, setEndMinute] = useState('00');
+
   const [kmInput, setKmInput] = useState('');
   const [stepsInput, setStepsInput] = useState('');
   const [workoutCaption, setWorkoutCaption] = useState('');
+
+  // FOTOS DE COMPROVAÇÃO
+  const [photoStart, setPhotoStart] = useState(null);
   const [photoEvidence, setPhotoEvidence] = useState(null);
+  const [photoEnd, setPhotoEnd] = useState(null);
 
   // CRIAR DESAFIO
   const [isCreateChallengeOpen, setIsCreateChallengeOpen] = useState(false);
@@ -153,6 +173,9 @@ export default function App() {
     { label: '🎁 Bônus e Critérios de Desempate', value: '🎁 Bônus e Critérios de Desempate' },
     { label: '🚶‍♂️ Passos Diários', value: '🚶‍♂️ Passos Diários' }
   ];
+
+  const hoursList = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+  const minutesList = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 
   const isCurrentActivityEnabled = Boolean(
     selectedConfigChallengeId && 
@@ -854,6 +877,14 @@ export default function App() {
     Alert.alert('Treino Rejeitado', 'O registro foi removido.');
   }
 
+  // SIMULADORES DE CAPTURA/UPLOAD DE IMAGEM
+  const handleTriggerPhoto = (type, setter) => {
+    const randomSeed = Math.floor(Math.random() * 1000);
+    const mockUrl = `https://picsum.photos/seed/${type}_${randomSeed}/400/300`;
+    setter(mockUrl);
+    Alert.alert('📸 Imagem Capturada', `Foto de (${type}) registrada com sucesso!`);
+  };
+
   async function handleSubmitWorkout() {
     const currentMemberRecord = memberships.find(m => m.challengeId === activeChallengeId && m.userId === currentUser.id);
     if (!currentMemberRecord && selectedChallenge.creator_id !== currentUser.id) {
@@ -861,27 +892,50 @@ export default function App() {
       return;
     }
 
-    if (!photoEvidence) {
-      Alert.alert('Comprovante Obrigatório', 'Envie a foto comprovando a atividade.');
-      return;
+    const isGymGroup = ['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico'].includes(selectedActivity);
+    
+    if (isGymGroup) {
+      if (!photoStart || !photoEvidence || !photoEnd) {
+        Alert.alert('Comprovante Incompleto', 'Envie as 3 fotos obrigatórias: Início, Evidência e Fim.');
+        return;
+      }
+    } else {
+      if (!photoEvidence) {
+        Alert.alert('Comprovante Obrigatório', 'Adicione a foto de comprovação da atividade.');
+        return;
+      }
     }
 
     const cleanActType = selectedActivity.trim().toUpperCase();
-    const todayStr = new Date().toLocaleDateString('pt-BR');
+    
+    // FORMATAR DATA
+    let formattedDateStr = new Date().toLocaleDateString('pt-BR');
+    if (workoutDate) {
+      const parts = workoutDate.split('-');
+      if (parts.length === 3) {
+        formattedDateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+    }
 
+    // TRAVA DE REPETIÇÃO
     const hasAlreadySubmittedToday = 
-      feedPosts.some(p => p.challenge_id === activeChallengeId && p.user_id === currentUser.id && (p.activity_type || '').toUpperCase() === cleanActType && p.created_at.includes(todayStr)) ||
-      pendingWorkouts.some(w => w.challenge_id === activeChallengeId && w.user_id === currentUser.id && (w.activity_type || '').toUpperCase() === cleanActType);
+      feedPosts.some(p => p.challenge_id === activeChallengeId && p.user_id === currentUser.id && (p.activity_type || '').toUpperCase() === cleanActType && p.created_at.includes(formattedDateStr)) ||
+      pendingWorkouts.some(w => w.challenge_id === activeChallengeId && w.user_id === currentUser.id && (w.activity_type || '').toUpperCase() === cleanActType && w.created_at.includes(formattedDateStr));
 
     if (hasAlreadySubmittedToday) {
       Alert.alert(
         '🚫 Trava de Treino Diário',
-        `Você já registrou um treino de "${selectedActivity}" hoje! Não é permitido repetir a mesma modalidade no mesmo dia até as 23:59:59.`
+        `Você já registrou um treino de "${selectedActivity}" na data selecionada (${formattedDateStr})! Não é permitido repetir a mesma modalidade na mesma data.`
       );
       return;
     }
 
-    const dur = parseInt(durationInput, 10) || 0;
+    // CÁLCULO DE DURAÇÃO PELO HORÁRIO DE INÍCIO E FIM
+    const startMins = (parseInt(startHour, 10) * 60) + parseInt(startMinute, 10);
+    const endMins = (parseInt(endHour, 10) * 60) + parseInt(endMinute, 10);
+    let dur = endMins - startMins;
+    if (dur <= 0) dur += 1440; // Trata virada de noite
+
     const points = dur >= 60 ? 10000 : 5000;
     let ptsRanking = points;
     let ptsBank = 0;
@@ -891,7 +945,7 @@ export default function App() {
       ptsBank = Math.max(0, points - selectedChallenge.daily_cap);
     }
 
-    const submissionTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const timeWindowStr = `${startHour}:${startMinute} às ${endHour}:${endMinute}`;
 
     const newPendingWorkout = {
       id: `pw_${Date.now()}`,
@@ -901,21 +955,25 @@ export default function App() {
       user_nickname: currentUser.nickname,
       user_avatar: currentUser.avatar,
       activity_type: cleanActType,
-      caption: workoutCaption || `Atividade de ${selectedActivity}`,
+      caption: workoutCaption || `Atividade de ${selectedActivity} (${dur} min)`,
       photo_evidence: photoEvidence,
       points_to_ranking: ptsRanking,
       points_to_bank: ptsBank,
-      created_at: `${todayStr} às ${submissionTime}`
+      created_at: `${formattedDateStr} (${timeWindowStr})`
     };
 
     await supabase.from('pending_workouts').insert([newPendingWorkout]);
     fetchDataFromSupabase();
+    
+    // RESETAR FORMULÁRIO
     setIsWorkoutModalOpen(false);
-    setDurationInput('');
     setKmInput('');
     setStepsInput('');
     setWorkoutCaption('');
+    setPhotoStart(null);
     setPhotoEvidence(null);
+    setPhotoEnd(null);
+    
     Alert.alert('Sucesso', 'Treino enviado para a nuvem! Aguardando aprovação do Admin.');
   }
 
@@ -969,7 +1027,6 @@ export default function App() {
     return (b.activeDays || 0) - (a.activeDays || 0);
   });
 
-  // VERIFICA SE DOIS ATLETAS ESTÃO COMPLETAMENTE EMPATADOS EM TODOS OS CRITÉRIOS
   const areAthletesTied = (a, b) => {
     if (!a || !b) return false;
     return (
@@ -981,7 +1038,6 @@ export default function App() {
     );
   };
 
-  // ATRIBUIÇÃO DE POSIÇÕES NO RANKING (SEM PULAR NÚMEROS: Ex: 1º, 1º, 2º)
   let currentRankPosition = 1;
   const rankedAthletes = sortedAthletes.map((athlete, index, array) => {
     if (index > 0 && !areAthletesTied(athlete, array[index - 1])) {
@@ -1458,7 +1514,6 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* ABA RANKING REORGANIZADA COM DOIS BLOCOS SEPARADOS */}
           {currentScreen === 'ranking' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <Text style={styles.pageTitle}>🏆 Ranking — {selectedChallenge.title}</Text>
@@ -1470,7 +1525,6 @@ export default function App() {
                 </Text>
               </View>
 
-              {/* BLOCO 1: RANKING DOS ATLETAS ATIVOS */}
               <Text style={styles.sectionHeaderTitle}>⚡ Atletas Ativos ({rankedAthletes.length})</Text>
               
               {rankedAthletes.length === 0 ? (
@@ -1494,7 +1548,6 @@ export default function App() {
                 ))
               )}
 
-              {/* BLOCO 2: LISTA DE TORCEDORES */}
               <View style={{ marginTop: 24 }}>
                 <Text style={[styles.sectionHeaderTitle, { color: '#64748b' }]}>👀 Lista de Torcedores ({spectatorMembersInChallenge.length})</Text>
                 {spectatorMembersInChallenge.length === 0 ? (
@@ -2388,31 +2441,111 @@ export default function App() {
         </View>
       </Modal>
 
+      {/* MODAL REESTRUTURADO DE REGISTRO DE TREINO */}
       <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <ScrollView contentContainerStyle={styles.modalContent}>
+          <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
             <Text style={styles.modalTitle}>📷 Registrar Novo Treino</Text>
 
+            {/* 1. SELEÇÃO DE TIPO DE ATIVIDADE */}
             <Text style={styles.inputLabel}>Tipo de Atividade:</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ex: Musculação, Corrida, Passos"
-              value={selectedActivity}
-              onChangeText={setSelectedActivity}
-            />
+            <View style={{ position: 'relative', zIndex: 50 }}>
+              <TouchableOpacity 
+                style={styles.dropdownSelectBox} 
+                onPress={() => setWorkoutActivityDropdownOpen(!workoutActivityDropdownOpen)}
+              >
+                <Text style={styles.dropdownSelectText}>{selectedActivity} ▼</Text>
+              </TouchableOpacity>
 
-            <Text style={styles.inputLabel}>Duração (minutos):</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ex: 60"
-              keyboardType="numeric"
-              value={durationInput}
-              onChangeText={setDurationInput}
-            />
+              {workoutActivityDropdownOpen && (
+                <View style={styles.floatingDropdownContainer}>
+                  {modalitiesList.filter(m => m.value !== '🎁 Bônus e Critérios de Desempate').map((item) => (
+                    <TouchableOpacity
+                      key={item.value}
+                      style={styles.dropdownOptionRow}
+                      onPress={() => {
+                        setSelectedActivity(item.label);
+                        setWorkoutActivityDropdownOpen(false);
+                      }}
+                    >
+                      <Text style={{ fontSize: 10, fontWeight: 'bold' }}>{item.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
 
-            {['Corrida', 'Caminhada', 'Bike'].includes(selectedActivity) && (
+            {/* 2. SELEÇÃO DE DATA COM SÍMBOLO DE CALENDÁRIO */}
+            <Text style={styles.inputLabel}>Data da Atividade:</Text>
+            <View style={styles.datePickerRow}>
+              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0f172a', flex: 1 }}>
+                📅 {workoutDate ? workoutDate.split('-').reverse().join('/') : 'Selecione...'}
+              </Text>
+              {Platform.OS === 'web' ? (
+                <input
+                  type="date"
+                  value={workoutDate}
+                  onChange={(e) => setWorkoutDate(e.target.value)}
+                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '14px' }}
+                />
+              ) : (
+                <TextInput
+                  style={styles.inputMini}
+                  value={workoutDate}
+                  onChangeText={setWorkoutDate}
+                  placeholder="AAAA-MM-DD"
+                />
+              )}
+            </View>
+
+            {/* 3. HORÁRIOS DE INÍCIO E FIM DO TREINO */}
+            <Text style={styles.inputLabel}>Horário do Treino (Início e Fim):</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8, zIndex: 20 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inputLabelMini}>⏰ Início:</Text>
+                <View style={{ flexDirection: 'row', gap: 4 }}>
+                  <select
+                    style={styles.htmlNativeSelectMini}
+                    value={startHour}
+                    onChange={(e) => setStartHour(e.target.value)}
+                  >
+                    {hoursList.map(h => <option key={h} value={h}>{h}h</option>)}
+                  </select>
+                  <select
+                    style={styles.htmlNativeSelectMini}
+                    value={startMinute}
+                    onChange={(e) => setStartMinute(e.target.value)}
+                  >
+                    {minutesList.map(m => <option key={m} value={m}>{m}m</option>)}
+                  </select>
+                </View>
+              </View>
+
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inputLabelMini}>⏰ Fim:</Text>
+                <View style={{ flexDirection: 'row', gap: 4 }}>
+                  <select
+                    style={styles.htmlNativeSelectMini}
+                    value={endHour}
+                    onChange={(e) => setEndHour(e.target.value)}
+                  >
+                    {hoursList.map(h => <option key={h} value={h}>{h}h</option>)}
+                  </select>
+                  <select
+                    style={styles.htmlNativeSelectMini}
+                    value={endMinute}
+                    onChange={(e) => setEndMinute(e.target.value)}
+                  >
+                    {minutesList.map(m => <option key={m} value={m}>{m}m</option>)}
+                  </select>
+                </View>
+              </View>
+            </View>
+
+            {/* CAMPOS ESPECÍFICOS POR MODALIDADE */}
+            {['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedActivity) && (
               <>
-                <Text style={styles.inputLabel}>Distância (KM):</Text>
+                <Text style={styles.inputLabel}>Distância Percorrida (KM):</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="Ex: 5.5"
@@ -2423,7 +2556,7 @@ export default function App() {
               </>
             )}
 
-            {selectedActivity === 'Passos Diários' && (
+            {selectedActivity === '🚶‍♂️ Passos Diários' && (
               <>
                 <Text style={styles.inputLabel}>Quantidade de Passos:</Text>
                 <TextInput
@@ -2436,23 +2569,76 @@ export default function App() {
               </>
             )}
 
-            <Text style={styles.inputLabel}>Legenda / Comentário:</Text>
+            {/* 4. QUADRADO PARA LEGENDA/COMENTÁRIO (OPCIONAL) */}
+            <Text style={styles.inputLabel}>Legenda / Comentário (Opcional):</Text>
             <TextInput
-              style={styles.input}
-              placeholder="Ex: Treino concluído!"
+              style={[styles.input, { height: 60, textAlignVertical: 'top' }]}
+              placeholder="Escreva algo sobre o treino..."
+              multiline
               value={workoutCaption}
               onChangeText={setWorkoutCaption}
             />
 
-            <TouchableOpacity 
-              style={[styles.primaryBtn, { backgroundColor: '#16a34a', marginBottom: 10 }]} 
-              onPress={() => setPhotoEvidence('https://picsum.photos/seed/' + Math.random() + '/400/300')}
-            >
-              <Text style={styles.primaryBtnText}>
-                {photoEvidence ? '📷 COMPROVANTE ANEXADO' : '📷 ADICIONAR FOTO COMPROVANTE'}
-              </Text>
-            </TouchableOpacity>
+            {/* 5. JANELAS DE REGISTRO DE FOTOS COM OPÇÕES DE CÂMERA E GALERIA */}
+            {['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico'].includes(selectedActivity) ? (
+              <View style={{ gap: 8, marginVertical: 8 }}>
+                <Text style={styles.inputLabelMini}>1. Foto do Início da Atividade (Obrigatório):</Text>
+                <View style={styles.photoUploadBox}>
+                  {photoStart && <Image source={{ uri: photoStart }} style={styles.photoPreviewMini} />}
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Inicio', setPhotoStart)}>
+                      <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Inicio_Galeria', setPhotoStart)}>
+                      <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
 
+                <Text style={styles.inputLabelMini}>2. Foto da Evidência de Treino (Obrigatório):</Text>
+                <View style={styles.photoUploadBox}>
+                  {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Evidencia', setPhotoEvidence)}>
+                      <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Evidencia_Galeria', setPhotoEvidence)}>
+                      <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <Text style={styles.inputLabelMini}>3. Foto do Fim da Atividade (Obrigatório):</Text>
+                <View style={styles.photoUploadBox}>
+                  {photoEnd && <Image source={{ uri: photoEnd }} style={styles.photoPreviewMini} />}
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Fim', setPhotoEnd)}>
+                      <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Fim_Galeria', setPhotoEnd)}>
+                      <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            ) : (
+              <View style={{ marginVertical: 8 }}>
+                <Text style={styles.inputLabelMini}>Comprovante de Treino (Foto / Print):</Text>
+                <View style={styles.photoUploadBox}>
+                  {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Evidencia', setPhotoEvidence)}>
+                      <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Evidencia_Galeria', setPhotoEvidence)}>
+                      <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* BOTÕES DE AÇÃO */}
             <TouchableOpacity style={styles.primaryBtn} onPress={handleSubmitWorkout}>
               <Text style={styles.primaryBtnText}>ENVIAR PARA APROVAÇÃO</Text>
             </TouchableOpacity>
@@ -2544,6 +2730,15 @@ const styles = StyleSheet.create({
   dropdownSelectBox: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 8, marginBottom: 4 },
   dropdownSelectText: { fontSize: 10, fontWeight: 'bold', color: '#0f172a' },
 
+  datePickerRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 6, marginBottom: 6 },
+
+  photoUploadBox: { backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', alignItems: 'center' },
+  photoPreviewMini: { width: '100%', height: 90, borderRadius: 4, marginBottom: 6 },
+  photoBtn: { backgroundColor: '#16a34a', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 4 },
+  photoBtnText: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
+  photoBtnSecondary: { backgroundColor: '#1e3a8a', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 4 },
+  photoBtnTextSecondary: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
+
   nativeSelectWrapper: {
     backgroundColor: '#f8fafc',
     borderWidth: 1,
@@ -2571,12 +2766,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#cbd5e1',
-    borderRadius: 4
+    borderRadius: 4,
+    flex: 1
   },
   
   floatingDropdownContainer: {
     position: 'absolute',
-    top: 52,
+    top: 40,
     left: 0,
     right: 0,
     backgroundColor: '#ffffff',
