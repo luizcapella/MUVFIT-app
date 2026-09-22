@@ -117,6 +117,31 @@ export default function App() {
   const [editAvatar, setEditAvatar] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
 
+  // ESTADOS ESPECÍFICOS DA CENTRAL DO ATLETA APRIMORADA
+  const [athletePerfScope, setAthletePerfScope] = useState('global'); // 'global' ou ID do desafio
+  const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
+  
+  // Stories, Peso e Objetivos
+  const [athleteStories, setAthleteStories] = useState([
+    { id: 'st_1', uri: 'https://picsum.photos/seed/story1/200/200' },
+    { id: 'st_2', uri: 'https://picsum.photos/seed/story2/200/200' }
+  ]);
+  const [athleteWeightLog, setAthleteWeightLog] = useState('82kg ➔ 79kg (Setembro)');
+  const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
+  const [newWeightInput, setNewWeightInput] = useState('');
+
+  const [personalGoals, setPersonalGoals] = useState([
+    { id: 'g_1', text: 'Perder Peso', completed: true },
+    { id: 'g_2', text: 'Ganhar Massa Magra', completed: false },
+    { id: 'g_3', text: 'Correr 10 km', completed: true },
+    { id: 'g_4', text: 'Participar de Maratona', completed: false }
+  ]);
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  const [newGoalText, setNewGoalText] = useState('');
+
+  // ESTADOS DE VISUALIZAÇÃO DE TODAS AS FOTOS (EVIDÊNCIAS)
+  const [isAllEvidencesModalOpen, setIsAllEvidencesModalOpen] = useState(false);
+
   const [currentUser, setCurrentUser] = useState({
     id: '',
     name: '',
@@ -464,7 +489,6 @@ export default function App() {
     try {
       let finalAvatarUrl = editAvatar;
 
-      // 1. Upload de imagem para o Storage (se for base64 local)
       if (editAvatar && editAvatar.startsWith('data:image')) {
         try {
           const fileExt = editAvatar.substring("data:image/".length, editAvatar.indexOf(";base64")) || 'jpeg';
@@ -493,7 +517,6 @@ export default function App() {
         }
       }
 
-      // 2. Tratamento da Data de Nascimento
       let dbBirthDate = null;
       let computedAge = 0;
 
@@ -505,7 +528,6 @@ export default function App() {
         }
       }
 
-      // 3. Payload para a tabela 'profiles' (SEM a coluna 'age')
       const profilePayload = {
         id: currentUser.id,
         full_name: editFullName.trim(),
@@ -526,7 +548,6 @@ export default function App() {
         throw new Error('Erro na tabela profiles: ' + profileError.message);
       }
 
-      // 4. Atualização nas memberships
       await supabase
         .from('memberships')
         .update({
@@ -538,7 +559,6 @@ export default function App() {
         })
         .eq('user_id', currentUser.id);
 
-      // 5. Atualização do estado local
       const updatedUser = {
         ...currentUser,
         name: editFullName.trim(),
@@ -575,8 +595,8 @@ export default function App() {
       if (challengesData && challengesData.length > 0) {
         const formattedChallenges = challengesData.map(c => ({
           ...c,
-          startDate: c.start_date, // EXIBE A DATA INICIAL GRAVADA NO BANCO
-          endDate: c.end_date,     // EXIBE A DATA FINAL GRAVADA NO BANCO
+          startDate: c.start_date,
+          endDate: c.end_date,
           tiebreakerEnabled: c.tiebreaker_enabled
         }));
         setChallenges(formattedChallenges);
@@ -589,7 +609,6 @@ export default function App() {
           setSelectedConfigChallengeId(formattedChallenges[0].id);
         }
 
-        // CARREGA AS REGRAS SALVAS NO SUPABASE PARA O DESAFIO ATIVO
         const activeCh = formattedChallenges.find(c => c.id === currentSelectedId) || formattedChallenges[0];
         if (activeCh && activeCh.rules_config) {
           if (activeCh.rules_config.modalitySettings) setModalitySettings(activeCh.rules_config.modalitySettings);
@@ -668,7 +687,6 @@ export default function App() {
     setActiveChallengeId(challenge.id);
     setIsAdminContext(asAdmin);
     
-    // Carrega as regras gravadas para essa liga ao trocar de contexto
     if (challenge.rules_config) {
       if (challenge.rules_config.modalitySettings) setModalitySettings(challenge.rules_config.modalitySettings);
       if (challenge.rules_config.bonusConfig) setBonusConfig(challenge.rules_config.bonusConfig);
@@ -691,6 +709,7 @@ export default function App() {
     } else {
       setViewedUser(currentUser);
     }
+    setAthletePerfScope('global');
     setCurrentScreen('athlete_center');
   }
 
@@ -791,7 +810,7 @@ export default function App() {
 
       Alert.alert(
         '⏳ Aprovação Pendente!',
-        `Sua solicitação para ser Atleta Ativo no "${selectedChallenge.title}" foi enviada. Acesse o menu Administrador ➔ 2. Controle de Inscrição para aprovar.`
+        `Sua solicitação para ser Atleta Ativo no "${selectedChallenge.title}" foi enviada.`
       );
     } catch (err) {
       Alert.alert('Erro Inesperado', err.message || 'Não foi possível enviar a solicitação.');
@@ -827,7 +846,6 @@ export default function App() {
     await supabase.from('feed_posts').update({ comments: newComments }).eq('id', postId);
   }
 
-  // CRIAÇÃO DE DESAFIO COM DATA DE INÍCIO DEFINIDA NA DATA ATUAL DE CRIAÇÃO
   async function handleCreateChallenge() {
     if (!newChallengeTitle.trim() || !newChallengeCode.trim()) {
       Alert.alert('Erro', 'Preencha o Nome e o Código do Desafio.');
@@ -843,7 +861,6 @@ export default function App() {
       leaguePeriod: newChallengePeriod
     };
 
-    // CALCULA DATAS DINÂMICAS: INÍCIO HOJE (CRIAÇÃO) ATÉ O FIM DA PERIODICIDADE
     const dates = calculateSeasonDates(newChallengePeriod, false, new Date());
 
     const newObj = {
@@ -930,7 +947,6 @@ export default function App() {
     }
   }
 
-  // ENCERRAMENTO E REINÍCIO AUTOMÁTICO DA TEMPORADA
   async function handleFinishChallenge(challengeId) {
     const targetChallenge = challenges.find(c => c.id === challengeId);
     if (!targetChallenge) return;
@@ -938,7 +954,6 @@ export default function App() {
     const challengeMembers = memberships.filter(m => m.challengeId === challengeId && m.role === 'active');
     const sorted = [...challengeMembers].sort((a, b) => (b.rankingPoints || 0) - (a.rankingPoints || 0));
 
-    // ATRIBUIÇÃO DE MEDALHAS NO PERFIL E NA LIGA
     if (sorted[0]) {
       const newGold = (sorted[0].goldMedals || 0) + 1;
       await supabase.from('memberships').update({ gold_medals: newGold }).eq('id', sorted[0].id);
@@ -955,7 +970,6 @@ export default function App() {
       await supabase.from('profiles').update({ bronze_medals: newBronze }).eq('id', sorted[2].userId);
     }
 
-    // RESET DOS ATLETAS ATIVOS PARA TORCEDOR E ZERAMENTO DE PONTOS
     await supabase.from('memberships').update({ 
       role: 'spectator', 
       ranking_points: 0, 
@@ -964,14 +978,12 @@ export default function App() {
       total_km: 0
     }).eq('challenge_id', challengeId);
 
-    // CALCULA A NOVA TEMPORADA (IS_RENEWAL = TRUE, DATA DO DIA SEGUINTE)
     const period = targetChallenge.rules_config?.leaguePeriod || 'Monthly';
     const nextDayDate = new Date();
     nextDayDate.setDate(nextDayDate.getDate() + 1);
 
     const newSeasonDates = calculateSeasonDates(period, true, nextDayDate);
 
-    // ATUALIZA A LIGA NO SUPABASE COM AS NOVAS DATAS E ABERTA PARA CANDIDATURAS
     await supabase.from('challenges').update({ 
       is_finished: false, 
       registrations_closed: false,
@@ -982,7 +994,7 @@ export default function App() {
     fetchDataFromSupabase();
     Alert.alert(
       '🏆 Temporada Encerrada!', 
-      `As medalhas foram distribuídas no Hall da Fama e perfis! Os atletas voltaram ao status de Torcedor. Nova Época Iniciada: ${newSeasonDates.startDateStr} até ${newSeasonDates.endDateStr}`
+      `As medalhas foram distribuídas! Nova Época Iniciada: ${newSeasonDates.startDateStr} até ${newSeasonDates.endDateStr}`
     );
   }
 
@@ -1094,7 +1106,6 @@ export default function App() {
 
     await supabase.from('pending_workouts').delete().eq('id', workoutId);
 
-    const isSteps = workout.activity_type === 'PASSOS DIÁRIOS';
     const parsedKm = parseFloat(workout.distance_km) || 0;
 
     const { data: currentMem } = await supabase.from('memberships')
@@ -1181,7 +1192,18 @@ export default function App() {
     }
   };
 
-  // CÁLCULO DE PONTUAÇÃO DINÂMICA
+  const handleAddStory = () => {
+    handleTriggerPhoto('camera', (base64Img) => {
+      if (base64Img) {
+        setAthleteStories(prev => [
+          ...prev,
+          { id: `st_${Date.now()}`, uri: base64Img }
+        ]);
+        Alert.alert('Story Adicionado!', 'O seu story foi publicado e ficará visível por 24h.');
+      }
+    });
+  };
+
   function calculateWorkoutPoints(activity, durationMins, kmDistance) {
     const config = modalitySettings[activity];
     if (!config || config.enabled === false) return 0;
@@ -1256,18 +1278,6 @@ export default function App() {
       if (parts.length === 3) {
         formattedDateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
       }
-    }
-
-    const hasAlreadySubmittedToday = 
-      feedPosts.some(p => p.challenge_id === activeChallengeId && p.user_id === currentUser.id && (p.activity_type || '').toUpperCase() === cleanActType && p.created_at.includes(formattedDateStr)) ||
-      pendingWorkouts.some(w => w.challenge_id === activeChallengeId && w.user_id === currentUser.id && (w.activity_type || '').toUpperCase() === cleanActType && w.created_at.includes(formattedDateStr));
-
-    if (hasAlreadySubmittedToday) {
-      Alert.alert(
-        '🚫 Trava de Treino Diário',
-        `Você já registrou um treino de "${selectedActivity}" na data selecionada (${formattedDateStr})!`
-      );
-      return;
     }
 
     let dur = 0;
@@ -1350,10 +1360,9 @@ export default function App() {
     setPhotoEvidence(null);
     setPhotoEnd(null);
     
-    Alert.alert('Sucesso', 'Treino enviado com sucesso! Aguardando aprovação do Administrador para ser creditado e exibido no feed.');
+    Alert.alert('Sucesso', 'Treino enviado com sucesso! Aguardando aprovação do Administrador.');
   }
 
-  // GRAVAÇÃO PERMANENTE DE REGRAS NO SUPABASE (COLUNA rules_config)
   async function handleSaveAdvancedRules() {
     if (!selectedConfigChallengeId) return;
 
@@ -1383,13 +1392,12 @@ export default function App() {
 
       setIsAdvancedRulesModalOpen(false);
       fetchDataFromSupabase();
-      Alert.alert('🎉 Sucesso!', 'As regras desta liga foram salvas permanentemente no banco de dados Supabase!');
+      Alert.alert('🎉 Sucesso!', 'As regras desta liga foram salvas permanentemente no banco de dados!');
     } catch (err) {
       Alert.alert('Erro Inesperado', err.message || 'Não foi possível gravar as regras.');
     }
   }
 
-  // HELPERS DE MANIPULAÇÃO DE STEPS DAS MODALIDADES
   const handleUpdateModalityProp = (modName, prop, val) => {
     setModalitySettings(prev => ({
       ...prev,
@@ -1515,23 +1523,65 @@ export default function App() {
     rankDisplay: `#${index + 1}`
   }));
 
-  // HALL DA FAMA: FILTRA OS 3 MAIORES CAMPEÕES DE OURO DESTA LIGA ESPECÍFICA
   const top3Winners = [...currentChallengeMembers]
     .filter(m => (m.goldMedals || 0) > 0)
     .sort((a, b) => (b.goldMedals || 0) - (a.goldMedals || 0))
     .slice(0, 3)
     .map((m) => `${m.nickname || m.name} - ${getChampionTitle(m.goldMedals)} (${m.goldMedals}x)`);
 
+  // VARIÁVEIS APRIMORADAS DA CENTRAL DO ATLETA
+  const athleteMembershipsAll = memberships.filter(m => m.userId === viewedUser.id);
+  const athleteChallengesList = challenges.filter(c => 
+    athleteMembershipsAll.some(m => m.challengeId === c.id)
+  );
+
+  let selectedMembershipForAthlete = null;
+  if (athletePerfScope !== 'global') {
+    selectedMembershipForAthlete = athleteMembershipsAll.find(m => m.challengeId === athletePerfScope);
+  }
+
   let displayedPerf = {
-    rankingPoints: userMembershipsAll.reduce((acc, curr) => acc + (curr.rankingPoints || 0), 0),
-    bankPoints: userMembershipsAll.reduce((acc, curr) => acc + (curr.bankPoints || 0), 0),
-    totalSteps: userMembershipsAll.reduce((acc, curr) => acc + (curr.totalSteps || 0), 0),
+    rankingPoints: 0,
+    bankPoints: 0,
+    totalSteps: 0,
+    totalKm: 0,
     goldMedals: viewedUser.goldMedals || 0,
     silverMedals: viewedUser.silverMedals || 0,
-    bronzeMedals: viewedUser.bronzeMedals || 0
+    bronzeMedals: viewedUser.bronzeMedals || 0,
+    athleteStatusText: 'N/A'
   };
 
-  const selectedAthleteObject = activeMembersInChallenge.find(m => m.id === manualSelectedAthleteId);
+  if (athletePerfScope === 'global') {
+    displayedPerf.rankingPoints = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.rankingPoints || 0), 0);
+    displayedPerf.bankPoints = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.bankPoints || 0), 0);
+    displayedPerf.totalSteps = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.totalSteps || 0), 0);
+    displayedPerf.totalKm = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.totalKm || 0), 0);
+    displayedPerf.goldMedals = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.goldMedals || 0), viewedUser.goldMedals || 0);
+    displayedPerf.silverMedals = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.silverMedals || 0), viewedUser.silverMedals || 0);
+    displayedPerf.bronzeMedals = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.bronzeMedals || 0), viewedUser.bronzeMedals || 0);
+    displayedPerf.athleteStatusText = 'Múltiplas Ligas';
+  } else if (selectedMembershipForAthlete) {
+    displayedPerf.rankingPoints = selectedMembershipForAthlete.rankingPoints || 0;
+    displayedPerf.bankPoints = selectedMembershipForAthlete.bankPoints || 0;
+    displayedPerf.totalSteps = selectedMembershipForAthlete.totalSteps || 0;
+    displayedPerf.totalKm = selectedMembershipForAthlete.totalKm || 0;
+    displayedPerf.goldMedals = selectedMembershipForAthlete.goldMedals || 0;
+    displayedPerf.silverMedals = selectedMembershipForAthlete.silverMedals || 0;
+    displayedPerf.bronzeMedals = selectedMembershipForAthlete.bronzeMedals || 0;
+    
+    if (selectedMembershipForAthlete.role === 'active') {
+      displayedPerf.athleteStatusText = '⚡ Atleta Ativo';
+    } else if (selectedMembershipForAthlete.role === 'pending_athlete') {
+      displayedPerf.athleteStatusText = '⏳ Atleta Pendente';
+    } else {
+      displayedPerf.athleteStatusText = '👀 Torcedor';
+    }
+  }
+
+  const athleteFeedPostsAll = feedPosts.filter(p => p.user_id === viewedUser.id);
+  const athleteFilteredPosts = athletePerfScope === 'global' 
+    ? athleteFeedPostsAll 
+    : athleteFeedPostsAll.filter(p => p.challenge_id === athletePerfScope);
 
   const calculatedStepsPoints = Math.round(
     (parseFloat(dailyStepsConfig.manualStepsInput) || 0) * (parseFloat(dailyStepsConfig.multiplier) || 0)
@@ -1621,7 +1671,6 @@ export default function App() {
     );
   }
 
-  // APENAS MUSCULAÇÃO, CROSSFIT E AERÓBICO EXIGEM 3 FOTOS
   const isThreePhotosGroupActive = ['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico'].includes(selectedActivity);
   const isKmGroupActive = ['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedActivity);
   const isStepsActive = selectedActivity === '🚶‍♂️ Passos Diários';
@@ -1657,7 +1706,6 @@ export default function App() {
           </View>
         )}
 
-        {/* PESQUISA DE LIGAS E ATLETAS */}
         <View style={{ width: '100%' }}>
           <TextInput
             style={styles.searchInput}
@@ -1777,7 +1825,7 @@ export default function App() {
             <Text style={[styles.sidebarText, currentScreen === 'dashboard' && styles.sidebarTextActive]}>Painel</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'athlete_center' && styles.sidebarBtnActive]} onPress={() => { setViewedUser(currentUser); setCurrentScreen('athlete_center'); }}>
+          <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'athlete_center' && styles.sidebarBtnActive]} onPress={() => { setViewedUser(currentUser); setAthletePerfScope('global'); setCurrentScreen('athlete_center'); }}>
             <Text style={styles.sidebarIcon}>👤</Text>
             <Text style={[styles.sidebarText, currentScreen === 'athlete_center' && styles.sidebarTextActive]}>Atleta</Text>
           </TouchableOpacity>
@@ -1837,17 +1885,14 @@ export default function App() {
                       </Text>
                     </View>
                     
-                    {/* EXIBE A DATA DINÂMICA GRAVADA NO BANCO */}
                     <Text style={styles.cardBoxSub}>
                       Código: {c.invite_code} | {c.startDate || c.start_date} até {c.endDate || c.end_date}
                     </Text>
 
-                    {/* BOTÃO PRINCIPAL DE ENTRAR COMO ADMIN */}
                     <TouchableOpacity style={[styles.primaryBtn, { marginVertical: 6 }]} onPress={() => selectChallengeContext(c, true)}>
                       <Text style={styles.primaryBtnText}>ENTRAR COMO ADMIN ➔</Text>
                     </TouchableOpacity>
 
-                    {/* BOTÕES SECUNDÁRIOS ALINHADOS */}
                     <View style={{ flexDirection: 'column', gap: 6, marginTop: 4 }}>
                       <TouchableOpacity style={styles.dashboardActionBtnGreen} onPress={() => handleShareInvite(c)}>
                         <Text style={styles.dashboardActionBtnText}>🔗 CONVIDAR</Text>
@@ -1898,7 +1943,6 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* FEED */}
           {currentScreen === 'feed' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -1989,7 +2033,6 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* TELA DE RANKING COM APELIDOS E HALL DA FAMA */}
           {currentScreen === 'ranking' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
@@ -2013,7 +2056,6 @@ export default function App() {
                 )}
               </View>
               
-              {/* HALL DA FAMA DEDICADO */}
               <View style={styles.topWinnersBannerBox}>
                 <Text style={styles.topWinnersBannerTitle}>👑 HALL DA FAMA - {selectedChallenge.title.toUpperCase()}</Text>
                 {top3Winners.length > 0 ? (
@@ -2074,28 +2116,41 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* CENTRAL DO ATLETA */}
+          {/* CENTRAL DO ATLETA APRIMORADA COM AS MELHORIAS SOLICITADAS */}
           {currentScreen === 'athlete_center' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.profileHeaderCard}>
                 <Image source={{ uri: viewedUser.avatar }} style={styles.avatarLarge} />
                 
-                {/* APELIDO LOGO ABAIXO DA FOTO */}
                 <Text style={styles.profileNicknameDisplay}>{viewedUser.nickname || viewedUser.name}</Text>
-                
-                {/* NOME COMPLETO DEPOIS */}
                 <Text style={styles.profileNameSub}>{viewedUser.name}</Text>
-                
-                {/* IDADE CALCULADA E GÊNERO */}
                 <Text style={styles.profileMeta}>
                   {viewedUser.age ? `${viewedUser.age} anos` : 'Idade não informada'} | {viewedUser.gender || 'Masculino'}
                 </Text>
+
+                {athletePerfScope !== 'global' && (
+                  <View style={styles.athleteStatusBadgeContainer}>
+                    <Text style={styles.athleteStatusBadgeText}>{displayedPerf.athleteStatusText}</Text>
+                  </View>
+                )}
 
                 {viewedUser.id === currentUser.id && (
                   <TouchableOpacity style={styles.editProfileBtn} onPress={handleOpenEditProfile}>
                     <Text style={styles.editProfileBtnText}>✏️ EDITAR PERFIL</Text>
                   </TouchableOpacity>
                 )}
+
+                <View style={{ width: '100%', marginTop: 10 }}>
+                  <Text style={styles.inputLabelMini}>Visualizar Desempenho Por:</Text>
+                  <TouchableOpacity 
+                    style={styles.scopeSelectorButton}
+                    onPress={() => setIsScopeModalOpen(true)}
+                  >
+                    <Text style={styles.scopeSelectorButtonText}>
+                      {athletePerfScope === 'global' ? '🌐 Somatório Geral (Todos os Desafios)' : (athleteChallengesList.find(c => c.id === athletePerfScope)?.title || 'Liga Selecionada')} ▼
+                    </Text>
+                  </TouchableOpacity>
+                </View>
 
                 <View style={styles.medalsRowContainer}>
                   <View style={styles.medalBadgeItem}>
@@ -2129,10 +2184,114 @@ export default function App() {
                   </View>
                 </View>
               </View>
+
+              {/* STORIES DO ATLETA */}
+              <View style={styles.sectionContainerBox}>
+                <Text style={styles.sectionHeaderTitle}>Stories do Atleta (24h)</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', gap: 8, marginVertical: 4 }}>
+                  {viewedUser.id === currentUser.id && (
+                    <TouchableOpacity style={styles.storyAddBtnCircle} onPress={handleAddStory}>
+                      <Text style={{ fontSize: 22, color: '#ffffff', fontWeight: 'bold' }}>+</Text>
+                    </TouchableOpacity>
+                  )}
+                  {athleteStories.map(st => (
+                    <Image key={st.id} source={{ uri: st.uri }} style={styles.storyThumbnailCircle} />
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* INSÍGNIAS DE BÔNUS */}
+              <View style={styles.sectionContainerBox}>
+                <Text style={styles.sectionHeaderTitle}>Insígnias de Bônus & Conquistas</Text>
+                <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
+                  <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>🪨 O Inquebrável (Ativo)</Text>
+                  <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>⏰ O Desperta (Ativo)</Text>
+                </View>
+              </View>
+
+              {/* EVOLUÇÃO E ESTATÍSTICAS */}
+              <View style={styles.sectionContainerBox}>
+                <Text style={styles.sectionHeaderTitle}>Evolução & Estatísticas do Atleta</Text>
+
+                <TouchableOpacity 
+                  style={styles.statsCardItemButton}
+                  onPress={() => {
+                    if (viewedUser.id === currentUser.id) setIsWeightModalOpen(true);
+                  }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>📊 Evolução de Peso (kg)</Text>
+                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>{athleteWeightLog}</Text>
+                </TouchableOpacity>
+
+                <View style={styles.statsCardItemButton}>
+                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>📈 Modalidades Mais Praticadas</Text>
+                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>1º Musculação (50%) | 2º Corrida (30%) | 3º Bike (20%)</Text>
+                </View>
+
+                <View style={styles.statsCardItemButton}>
+                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>🏃 KM Total Percorrido</Text>
+                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>{displayedPerf.totalKm.toFixed(1)} km acumulados</Text>
+                </View>
+              </View>
+
+              {/* ÚLTIMAS EVIDÊNCIAS */}
+              <View style={styles.sectionContainerBox}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <Text style={styles.sectionHeaderTitle}>Últimas Evidências de Atividades</Text>
+                  <TouchableOpacity onPress={() => setIsAllEvidencesModalOpen(true)}>
+                    <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#f97316' }}>Ver Mais &gt;</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ gap: 8 }}>
+                  {athleteFilteredPosts.length === 0 ? (
+                    <Text style={styles.emptyNoticeText}>Nenhuma evidência registrada neste filtro.</Text>
+                  ) : (
+                    athleteFilteredPosts.slice(0, 3).map(post => (
+                      <View key={post.id} style={{ width: 120, marginRight: 8, backgroundColor: '#f8fafc', borderRadius: 6, padding: 4, borderWidth: 1, borderColor: '#cbd5e1' }}>
+                        <Image source={{ uri: post.photo_evidence }} style={{ width: '100%', height: 100, borderRadius: 4 }} />
+                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#0f172a', marginTop: 2 }} numberOfLines={1}>{post.activity_type}</Text>
+                        <Text style={{ fontSize: 8, color: '#64748b' }}>{post.created_at.slice(0, 10)}</Text>
+                      </View>
+                    ))
+                  )}
+                </ScrollView>
+              </View>
+
+              {/* CHECKLIST DE OBJETIVOS PESSOAIS */}
+              <View style={styles.sectionContainerBox}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <Text style={styles.sectionHeaderTitle}>Checklist de Objetivos Pessoais</Text>
+                  {viewedUser.id === currentUser.id && (
+                    <TouchableOpacity style={styles.goalAddHeaderBtn} onPress={() => setIsGoalModalOpen(true)}>
+                      <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#ffffff' }}>+ OBJETIVO</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {personalGoals.map(goal => (
+                  <TouchableOpacity 
+                    key={goal.id} 
+                    style={styles.goalCheckboxRow}
+                    onPress={() => {
+                      if (viewedUser.id === currentUser.id) {
+                        setPersonalGoals(personalGoals.map(g => g.id === goal.id ? { ...g, completed: !g.completed } : g));
+                      }
+                    }}
+                  >
+                    <View style={[styles.goalCheckboxSquare, goal.completed && styles.goalCheckboxSquareActive]}>
+                      {goal.completed && <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold' }}>✓</Text>}
+                    </View>
+                    <Text style={[styles.goalTextLabel, goal.completed && { textDecorationLine: 'line-through', color: '#94a3b8' }]}>
+                      {goal.text}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
             </ScrollView>
           )}
 
-          {/* PAINEL ADMINISTRADOR */}
           {currentScreen === 'admin' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.adminControlCard}>
@@ -2140,7 +2299,6 @@ export default function App() {
                 <Text style={styles.adminCardSub}>Gerencie aprovações, inscrições de atletas ativos, lançamento manual, membros e configurações avançadas.</Text>
               </View>
 
-              {/* 1. APROVAÇÃO DE TREINOS PENDENTES */}
               <View style={styles.accordionCard}>
                 <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec1(!expandedSec1)}>
                   <Text style={styles.accordionTitle}>1. APROVAÇÃO DE TREINOS PENDENTES ({currentPendingWorkouts.length})</Text>
@@ -2214,7 +2372,6 @@ export default function App() {
                 )}
               </View>
 
-              {/* 2. CONTROLE DE INSCRIÇÃO */}
               <View style={styles.accordionCard}>
                 <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec2(!expandedSec2)}>
                   <Text style={styles.accordionTitle}>2. CONTROLE DE INSCRIÇÃO ({pendingAthleteMembers.length + activeMembersInChallenge.length})</Text>
@@ -2286,7 +2443,6 @@ export default function App() {
                 )}
               </View>
 
-              {/* 3. LANÇAMENTO MANUAL DE PONTOS */}
               <View style={styles.accordionCard}>
                 <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec3(!expandedSec3)}>
                   <Text style={styles.accordionTitle}>3. LANÇAMENTO MANUAL DE PONTOS, BÔNUS E PASSOS</Text>
@@ -2297,7 +2453,7 @@ export default function App() {
                   <View style={styles.accordionBody}>
                     <Text style={styles.inputLabel}>Por Atleta Ativo:</Text>
                     
-                    <View style={styles.nativeSelectWrapper}>
+                    <div style={{ marginBottom: 8 }}>
                       <select
                         style={styles.htmlNativeSelect}
                         value={manualSelectedAthleteId}
@@ -2310,7 +2466,7 @@ export default function App() {
                           </option>
                         ))}
                       </select>
-                    </View>
+                    </div>
 
                     <Text style={[styles.inputLabel, { marginTop: 8 }]}>Selecione a Modalidade Realizada:</Text>
                     <View style={styles.modalityGridContainer}>
@@ -2390,7 +2546,6 @@ export default function App() {
                 )}
               </View>
 
-              {/* 4. GERENCIAMENTO DE MEMBROS */}
               <View style={styles.accordionCard}>
                 <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec4(!expandedSec4)}>
                   <Text style={styles.accordionTitle}>4. GERENCIAMENTO DE MEMBROS DA COMUNIDADE ({currentChallengeMembers.length})</Text>
@@ -2444,7 +2599,6 @@ export default function App() {
                 )}
               </View>
 
-              {/* 5. CONFIGURAÇÃO AVANÇADA DE PONTOS */}
               <View style={styles.accordionCard}>
                 <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec5(!expandedSec5)}>
                   <Text style={styles.accordionTitle}>5. CONFIGURAÇÃO AVANÇADA DE PONTOS</Text>
@@ -2468,6 +2622,114 @@ export default function App() {
         </View>
       </View>
 
+      {/* MODAL DE ESCOPO DA CENTRAL DO ATLETA */}
+      <Modal visible={isScopeModalOpen} transparent animationType="fade">
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsScopeModalOpen(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Visualizar Desempenho Por:</Text>
+            <ScrollView>
+              <TouchableOpacity 
+                style={styles.selectOptionRow}
+                onPress={() => { setAthletePerfScope('global'); setIsScopeModalOpen(false); }}
+              >
+                <Text style={styles.selectOptionText}>🌐 Somatório Geral (Todos os Desafios)</Text>
+              </TouchableOpacity>
+              {athleteChallengesList.map(ch => (
+                <TouchableOpacity 
+                  key={ch.id} 
+                  style={styles.selectOptionRow}
+                  onPress={() => { setAthletePerfScope(ch.id); setIsScopeModalOpen(false); }}
+                >
+                  <Text style={styles.selectOptionText}>🏆 {ch.title}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* MODAL EDITAR PESO */}
+      <Modal visible={isWeightModalOpen} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>⚖️ Atualizar Evolução de Peso</Text>
+            <TextInput 
+              style={styles.input} 
+              placeholder="Ex: 81kg ➔ 78kg (Outubro)" 
+              value={newWeightInput} 
+              onChangeText={setNewWeightInput} 
+            />
+            <TouchableOpacity style={styles.primaryBtn} onPress={() => {
+              if (newWeightInput.trim()) {
+                setAthleteWeightLog(newWeightInput.trim());
+                setIsWeightModalOpen(false);
+                setNewWeightInput('');
+                Alert.alert('Atualizado!', 'Evolução de peso registrada.');
+              }
+            }}>
+              <Text style={styles.primaryBtnText}>SALVAR</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsWeightModalOpen(false)}>
+              <Text style={styles.cancelBtnText}>CANCELAR</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL NOVO OBJETIVO */}
+      <Modal visible={isGoalModalOpen} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>🎯 Novo Objetivo Pessoal</Text>
+            <TextInput 
+              style={styles.input} 
+              placeholder="Ex: Fazer 100 flexões seguidas" 
+              value={newGoalText} 
+              onChangeText={setNewGoalText} 
+            />
+            <TouchableOpacity style={styles.primaryBtn} onPress={() => {
+              if (newGoalText.trim()) {
+                setPersonalGoals([...personalGoals, { id: `g_${Date.now()}`, text: newGoalText.trim(), completed: false }]);
+                setIsGoalModalOpen(false);
+                setNewGoalText('');
+                Alert.alert('Adicionado!', 'O seu objetivo foi incluído na lista.');
+              }
+            }}>
+              <Text style={styles.primaryBtnText}>ADICIONAR</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsGoalModalOpen(false)}>
+              <Text style={styles.cancelBtnText}>CANCELAR</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL TODAS AS EVIDÊNCIAS */}
+      <Modal visible={isAllEvidencesModalOpen} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentLarge}>
+            <Text style={styles.modalTitle}>📸 Histórico Completo de Evidências</Text>
+            <ScrollView style={{ maxHeight: 400 }}>
+              {athleteFilteredPosts.length === 0 ? (
+                <Text style={styles.emptyNoticeText}>Nenhuma evidência registrada.</Text>
+              ) : (
+                athleteFilteredPosts.map(post => (
+                  <View key={post.id} style={{ marginBottom: 12, backgroundColor: '#f8fafc', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1' }}>
+                    <Image source={{ uri: post.photo_evidence }} style={{ width: '100%', height: 180, borderRadius: 6, marginBottom: 4 }} />
+                    <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>{post.activity_type}</Text>
+                    <Text style={{ fontSize: 10, color: '#334155' }}>{post.caption}</Text>
+                    <Text style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>{post.created_at}</Text>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+            <TouchableOpacity style={[styles.primaryBtn, { marginTop: 10 }]} onPress={() => setIsAllEvidencesModalOpen(false)}>
+              <Text style={styles.primaryBtnText}>FECHAR</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* MODAL CONFIGURAÇÃO AVANÇADA DE PONTOS */}
       <Modal visible={isAdvancedRulesModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
@@ -2477,7 +2739,7 @@ export default function App() {
             <ScrollView style={{ maxHeight: 520 }} keyboardShouldPersistTaps="handled">
               
               <Text style={styles.inputLabel}>1 - Selecione o Desafio Para Configurar:</Text>
-              <View style={styles.nativeSelectWrapper}>
+              <div style={{ marginBottom: 8 }}>
                 <select
                   style={styles.htmlNativeSelect}
                   value={selectedConfigChallengeId || ''}
@@ -2489,10 +2751,10 @@ export default function App() {
                     </option>
                   ))}
                 </select>
-              </View>
+              </div>
 
               <Text style={styles.inputLabel}>2 - Selecione a Categoria para Configurar:</Text>
-              <View style={styles.nativeSelectWrapper}>
+              <div style={{ marginBottom: 8 }}>
                 <select
                   style={styles.htmlNativeSelect}
                   value={selectedConfigActivity}
@@ -2504,9 +2766,8 @@ export default function App() {
                     </option>
                   ))}
                 </select>
-              </View>
+              </div>
 
-              {/* BASE DA LIGA */}
               {selectedConfigActivity === '🏛️ Base da Liga' && (
                 <View style={styles.scoringModeBoxContainer}>
                   <Text style={styles.sectionHeaderTitle}>🏛️ Configurações Gerais da Liga</Text>
@@ -2586,7 +2847,6 @@ export default function App() {
                 </View>
               )}
 
-              {/* PASSOS DIÁRIOS */}
               {selectedConfigActivity === '🚶‍♂️ Passos Diários' && (
                 <View style={styles.scoringModeBoxContainer}>
                   <Text style={styles.sectionHeaderTitle}>🚶‍♂️ Configuração de Passos Diários</Text>
@@ -2652,7 +2912,6 @@ export default function App() {
                 </View>
               )}
 
-              {/* TREINOS COM TEMPO */}
               {['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico', '⚽ Esportes Coletivos', '🥋 Lutas / Esportes Individuais'].includes(selectedConfigActivity) && (() => {
                 const currentMod = modalitySettings[selectedConfigActivity] || {};
                 const isEnabled = currentMod.enabled !== false;
@@ -2732,7 +2991,7 @@ export default function App() {
                                       </View>
 
                                       <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center', marginBottom: 4 }}>
-                                        <View style={styles.nativeSelectWrapperSmall}>
+                                        <div style={{ width: '60px' }}>
                                           <select
                                             style={styles.htmlNativeSelectSmall}
                                             value={st.modeType || 'De'}
@@ -2745,7 +3004,7 @@ export default function App() {
                                             <option value="De">De</option>
                                             <option value="Acima">Acima</option>
                                           </select>
-                                        </View>
+                                        </div>
 
                                         <TextInput 
                                           style={styles.stepMiniInput} 
@@ -2801,7 +3060,6 @@ export default function App() {
                 );
               })()}
 
-              {/* TREINOS COM KM */}
               {['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedConfigActivity) && (() => {
                 const currentMod = modalitySettings[selectedConfigActivity] || {};
                 const isEnabled = currentMod.enabled !== false;
@@ -2910,7 +3168,7 @@ export default function App() {
                                       </View>
 
                                       <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center', marginBottom: 4 }}>
-                                        <View style={styles.nativeSelectWrapperSmall}>
+                                        <div style={{ width: '60px' }}>
                                           <select
                                             style={styles.htmlNativeSelectSmall}
                                             value={st.modeType || 'De'}
@@ -2923,7 +3181,7 @@ export default function App() {
                                             <option value="De">De</option>
                                             <option value="Acima">Acima</option>
                                           </select>
-                                        </View>
+                                        </div>
 
                                         <TextInput 
                                           style={styles.stepMiniInput} 
@@ -2979,7 +3237,6 @@ export default function App() {
                 );
               })()}
 
-              {/* BÔNUS E CRITÉRIOS DE DESEMPATE */}
               {selectedConfigActivity === '🎁 Bônus e Critérios de Desempate' && (
                 <View style={styles.scoringModeBoxContainer}>
                   <Text style={styles.sectionHeaderTitle}>🎁 Bônus e Critérios de Desempate</Text>
@@ -3061,26 +3318,24 @@ export default function App() {
                         <Text style={styles.checkboxLabel}>{tb.label}</Text>
                       </TouchableOpacity>
 
-                      <View style={{ width: 90 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#1e3a8a' }}>Ordem:</span>
-                          <select
-                            style={{ width: '45px', padding: '4px', fontSize: '10px', fontWeight: 'bold', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                            value={tb.order}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value, 10);
-                              const updated = [...tiebreakers];
-                              updated[index].order = val;
-                              setTiebreakers(updated);
-                            }}
-                          >
-                            <option value={1}>1º</option>
-                            <option value={2}>2º</option>
-                            <option value={3}>3º</option>
-                            <option value={4}>4º</option>
-                          </select>
-                        </div>
-                      </View>
+                      <div style={{ width: '90px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#1e3a8a' }}>Ordem:</span>
+                        <select
+                          style={{ width: '45px', padding: '4px', fontSize: '10px', fontWeight: 'bold', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                          value={tb.order}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value, 10);
+                            const updated = [...tiebreakers];
+                            updated[index].order = val;
+                            setTiebreakers(updated);
+                          }}
+                        >
+                          <option value={1}>1º</option>
+                          <option value={2}>2º</option>
+                          <option value={3}>3º</option>
+                          <option value={4}>4º</option>
+                        </select>
+                      </div>
                     </View>
                   ))}
                 </View>
@@ -3100,13 +3355,11 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL EDITAR PERFIL AMPLIADO COM FOTO, NOME, APELIDO E DATA DE NASCIMENTO */}
       <Modal visible={isEditProfileOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={styles.modalContent}>
             <Text style={styles.modalTitle}>✏️ Editar Perfil do Atleta</Text>
 
-            {/* SELEÇÃO DE FOTO DE PERFIL */}
             <Text style={styles.inputLabel}>Foto do Perfil:</Text>
             <View style={{ alignItems: 'center', marginBottom: 10 }}>
               <Image source={{ uri: editAvatar || currentUser.avatar }} style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: '#f97316', marginBottom: 8 }} />
@@ -3156,7 +3409,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL SELEÇÃO LIGA */}
       <Modal visible={isHeaderSelectOpen} transparent animationType="fade">
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsHeaderSelectOpen(false)}>
           <View style={styles.modalContent}>
@@ -3181,7 +3433,6 @@ export default function App() {
         </TouchableOpacity>
       </Modal>
 
-      {/* MODAL CRIAR DESAFIO COM SELEÇÃO DE PERIODICIDADE DA ÉPOCA */}
       <Modal visible={isCreateChallengeOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={styles.modalContent}>
@@ -3194,7 +3445,7 @@ export default function App() {
             <TextInput style={styles.input} placeholder="Ex: MUV2026" autoCapitalize="characters" value={newChallengeCode} onChangeText={setNewChallengeCode} />
 
             <Text style={styles.inputLabel}>Periodicidade da Temporada:</Text>
-            <View style={styles.nativeSelectWrapper}>
+            <div style={{ marginBottom: 8 }}>
               <select
                 style={styles.htmlNativeSelect}
                 value={newChallengePeriod}
@@ -3204,7 +3455,7 @@ export default function App() {
                 <option value="Monthly">Mensal (Até o último dia do mês)</option>
                 <option value="Yearly">Anual (Até 31/12 do ano corrente)</option>
               </select>
-            </View>
+            </div>
 
             <TouchableOpacity style={styles.checkboxRow} onPress={() => setHasCapToggle(!hasCapToggle)}>
               <View style={[styles.checkboxBoxCircle, hasCapToggle && styles.checkboxBoxCircleActive]}>{hasCapToggle && <Text style={styles.checkboxCheckmark}>✓</Text>}</View>
@@ -3229,7 +3480,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL REGISTRO TREINO RECONSTRUÍDO */}
       <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -3245,55 +3495,46 @@ export default function App() {
               </View>
 
               <Text style={styles.inputLabel}>Selecione a Modalidade:</Text>
-              <View style={styles.modalityGridContainer}>
-                {modalitiesList.filter(m => m.value !== '🎁 Bônus e Critérios de Desempate' && m.value !== '🏛️ Base da Liga').map((item) => {
-                  const isSelected = selectedActivity === item.value;
-                  return (
-                    <TouchableOpacity
-                      key={item.value}
-                      style={[styles.modalityChipBtn, isSelected && styles.modalityChipBtnActive]}
-                      onPress={() => setSelectedActivity(item.value)}
-                    >
-                      <Text style={[styles.modalityChipText, isSelected && styles.modalityChipTextActive]}>
-                        {item.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+              <div style={{ marginBottom: 8 }}>
+                <select
+                  style={styles.htmlNativeSelect}
+                  value={selectedActivity}
+                  onChange={(e) => setSelectedActivity(e.target.value)}
+                >
+                  {modalitiesList.filter(m => m.value !== '🎁 Bônus e Critérios de Desempate' && m.value !== '🏛️ Base da Liga').map(m => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
 
-              {/* SELETOR DE DATA */}
-              <View style={{ marginVertical: 6 }}>
+              <div style={{ margin: '6px 0' }}>
                 <Text style={styles.inputLabel}>📅 Data do Treino:</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <input
-                    type="date"
-                    value={workoutDate}
-                    onChange={(e) => setWorkoutDate(e.target.value)}
-                    style={{
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: '6px',
-                      padding: '8px',
-                      fontSize: '12px',
-                      fontWeight: 'bold',
-                      color: '#0f172a',
-                      flex: 1,
-                      cursor: 'pointer'
-                    }}
-                  />
-                </View>
-              </View>
+                <input
+                  type="date"
+                  value={workoutDate}
+                  onChange={(e) => setWorkoutDate(e.target.value)}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                    padding: '8px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    color: '#0f172a',
+                    width: '100%',
+                    cursor: 'pointer'
+                  }}
+                />
+              </div>
 
-              {/* HORÁRIOS INÍCIO E FIM (PARA TODAS EXCETO PASSOS DIÁRIOS) */}
               {!isStepsActive && (
                 <View style={{ backgroundColor: '#f8fafc', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginVertical: 6 }}>
                   <Text style={[styles.inputLabel, { color: '#1e3a8a', fontWeight: 'bold' }]}>⏱️ Horário de Início e Fim da Atividade:</Text>
                   
                   <View style={{ flexDirection: 'row', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
-                    <View style={{ flex: 1, minWidth: 120 }}>
+                    <div style={{ flex: 1 }}>
                       <Text style={styles.inputLabelMini}>Horário Início:</Text>
-                      <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                         <select
                           style={styles.timeSelectNative}
                           value={startHour}
@@ -3301,7 +3542,7 @@ export default function App() {
                         >
                           {hoursArray.map(h => <option key={h} value={h}>{h} h</option>)}
                         </select>
-                        <Text style={{ fontWeight: 'bold', color: '#1e3a8a' }}>:</Text>
+                        <span style={{ fontWeight: 'bold', color: '#1e3a8a' }}>:</span>
                         <select
                           style={styles.timeSelectNative}
                           value={startMinute}
@@ -3309,12 +3550,12 @@ export default function App() {
                         >
                           {minutesArray.map(m => <option key={m} value={m}>{m} min</option>)}
                         </select>
-                      </View>
-                    </View>
+                      </div>
+                    </div>
 
-                    <View style={{ flex: 1, minWidth: 120 }}>
+                    <div style={{ flex: 1 }}>
                       <Text style={styles.inputLabelMini}>Horário Término:</Text>
-                      <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                         <select
                           style={styles.timeSelectNative}
                           value={endHour}
@@ -3322,7 +3563,7 @@ export default function App() {
                         >
                           {hoursArray.map(h => <option key={h} value={h}>{h} h</option>)}
                         </select>
-                        <Text style={{ fontWeight: 'bold', color: '#1e3a8a' }}>:</Text>
+                        <span style={{ fontWeight: 'bold', color: '#1e3a8a' }}>:</span>
                         <select
                           style={styles.timeSelectNative}
                           value={endMinute}
@@ -3330,8 +3571,8 @@ export default function App() {
                         >
                           {minutesArray.map(m => <option key={m} value={m}>{m} min</option>)}
                         </select>
-                      </View>
-                    </View>
+                      </div>
+                    </div>
                   </View>
 
                   {(() => {
@@ -3348,7 +3589,6 @@ export default function App() {
                 </View>
               )}
 
-              {/* DISTÂNCIA EM KM */}
               {isKmGroupActive && (
                 <View style={{ marginVertical: 4 }}>
                   <Text style={styles.inputLabel}>🏃 Distância Percorrida (em KM):</Text>
@@ -3371,7 +3611,6 @@ export default function App() {
                 onChangeText={setWorkoutCaption} 
               />
 
-              {/* FOTOS DE COMPROVAÇÃO */}
               <View style={{ marginVertical: 8 }}>
                 <Text style={[styles.inputLabel, { color: '#1e3a8a' }]}>📷 Comprovante(s) em Foto da Atividade:</Text>
 
@@ -3483,7 +3722,7 @@ const styles = StyleSheet.create({
   selectOptionRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   selectOptionText: { fontSize: 12, fontWeight: 'bold', color: '#0f172a' },
 
-  timeSelectNative: { backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '6px', fontSize: '11px', fontWeight: 'bold', color: '#0f172a', flex: 1 },
+  timeSelectNative: { backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '6px', fontSize: '11px', fontWeight: 'bold', color: '#0f172a', width: '100%' },
 
   searchInput: { backgroundColor: '#ffffff', borderRadius: 6, paddingHorizontal: 10, paddingVertical: Platform.OS === 'ios' ? 8 : 4, fontSize: 11, color: '#0f172a', borderWidth: 1, borderColor: '#cbd5e1' },
   
@@ -3573,11 +3812,8 @@ const styles = StyleSheet.create({
   removePhotoBtn: { backgroundColor: '#dc2626', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 4 },
   removePhotoBtnText: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
 
-  nativeSelectWrapper: { backgroundColor: '#ffffff', borderWidth: 1.5, borderColor: '#000000', borderRadius: 6, marginBottom: 8, overflow: 'hidden' },
-  htmlNativeSelect: { width: '100%', padding: 10, fontSize: 11, fontWeight: 'bold', color: '#0f172a', backgroundColor: 'transparent', border: 'none', outline: 'none', cursor: 'pointer' },
-
-  nativeSelectWrapperSmall: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, overflow: 'hidden', width: 60 },
-  htmlNativeSelectSmall: { width: '100%', padding: 5, fontSize: 9, fontWeight: 'bold', color: '#0f172a', backgroundColor: 'transparent', border: 'none', outline: 'none', cursor: 'pointer' },
+  htmlNativeSelect: { width: '100%', padding: 10, fontSize: 11, fontWeight: 'bold', color: '#0f172a', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer' },
+  htmlNativeSelectSmall: { width: '100%', padding: 5, fontSize: 9, fontWeight: 'bold', color: '#0f172a', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' },
 
   stepMiniInput: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 4, padding: 5, fontSize: 10, width: 55, textAlign: 'center', marginBottom: 0 },
 
@@ -3641,6 +3877,12 @@ const styles = StyleSheet.create({
   editProfileBtn: { backgroundColor: '#1e3a8a', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, marginVertical: 6 },
   editProfileBtnText: { color: '#ffffff', fontSize: 10, fontWeight: 'bold' },
 
+  athleteStatusBadgeContainer: { backgroundColor: '#dcfce7', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 6, marginVertical: 4, borderWidth: 1, borderColor: '#16a34a' },
+  athleteStatusBadgeText: { fontSize: 10, fontWeight: 'bold', color: '#16a34a' },
+
+  scopeSelectorButton: { backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1' },
+  scopeSelectorButtonText: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
+
   medalsRowContainer: { flexDirection: 'row', gap: 12, marginVertical: 8, backgroundColor: '#ffffff', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1' },
   medalBadgeItem: { alignItems: 'center' },
   medalBadgeCount: { fontSize: 9, fontWeight: 'bold', color: '#1e3a8a', marginTop: 2 },
@@ -3649,6 +3891,19 @@ const styles = StyleSheet.create({
   scoreBoxItem: { flex: 1, backgroundColor: '#ffffff', borderRadius: 8, padding: 8, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
   scoreNumber: { fontSize: 14, fontWeight: '900', color: '#f97316' },
   scoreLabel: { fontSize: 8, fontWeight: 'bold', color: '#1e3a8a', marginTop: 2 },
+
+  sectionContainerBox: { backgroundColor: '#ffffff', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 10 },
+
+  storyAddBtnCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#f97316', justifyContent: 'center', alignItems: 'center', marginRight: 8 },
+  storyThumbnailCircle: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: '#1e3a8a', marginRight: 8 },
+
+  statsCardItemButton: { backgroundColor: '#f8fafc', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 6 },
+
+  goalAddHeaderBtn: { backgroundColor: '#f97316', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 },
+  goalCheckboxRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 4, gap: 8 },
+  goalCheckboxSquare: { width: 16, height: 16, borderWidth: 1.5, borderColor: '#1e3a8a', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' },
+  goalCheckboxSquareActive: { backgroundColor: '#16a34a', borderColor: '#16a34a' },
+  goalTextLabel: { fontSize: 10, fontWeight: 'bold', color: '#0f172a' },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 14 },
   modalContent: { backgroundColor: '#ffffff', borderRadius: 12, padding: 14, maxHeight: '90%' },
