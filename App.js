@@ -1051,7 +1051,6 @@ export default function App() {
     }
 
     if (bonusConfig.inquebravelEnabled) {
-      // Simulação automática baseada em dias ativos consecutivos
       points += parseInt(bonusConfig.inquebravelPts, 10) || 5000;
       bonusAppliedMsg += ' | 🪨 Bônus "O Inquebrável" aplicado automaticamente!';
     }
@@ -2400,74 +2399,78 @@ export default function App() {
 
                         {scoringMode === 'timeSteps' && (
                           <View style={{ paddingLeft: 24, marginBottom: 10 }}>
-                            {(currentMod.timeSteps || []).map((st, idx) => {
-                              const isAcima = st.modeType === 'Acima';
-                              return (
-                                <View key={idx} style={{ backgroundColor: '#f1f5f9', padding: 8, borderRadius: 6, marginBottom: 6, borderWidth: 1, borderColor: '#cbd5e1' }}>
-                                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                    <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1e3a8a' }}>Step {idx + 1}</Text>
-                                    <TouchableOpacity onPress={() => handleRemoveTimeStep(selectedConfigActivity, idx)}>
-                                      <Text style={{ color: '#dc2626', fontSize: 10, fontWeight: 'bold' }}>Remover Step ✕</Text>
-                                    </TouchableOpacity>
-                                  </View>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={true} style={{ paddingBottom: 6 }}>
+                              <View style={{ minWidth: 280 }}>
+                                {(currentMod.timeSteps || []).map((st, idx) => {
+                                  const isAcima = st.modeType === 'Acima';
+                                  return (
+                                    <View key={idx} style={{ backgroundColor: '#f1f5f9', padding: 8, borderRadius: 6, marginBottom: 6, borderWidth: 1, borderColor: '#cbd5e1' }}>
+                                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1e3a8a' }}>Step {idx + 1}</Text>
+                                        <TouchableOpacity onPress={() => handleRemoveTimeStep(selectedConfigActivity, idx)}>
+                                          <Text style={{ color: '#dc2626', fontSize: 10, fontWeight: 'bold' }}>Remover Step ✕</Text>
+                                        </TouchableOpacity>
+                                      </View>
 
-                                  <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', marginBottom: 4 }}>
-                                    <View style={styles.nativeSelectWrapperSmall}>
-                                      <select
-                                        style={styles.htmlNativeSelectSmall}
-                                        value={st.modeType || 'De'}
-                                        onChange={(e) => {
+                                      <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center', marginBottom: 4 }}>
+                                        <View style={styles.nativeSelectWrapperSmall}>
+                                          <select
+                                            style={styles.htmlNativeSelectSmall}
+                                            value={st.modeType || 'De'}
+                                            onChange={(e) => {
+                                              const newArr = [...currentMod.timeSteps];
+                                              newArr[idx].modeType = e.target.value;
+                                              handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
+                                            }}
+                                          >
+                                            <option value="De">De</option>
+                                            <option value="Acima">Acima</option>
+                                          </select>
+                                        </View>
+
+                                        <TextInput 
+                                          style={styles.stepMiniInput} 
+                                          placeholder="Min" 
+                                          keyboardType="numeric" 
+                                          value={st.minTime} 
+                                          onChangeText={(v) => {
+                                            const newArr = [...currentMod.timeSteps];
+                                            newArr[idx].minTime = v;
+                                            handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
+                                          }} 
+                                        />
+                                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#64748b' }}>until</Text>
+                                        <TextInput 
+                                          style={[styles.stepMiniInput, { backgroundColor: isAcima ? '#e2e8f0' : '#ffffff' }]} 
+                                          placeholder="Até" 
+                                          keyboardType="numeric" 
+                                          editable={!isAcima}
+                                          value={isAcima ? '' : st.maxTime} 
+                                          onChangeText={(v) => {
+                                            const newArr = [...currentMod.timeSteps];
+                                            newArr[idx].maxTime = v;
+                                            handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
+                                          }} 
+                                        />
+                                      </View>
+
+                                      <Text style={styles.inputLabelMini}>Pontos deste Step:</Text>
+                                      <TextInput 
+                                        style={[styles.input, { marginBottom: 0 }]} 
+                                        placeholder="Quanto valerá o Step (pts)" 
+                                        keyboardType="numeric" 
+                                        value={st.pts} 
+                                        onChangeText={(v) => {
                                           const newArr = [...currentMod.timeSteps];
-                                          newArr[idx].modeType = e.target.value;
+                                          newArr[idx].pts = v;
                                           handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
-                                        }}
-                                      >
-                                        <option value="De">De</option>
-                                        <option value="Acima">Acima</option>
-                                      </select>
+                                        }} 
+                                      />
                                     </View>
-
-                                    <TextInput 
-                                      style={[styles.input, { flex: 1, marginBottom: 0 }]} 
-                                      placeholder="Minutos" 
-                                      keyboardType="numeric" 
-                                      value={st.minTime} 
-                                      onChangeText={(v) => {
-                                        const newArr = [...currentMod.timeSteps];
-                                        newArr[idx].minTime = v;
-                                        handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
-                                      }} 
-                                    />
-                                    <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#64748b' }}>until</Text>
-                                    <TextInput 
-                                      style={[styles.input, { flex: 1, marginBottom: 0, backgroundColor: isAcima ? '#e2e8f0' : '#ffffff' }]} 
-                                      placeholder="Até (min)" 
-                                      keyboardType="numeric" 
-                                      editable={!isAcima}
-                                      value={isAcima ? '' : st.maxTime} 
-                                      onChangeText={(v) => {
-                                        const newArr = [...currentMod.timeSteps];
-                                        newArr[idx].maxTime = v;
-                                        handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
-                                      }} 
-                                    />
-                                  </View>
-
-                                  <Text style={styles.inputLabelMini}>Pontos deste Step:</Text>
-                                  <TextInput 
-                                    style={[styles.input, { marginBottom: 0 }]} 
-                                    placeholder="Quanto valerá o Step (pts)" 
-                                    keyboardType="numeric" 
-                                    value={st.pts} 
-                                    onChangeText={(v) => {
-                                      const newArr = [...currentMod.timeSteps];
-                                      newArr[idx].pts = v;
-                                      handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
-                                    }} 
-                                  />
-                                </View>
-                              );
-                            })}
+                                  );
+                                })}
+                              </View>
+                            </ScrollView>
                             <TouchableOpacity style={[styles.primaryBtn, { paddingVertical: 6, marginTop: 4, backgroundColor: '#16a34a' }]} onPress={() => handleAddTimeStep(selectedConfigActivity)}>
                               <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold' }}>+ Step</Text>
                             </TouchableOpacity>
@@ -2577,74 +2580,78 @@ export default function App() {
 
                         {scoringMode === 'timeSteps' && (
                           <View style={{ paddingLeft: 24, marginBottom: 10 }}>
-                            {(currentMod.timeSteps || []).map((st, idx) => {
-                              const isAcima = st.modeType === 'Acima';
-                              return (
-                                <View key={idx} style={{ backgroundColor: '#f1f5f9', padding: 8, borderRadius: 6, marginBottom: 6, borderWidth: 1, borderColor: '#cbd5e1' }}>
-                                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                    <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1e3a8a' }}>Step {idx + 1}</Text>
-                                    <TouchableOpacity onPress={() => handleRemoveTimeStep(selectedConfigActivity, idx)}>
-                                      <Text style={{ color: '#dc2626', fontSize: 10, fontWeight: 'bold' }}>Remover Step ✕</Text>
-                                    </TouchableOpacity>
-                                  </View>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={true} style={{ paddingBottom: 6 }}>
+                              <View style={{ minWidth: 280 }}>
+                                {(currentMod.timeSteps || []).map((st, idx) => {
+                                  const isAcima = st.modeType === 'Acima';
+                                  return (
+                                    <View key={idx} style={{ backgroundColor: '#f1f5f9', padding: 8, borderRadius: 6, marginBottom: 6, borderWidth: 1, borderColor: '#cbd5e1' }}>
+                                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1e3a8a' }}>Step {idx + 1}</Text>
+                                        <TouchableOpacity onPress={() => handleRemoveTimeStep(selectedConfigActivity, idx)}>
+                                          <Text style={{ color: '#dc2626', fontSize: 10, fontWeight: 'bold' }}>Remover Step ✕</Text>
+                                        </TouchableOpacity>
+                                      </View>
 
-                                  <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', marginBottom: 4 }}>
-                                    <View style={styles.nativeSelectWrapperSmall}>
-                                      <select
-                                        style={styles.htmlNativeSelectSmall}
-                                        value={st.modeType || 'De'}
-                                        onChange={(e) => {
+                                      <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center', marginBottom: 4 }}>
+                                        <View style={styles.nativeSelectWrapperSmall}>
+                                          <select
+                                            style={styles.htmlNativeSelectSmall}
+                                            value={st.modeType || 'De'}
+                                            onChange={(e) => {
+                                              const newArr = [...currentMod.timeSteps];
+                                              newArr[idx].modeType = e.target.value;
+                                              handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
+                                            }}
+                                          >
+                                            <option value="De">De</option>
+                                            <option value="Acima">Acima</option>
+                                          </select>
+                                        </View>
+
+                                        <TextInput 
+                                          style={styles.stepMiniInput} 
+                                          placeholder="Min" 
+                                          keyboardType="numeric" 
+                                          value={st.minTime} 
+                                          onChangeText={(v) => {
+                                            const newArr = [...currentMod.timeSteps];
+                                            newArr[idx].minTime = v;
+                                            handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
+                                          }} 
+                                        />
+                                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#64748b' }}>until</Text>
+                                        <TextInput 
+                                          style={[styles.stepMiniInput, { backgroundColor: isAcima ? '#e2e8f0' : '#ffffff' }]} 
+                                          placeholder="Até" 
+                                          keyboardType="numeric" 
+                                          editable={!isAcima}
+                                          value={isAcima ? '' : st.maxTime} 
+                                          onChangeText={(v) => {
+                                            const newArr = [...currentMod.timeSteps];
+                                            newArr[idx].maxTime = v;
+                                            handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
+                                          }} 
+                                        />
+                                      </View>
+
+                                      <Text style={styles.inputLabelMini}>Pontos deste Step:</Text>
+                                      <TextInput 
+                                        style={[styles.input, { marginBottom: 0 }]} 
+                                        placeholder="Quanto valerá o Step (pts)" 
+                                        keyboardType="numeric" 
+                                        value={st.pts} 
+                                        onChangeText={(v) => {
                                           const newArr = [...currentMod.timeSteps];
-                                          newArr[idx].modeType = e.target.value;
+                                          newArr[idx].pts = v;
                                           handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
-                                        }}
-                                      >
-                                        <option value="De">De</option>
-                                        <option value="Acima">Acima</option>
-                                      </select>
+                                        }} 
+                                      />
                                     </View>
-
-                                    <TextInput 
-                                      style={[styles.input, { flex: 1, marginBottom: 0 }]} 
-                                      placeholder="Minutos" 
-                                      keyboardType="numeric" 
-                                      value={st.minTime} 
-                                      onChangeText={(v) => {
-                                        const newArr = [...currentMod.timeSteps];
-                                        newArr[idx].minTime = v;
-                                        handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
-                                      }} 
-                                    />
-                                    <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#64748b' }}>until</Text>
-                                    <TextInput 
-                                      style={[styles.input, { flex: 1, marginBottom: 0, backgroundColor: isAcima ? '#e2e8f0' : '#ffffff' }]} 
-                                      placeholder="Até (min)" 
-                                      keyboardType="numeric" 
-                                      editable={!isAcima}
-                                      value={isAcima ? '' : st.maxTime} 
-                                      onChangeText={(v) => {
-                                        const newArr = [...currentMod.timeSteps];
-                                        newArr[idx].maxTime = v;
-                                        handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
-                                      }} 
-                                    />
-                                  </View>
-
-                                  <Text style={styles.inputLabelMini}>Pontos deste Step:</Text>
-                                  <TextInput 
-                                    style={[styles.input, { marginBottom: 0 }]} 
-                                    placeholder="Quanto valerá o Step (pts)" 
-                                    keyboardType="numeric" 
-                                    value={st.pts} 
-                                    onChangeText={(v) => {
-                                      const newArr = [...currentMod.timeSteps];
-                                      newArr[idx].pts = v;
-                                      handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
-                                    }} 
-                                  />
-                                </View>
-                              );
-                            })}
+                                  );
+                                })}
+                              </View>
+                            </ScrollView>
                             <TouchableOpacity style={[styles.primaryBtn, { paddingVertical: 6, marginTop: 4, backgroundColor: '#16a34a' }]} onPress={() => handleAddTimeStep(selectedConfigActivity)}>
                               <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold' }}>+ Step</Text>
                             </TouchableOpacity>
@@ -2664,74 +2671,78 @@ export default function App() {
 
                         {scoringMode === 'kmSteps' && (
                           <View style={{ paddingLeft: 24, marginBottom: 10 }}>
-                            {(currentMod.kmSteps || []).map((st, idx) => {
-                              const isAcima = st.modeType === 'Acima';
-                              return (
-                                <View key={idx} style={{ backgroundColor: '#f1f5f9', padding: 8, borderRadius: 6, marginBottom: 6, borderWidth: 1, borderColor: '#cbd5e1' }}>
-                                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                    <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1e3a8a' }}>Step KM {idx + 1}</Text>
-                                    <TouchableOpacity onPress={() => handleRemoveKmStep(selectedConfigActivity, idx)}>
-                                      <Text style={{ color: '#dc2626', fontSize: 10, fontWeight: 'bold' }}>Remover Step ✕</Text>
-                                    </TouchableOpacity>
-                                  </View>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={true} style={{ paddingBottom: 6 }}>
+                              <View style={{ minWidth: 280 }}>
+                                {(currentMod.kmSteps || []).map((st, idx) => {
+                                  const isAcima = st.modeType === 'Acima';
+                                  return (
+                                    <View key={idx} style={{ backgroundColor: '#f1f5f9', padding: 8, borderRadius: 6, marginBottom: 6, borderWidth: 1, borderColor: '#cbd5e1' }}>
+                                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1e3a8a' }}>Step KM {idx + 1}</Text>
+                                        <TouchableOpacity onPress={() => handleRemoveKmStep(selectedConfigActivity, idx)}>
+                                          <Text style={{ color: '#dc2626', fontSize: 10, fontWeight: 'bold' }}>Remover Step ✕</Text>
+                                        </TouchableOpacity>
+                                      </View>
 
-                                  <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', marginBottom: 4 }}>
-                                    <View style={styles.nativeSelectWrapperSmall}>
-                                      <select
-                                        style={styles.htmlNativeSelectSmall}
-                                        value={st.modeType || 'De'}
-                                        onChange={(e) => {
+                                      <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center', marginBottom: 4 }}>
+                                        <View style={styles.nativeSelectWrapperSmall}>
+                                          <select
+                                            style={styles.htmlNativeSelectSmall}
+                                            value={st.modeType || 'De'}
+                                            onChange={(e) => {
+                                              const newArr = [...currentMod.kmSteps];
+                                              newArr[idx].modeType = e.target.value;
+                                              handleUpdateModalityProp(selectedConfigActivity, 'kmSteps', newArr);
+                                            }}
+                                          >
+                                            <option value="De">De</option>
+                                            <option value="Acima">Acima</option>
+                                          </select>
+                                        </View>
+
+                                        <TextInput 
+                                          style={styles.stepMiniInput} 
+                                          placeholder="KM" 
+                                          keyboardType="numeric" 
+                                          value={st.minKm} 
+                                          onChangeText={(v) => {
+                                            const newArr = [...currentMod.kmSteps];
+                                            newArr[idx].minKm = v;
+                                            handleUpdateModalityProp(selectedConfigActivity, 'kmSteps', newArr);
+                                          }} 
+                                        />
+                                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#64748b' }}>until</Text>
+                                        <TextInput 
+                                          style={[styles.stepMiniInput, { backgroundColor: isAcima ? '#e2e8f0' : '#ffffff' }]} 
+                                          placeholder="Até" 
+                                          keyboardType="numeric" 
+                                          editable={!isAcima}
+                                          value={isAcima ? '' : st.maxKm} 
+                                          onChangeText={(v) => {
+                                            const newArr = [...currentMod.kmSteps];
+                                            newArr[idx].maxKm = v;
+                                            handleUpdateModalityProp(selectedConfigActivity, 'kmSteps', newArr);
+                                          }} 
+                                        />
+                                      </View>
+
+                                      <Text style={styles.inputLabelMini}>Pontos deste Step:</Text>
+                                      <TextInput 
+                                        style={[styles.input, { marginBottom: 0 }]} 
+                                        placeholder="Quanto valerá o Step (pts)" 
+                                        keyboardType="numeric" 
+                                        value={st.pts} 
+                                        onChangeText={(v) => {
                                           const newArr = [...currentMod.kmSteps];
-                                          newArr[idx].modeType = e.target.value;
+                                          newArr[idx].pts = v;
                                           handleUpdateModalityProp(selectedConfigActivity, 'kmSteps', newArr);
-                                        }}
-                                      >
-                                        <option value="De">De</option>
-                                        <option value="Acima">Acima</option>
-                                      </select>
+                                        }} 
+                                      />
                                     </View>
-
-                                    <TextInput 
-                                      style={[styles.input, { flex: 1, marginBottom: 0 }]} 
-                                      placeholder="KM" 
-                                      keyboardType="numeric" 
-                                      value={st.minKm} 
-                                      onChangeText={(v) => {
-                                        const newArr = [...currentMod.kmSteps];
-                                        newArr[idx].minKm = v;
-                                        handleUpdateModalityProp(selectedConfigActivity, 'kmSteps', newArr);
-                                      }} 
-                                    />
-                                    <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#64748b' }}>until</Text>
-                                    <TextInput 
-                                      style={[styles.input, { flex: 1, marginBottom: 0, backgroundColor: isAcima ? '#e2e8f0' : '#ffffff' }]} 
-                                      placeholder="Até (KM)" 
-                                      keyboardType="numeric" 
-                                      editable={!isAcima}
-                                      value={isAcima ? '' : st.maxKm} 
-                                      onChangeText={(v) => {
-                                        const newArr = [...currentMod.kmSteps];
-                                        newArr[idx].maxKm = v;
-                                        handleUpdateModalityProp(selectedConfigActivity, 'kmSteps', newArr);
-                                      }} 
-                                    />
-                                  </View>
-
-                                  <Text style={styles.inputLabelMini}>Pontos deste Step:</Text>
-                                  <TextInput 
-                                    style={[styles.input, { marginBottom: 0 }]} 
-                                    placeholder="Quanto valerá o Step (pts)" 
-                                    keyboardType="numeric" 
-                                    value={st.pts} 
-                                    onChangeText={(v) => {
-                                      const newArr = [...currentMod.kmSteps];
-                                      newArr[idx].pts = v;
-                                      handleUpdateModalityProp(selectedConfigActivity, 'kmSteps', newArr);
-                                    }} 
-                                  />
-                                </View>
-                              );
-                            })}
+                                  );
+                                })}
+                              </View>
+                            </ScrollView>
                             <TouchableOpacity style={[styles.primaryBtn, { paddingVertical: 6, marginTop: 4, backgroundColor: '#16a34a' }]} onPress={() => handleAddKmStep(selectedConfigActivity)}>
                               <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold' }}>+ Step</Text>
                             </TouchableOpacity>
@@ -3119,8 +3130,10 @@ const styles = StyleSheet.create({
   nativeSelectWrapper: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, marginBottom: 6, overflow: 'hidden' },
   htmlNativeSelect: { width: '100%', padding: 8, fontSize: 11, fontWeight: 'bold', color: '#0f172a', backgroundColor: 'transparent', border: 'none', outline: 'none', cursor: 'pointer' },
 
-  nativeSelectWrapperSmall: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, overflow: 'hidden', width: 85 },
-  htmlNativeSelectSmall: { width: '100%', padding: 6, fontSize: 10, fontWeight: 'bold', color: '#0f172a', backgroundColor: 'transparent', border: 'none', outline: 'none', cursor: 'pointer' },
+  nativeSelectWrapperSmall: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, overflow: 'hidden', width: 60 },
+  htmlNativeSelectSmall: { width: '100%', padding: 5, fontSize: 9, fontWeight: 'bold', color: '#0f172a', backgroundColor: 'transparent', border: 'none', outline: 'none', cursor: 'pointer' },
+
+  stepMiniInput: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 4, padding: 5, fontSize: 10, width: 55, textAlign: 'center', marginBottom: 0 },
 
   floatingDropdownContainer: { backgroundColor: '#ffffff', borderWidth: 2, borderColor: '#f97316', borderRadius: 6, marginBottom: 8, elevation: 10 },
   dropdownOptionRow: { flexDirection: 'row', alignItems: 'center', padding: 10, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', backgroundColor: '#ffffff' },
