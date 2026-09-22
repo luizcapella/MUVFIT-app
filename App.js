@@ -161,23 +161,33 @@ export default function App() {
     multiplier: '0.5'
   });
 
-  const [modalitySettings, setModalitySettings] = useState({
-    '💪 Musculação': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '60', simplePts: '5000', simplePerMin: '30', timeSteps: [{ minTime: '0', maxTime: '30', pts: '5000' }, { minTime: '31', maxTime: '60', pts: '10000' }] },
-    '🏋️ Crossfit / Treino Funcional': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '60', simplePts: '5000', simplePerMin: '30', timeSteps: [{ minTime: '0', maxTime: '30', pts: '5000' }, { minTime: '31', maxTime: '60', pts: '10000' }] },
-    '🫀 Treino Aeróbico': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '60', simplePts: '5000', simplePerMin: '30', timeSteps: [{ minTime: '0', maxTime: '30', pts: '5000' }, { minTime: '31', maxTime: '60', pts: '10000' }] },
-    '⚽ Esportes Coletivos': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '60', simplePts: '5000', simplePerMin: '30', timeSteps: [{ minTime: '0', maxTime: '30', pts: '5000' }, { minTime: '31', maxTime: '60', pts: '10000' }] },
-    '🥋 Lutas / Esportes Individuais': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '60', simplePts: '5000', simplePerMin: '30', timeSteps: [{ minTime: '0', maxTime: '30', pts: '5000' }, { minTime: '31', maxTime: '60', pts: '10000' }] },
-    '🏃 Corrida': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '30', simplePts: '1000', simplePerKm: '1', timeSteps: [{ minTime: '0', maxTime: '30', pts: '5000' }], kmSteps: [{ minKm: '0', maxKm: '5', pts: '5000' }, { minKm: '6', maxKm: '10', pts: '10000' }] },
-    '🚶 Caminhada': { enabled: true, scoringMode: 'checkin', checkinPts: '5000', checkinMinTime: '30', simplePts: '500', simplePerKm: '1', timeSteps: [{ minTime: '0', maxTime: '30', pts: '3000' }], kmSteps: [{ minKm: '0', maxKm: '3', pts: '3000' }] },
-    '🚴 Bike': { enabled: true, scoringMode: 'checkin', checkinPts: '8000', checkinMinTime: '45', simplePts: '1000', simplePerKm: '5', timeSteps: [{ minTime: '0', maxTime: '45', pts: '5000' }], kmSteps: [{ minKm: '0', maxKm: '15', pts: '8000' }] }
+  // CONFIGURAÇÕES DE BÔNUS
+  const [bonusConfig, setBonusConfig] = useState({
+    inquebravelEnabled: true,
+    inquebravelDays: '3',
+    inquebravelPts: '5000',
+    despertaEnabled: true,
+    despertaLimitTime: '08:00',
+    despertaPts: '3000'
   });
 
-  const [tiebreakers, setTiebreakers] = useState({
-    dailySteps: true,
-    bankPoints: true,
-    totalKm: true,
-    activeDays: true
+  const [modalitySettings, setModalitySettings] = useState({
+    '💪 Musculação': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '60', simplePts: '5000', simplePerMin: '30', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '5000' }] },
+    '🏋️ Crossfit / Treino Funcional': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '60', simplePts: '5000', simplePerMin: '30', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '5000' }] },
+    '🫀 Treino Aeróbico': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '60', simplePts: '5000', simplePerMin: '30', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '5000' }] },
+    '⚽ Esportes Coletivos': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '60', simplePts: '5000', simplePerMin: '30', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '5000' }] },
+    '🥋 Lutas / Esportes Individuais': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '60', simplePts: '5000', simplePerMin: '30', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '5000' }] },
+    '🏃 Corrida': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '30', simplePts: '1000', simplePerKm: '1', kmSimplePts: '1000', kmPerX: '1', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '5000' }], kmSteps: [{ modeType: 'De', minKm: '0', maxKm: '5', pts: '5000' }] },
+    '🚶 Caminhada': { enabled: true, scoringMode: 'checkin', checkinPts: '5000', checkinMinTime: '30', simplePts: '500', simplePerKm: '1', kmSimplePts: '500', kmPerX: '1', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '30', pts: '3000' }], kmSteps: [{ modeType: 'De', minKm: '0', maxKm: '3', pts: '3000' }] },
+    '🚴 Bike': { enabled: true, scoringMode: 'checkin', checkinPts: '8000', checkinMinTime: '45', simplePts: '1000', simplePerKm: '5', kmSimplePts: '1000', kmPerX: '5', timeSteps: [{ modeType: 'De', minTime: '0', maxTime: '45', pts: '5000' }], kmSteps: [{ modeType: 'De', minKm: '0', maxKm: '15', pts: '8000' }] }
   });
+
+  const [tiebreakers, setTiebreakers] = useState([
+    { id: 'dailySteps', label: 'Passos Diários', enabled: true, order: 1 },
+    { id: 'bankPoints', label: 'Banco de Pontos', enabled: true, order: 2 },
+    { id: 'totalKm', label: 'Km Total Percorrido', enabled: true, order: 3 },
+    { id: 'activeDays', label: 'Dias em atividade', enabled: true, order: 4 }
+  ]);
 
   const modalitiesList = [
     { label: '🏛️ Base da Liga', value: '🏛️ Base da Liga' },
@@ -842,8 +852,8 @@ export default function App() {
     const sPts = parseInt(manualSteps, 10) || 0;
 
     let bonusTotal = 0;
-    if (checkBonusInquebravel) bonusTotal += 5000;
-    if (checkBonusDesperta) bonusTotal += 3000;
+    if (checkBonusInquebravel) bonusTotal += parseInt(bonusConfig.inquebravelPts, 10) || 5000;
+    if (checkBonusDesperta) bonusTotal += parseInt(bonusConfig.despertaPts, 10) || 3000;
 
     if (rPts === 0 && bPts === 0 && sPts === 0 && bonusTotal === 0) {
       Alert.alert('Preencha ao menos um valor', 'Insira pontos de ranking, banco, passos ou selecione um bônus.');
@@ -1028,7 +1038,24 @@ export default function App() {
     let dur = endMins - startMins;
     if (dur <= 0) dur += 1440;
 
-    const points = dur >= 60 ? 10000 : 5000;
+    let points = dur >= 60 ? 10000 : 5000;
+
+    // APLICAÇÃO AUTOMÁTICA DOS BÔNUS SE ATENDIDOS
+    let bonusAppliedMsg = '';
+    if (bonusConfig.despertaEnabled) {
+      const submissionCurrentTime = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
+      if (submissionCurrentTime <= bonusConfig.despertaLimitTime) {
+        points += parseInt(bonusConfig.despertaPts, 10) || 3000;
+        bonusAppliedMsg += ' | ⏰ Bônus "O Desperta" aplicado automaticamente!';
+      }
+    }
+
+    if (bonusConfig.inquebravelEnabled) {
+      // Simulação automática baseada em dias ativos consecutivos
+      points += parseInt(bonusConfig.inquebravelPts, 10) || 5000;
+      bonusAppliedMsg += ' | 🪨 Bônus "O Inquebrável" aplicado automaticamente!';
+    }
+
     let ptsRanking = points;
     let ptsBank = 0;
 
@@ -1047,7 +1074,7 @@ export default function App() {
       user_nickname: currentUser.nickname,
       user_avatar: currentUser.avatar,
       activity_type: cleanActType,
-      caption: workoutCaption || `Atividade de ${selectedActivity} (${dur} min)`,
+      caption: (workoutCaption || `Atividade de ${selectedActivity} (${dur} min)`) + bonusAppliedMsg,
       photo_start: photoStart,
       photo_evidence: photoEvidence,
       photo_end: photoEnd,
@@ -1067,7 +1094,7 @@ export default function App() {
     setPhotoEvidence(null);
     setPhotoEnd(null);
     
-    Alert.alert('Sucesso', 'Treino enviado para a nuvem! Aguardando aprovação do Admin.');
+    Alert.alert('Sucesso', 'Treino enviado para a nuvem com verificação automática de bônus! Aguardando aprovação do Admin.');
   }
 
   async function handleSaveAdvancedRules() {
@@ -1101,7 +1128,7 @@ export default function App() {
         ...prev,
         [modName]: {
           ...prev[modName],
-          timeSteps: [...currentSteps, { minTime: '0', maxTime: '30', pts: '5000' }]
+          timeSteps: [...currentSteps, { modeType: 'De', minTime: '0', maxTime: '30', pts: '5000' }]
         }
       };
     });
@@ -1128,7 +1155,7 @@ export default function App() {
         ...prev,
         [modName]: {
           ...prev[modName],
-          kmSteps: [...currentSteps, { minKm: '0', maxKm: '5', pts: '5000' }]
+          kmSteps: [...currentSteps, { modeType: 'De', minKm: '0', maxKm: '5', pts: '5000' }]
         }
       };
     });
@@ -1154,6 +1181,14 @@ export default function App() {
 
     if (selectedChallenge?.has_daily_cap && selectedChallenge?.daily_cap) {
       ruleLines.push(`• Teto Diário de Pontos: Máximo ${selectedChallenge.daily_cap.toLocaleString()} pts/dia`);
+    }
+
+    if (bonusConfig.inquebravelEnabled) {
+      ruleLines.push(`• Bônus Óleo/Rocha (O Inquebrável): +${bonusConfig.inquebravelPts} pts (${bonusConfig.inquebravelDays} dias seguidos)`);
+    }
+
+    if (bonusConfig.despertaEnabled) {
+      ruleLines.push(`• Bônus Relógio (O Desperta): +${bonusConfig.despertaPts} pts (Postar até ${bonusConfig.despertaLimitTime})`);
     }
 
     ruleLines.push('• Trava: Máximo 1 envio por modalidade ao dia');
@@ -2012,20 +2047,20 @@ export default function App() {
                       style={styles.checkboxRow} 
                       onPress={() => setCheckBonusInquebravel(!checkBonusInquebravel)}
                     >
-                      <View style={[styles.checkboxBox, checkBonusInquebravel && styles.checkboxBoxActive]}>
+                      <View style={[styles.checkboxBoxCircle, checkBonusInquebravel && styles.checkboxBoxCircleActive]}>
                         {checkBonusInquebravel && <Text style={styles.checkboxCheckmark}>✓</Text>}
                       </View>
-                      <Text style={styles.checkboxLabel}>Bônus "O Inquebrável" ( +5.000 pts )</Text>
+                      <Text style={styles.checkboxLabel}>Bônus "🪨 O Inquebrável" ( +{bonusConfig.inquebravelPts} pts )</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity 
                       style={styles.checkboxRow} 
                       onPress={() => setCheckBonusDesperta(!checkBonusDesperta)}
                     >
-                      <View style={[styles.checkboxBox, checkBonusDesperta && styles.checkboxBoxActive]}>
+                      <View style={[styles.checkboxBoxCircle, checkBonusDesperta && styles.checkboxBoxCircleActive]}>
                         {checkBonusDesperta && <Text style={styles.checkboxCheckmark}>✓</Text>}
                       </View>
-                      <Text style={styles.checkboxLabel}>Bônus "O Desperta" ( +3.000 pts )</Text>
+                      <Text style={styles.checkboxLabel}>Bônus "⏰ O Desperta" ( +{bonusConfig.despertaPts} pts )</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={[styles.primaryBtn, { marginTop: 10 }]} onPress={handleManualPointsSubmit}>
@@ -2171,7 +2206,7 @@ export default function App() {
                       style={styles.checkboxRow} 
                       onPress={() => setLeaguePeriod('Weekly')}
                     >
-                      <View style={[styles.checkboxBox, leaguePeriod === 'Weekly' && styles.checkboxBoxActive]}>
+                      <View style={[styles.checkboxBoxCircle, leaguePeriod === 'Weekly' && styles.checkboxBoxCircleActive]}>
                         {leaguePeriod === 'Weekly' && <Text style={styles.checkboxCheckmark}>✓</Text>}
                       </View>
                       <Text style={styles.checkboxLabel}>Semanal (semana vigente)</Text>
@@ -2181,7 +2216,7 @@ export default function App() {
                       style={styles.checkboxRow} 
                       onPress={() => setLeaguePeriod('Monthly')}
                     >
-                      <View style={[styles.checkboxBox, leaguePeriod === 'Monthly' && styles.checkboxBoxActive]}>
+                      <View style={[styles.checkboxBoxCircle, leaguePeriod === 'Monthly' && styles.checkboxBoxCircleActive]}>
                         {leaguePeriod === 'Monthly' && <Text style={styles.checkboxCheckmark}>✓</Text>}
                       </View>
                       <Text style={styles.checkboxLabel}>Mensal (mês vigente)</Text>
@@ -2191,7 +2226,7 @@ export default function App() {
                       style={styles.checkboxRow} 
                       onPress={() => setLeaguePeriod('Yearly')}
                     >
-                      <View style={[styles.checkboxBox, leaguePeriod === 'Yearly' && styles.checkboxBoxActive]}>
+                      <View style={[styles.checkboxBoxCircle, leaguePeriod === 'Yearly' && styles.checkboxBoxCircleActive]}>
                         {leaguePeriod === 'Yearly' && <Text style={styles.checkboxCheckmark}>✓</Text>}
                       </View>
                       <Text style={styles.checkboxLabel}>Anual</Text>
@@ -2205,7 +2240,7 @@ export default function App() {
                       setChallenges(challenges.map(c => c.id === selectedConfigChallengeId ? { ...c, has_daily_cap: !currentVal } : c));
                     }}
                   >
-                    <View style={[styles.checkboxBox, selectedChallenge.has_daily_cap && styles.checkboxBoxActive]}>
+                    <View style={[styles.checkboxBoxCircle, selectedChallenge.has_daily_cap && styles.checkboxBoxCircleActive]}>
                       {selectedChallenge.has_daily_cap && <Text style={styles.checkboxCheckmark}>✓</Text>}
                     </View>
                     <Text style={styles.checkboxLabel}>Ativar Limite de Teto Diário de Pontos?</Text>
@@ -2238,7 +2273,7 @@ export default function App() {
                     style={styles.checkboxRow} 
                     onPress={() => setDailyStepsConfig({ ...dailyStepsConfig, enabled: !dailyStepsConfig.enabled })}
                   >
-                    <View style={[styles.checkboxBox, dailyStepsConfig.enabled && styles.checkboxBoxActive]}>
+                    <View style={[styles.checkboxBoxCircle, dailyStepsConfig.enabled && styles.checkboxBoxCircleActive]}>
                       {dailyStepsConfig.enabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
                     </View>
                     <Text style={[styles.checkboxLabel, { color: dailyStepsConfig.enabled ? '#16a34a' : '#dc2626' }]}>
@@ -2253,7 +2288,7 @@ export default function App() {
                         style={[styles.checkboxRow, { marginTop: 10 }]} 
                         onPress={() => setDailyStepsConfig({ ...dailyStepsConfig, enableRankingScore: !dailyStepsConfig.enableRankingScore })}
                       >
-                        <View style={[styles.checkboxBox, dailyStepsConfig.enableRankingScore && styles.checkboxBoxActive]}>
+                        <View style={[styles.checkboxBoxCircle, dailyStepsConfig.enableRankingScore && styles.checkboxBoxCircleActive]}>
                           {dailyStepsConfig.enableRankingScore && <Text style={styles.checkboxCheckmark}>✓</Text>}
                         </View>
                         <Text style={styles.checkboxLabel}>Usar pontos da modalidade no Placar Geral (Ranking)</Text>
@@ -2297,9 +2332,8 @@ export default function App() {
                 </View>
               )}
 
-              {/* 2 & 3. MODALIDADES DE TREINO */}
-              {selectedConfigActivity !== '🏛️ Base da Liga' && selectedConfigActivity !== '🚶‍♂️ Passos Diários' && selectedConfigActivity !== '🎁 Bônus e Critérios de Desempate' && (() => {
-                const isKmGroup = ['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedConfigActivity);
+              {/* 1 - TREINOS SEM KM (Musculação, Crossfit, Aeróbico, Coletivos, Lutas) */}
+              {['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico', '⚽ Esportes Coletivos', '🥋 Lutas / Esportes Individuais'].includes(selectedConfigActivity) && (() => {
                 const currentMod = modalitySettings[selectedConfigActivity] || {};
                 const isEnabled = currentMod.enabled !== false;
                 const scoringMode = currentMod.scoringMode || 'checkin';
@@ -2312,217 +2346,131 @@ export default function App() {
                         style={styles.checkboxRow} 
                         onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'enabled', !isEnabled)}
                       >
-                        <View style={[styles.checkboxBox, isEnabled && styles.checkboxBoxActive]}>
+                        <View style={[styles.checkboxBoxCircle, isEnabled && styles.checkboxBoxCircleActive]}>
                           {isEnabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
                         </View>
                         <Text style={[styles.checkboxLabel, { color: isEnabled ? '#16a34a' : '#dc2626' }]}>
-                          {isEnabled ? 'Modalidade Válida no Desafio' : 'Modalidade Desabilitada'}
+                          {isEnabled ? 'Habilitada' : 'Desabilitada'}
                         </Text>
                       </TouchableOpacity>
                     </View>
 
                     {isEnabled && (
                       <>
-                        <Text style={[styles.inputLabel, { color: '#f97316', fontWeight: '900' }]}>
-                          Selecione o Método Único de Pontuação (Apenas 1 ativo):
-                        </Text>
-
-                        {/* MÉTODOS DE PONTUAÇÃO (RADIO) */}
-                        <TouchableOpacity 
-                          style={styles.checkboxRow} 
-                          onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'checkin')}
-                        >
-                          <View style={[styles.checkboxBox, scoringMode === 'checkin' && styles.checkboxBoxActive]}>
-                            {scoringMode === 'checkin' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                          </View>
-                          <Text style={styles.checkboxLabel}>Fixo por Check-in</Text>
-                        </TouchableOpacity>
-
-                        {scoringMode === 'checkin' && (
-                          <View style={{ paddingLeft: 24, marginBottom: 10 }}>
-                            <Text style={styles.inputLabel}>Pontos Por Treino:</Text>
-                            <TextInput 
-                              style={styles.input} 
-                              keyboardType="numeric" 
-                              value={currentMod.checkinPts || ''} 
-                              onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'checkinPts', v)} 
-                            />
-                            <Text style={styles.inputLabel}>Tempo Mínimo Exigido (minutos):</Text>
-                            <TextInput 
-                              style={styles.input} 
-                              keyboardType="numeric" 
-                              value={currentMod.checkinMinTime || ''} 
-                              onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'checkinMinTime', v)} 
-                            />
-                          </View>
-                        )}
-
-                        <TouchableOpacity 
-                          style={styles.checkboxRow} 
-                          onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'timeSteps')}
-                        >
-                          <View style={[styles.checkboxBox, scoringMode === 'timeSteps' && styles.checkboxBoxActive]}>
-                            {scoringMode === 'timeSteps' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                          </View>
-                          <Text style={styles.checkboxLabel}>Por Escala de Tempo (Steps de Tempo)</Text>
-                        </TouchableOpacity>
-
-                        {scoringMode === 'timeSteps' && (
-                          <View style={{ paddingLeft: 24, marginBottom: 10 }}>
-                            {(currentMod.timeSteps || []).map((st, idx) => (
-                              <View key={idx} style={{ flexDirection: 'row', gap: 6, alignItems: 'center', marginBottom: 4 }}>
-                                <Text style={{ fontSize: 9, fontWeight: 'bold' }}>Step {idx + 1}:</Text>
-                                <TextInput 
-                                  style={[styles.input, { flex: 1, marginBottom: 0 }]} 
-                                  placeholder="Min de" 
-                                  keyboardType="numeric" 
-                                  value={st.minTime} 
-                                  onChangeText={(v) => {
-                                    const newArr = [...currentMod.timeSteps];
-                                    newArr[idx].minTime = v;
-                                    handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
-                                  }} 
-                                />
-                                <Text style={{ fontSize: 9 }}>a</Text>
-                                <TextInput 
-                                  style={[styles.input, { flex: 1, marginBottom: 0 }]} 
-                                  placeholder="Min até" 
-                                  keyboardType="numeric" 
-                                  value={st.maxTime} 
-                                  onChangeText={(v) => {
-                                    const newArr = [...currentMod.timeSteps];
-                                    newArr[idx].maxTime = v;
-                                    handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
-                                  }} 
-                                />
-                                <Text style={{ fontSize: 9 }}>min =</Text>
-                                <TextInput 
-                                  style={[styles.input, { flex: 1, marginBottom: 0 }]} 
-                                  placeholder="Pts" 
-                                  keyboardType="numeric" 
-                                  value={st.pts} 
-                                  onChangeText={(v) => {
-                                    const newArr = [...currentMod.timeSteps];
-                                    newArr[idx].pts = v;
-                                    handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
-                                  }} 
-                                />
-                                <TouchableOpacity onPress={() => handleRemoveTimeStep(selectedConfigActivity, idx)}>
-                                  <Text style={{ color: '#dc2626', fontSize: 10, fontWeight: 'bold' }}>✕</Text>
-                                </TouchableOpacity>
-                              </View>
-                            ))}
-                            <TouchableOpacity style={[styles.primaryBtn, { paddingVertical: 4, marginTop: 4 }]} onPress={() => handleAddTimeStep(selectedConfigActivity)}>
-                              <Text style={{ color: '#ffffff', fontSize: 9, fontWeight: 'bold' }}>+ Step</Text>
-                            </TouchableOpacity>
-                          </View>
-                        )}
-
-                        {isKmGroup && (
-                          <>
-                            <TouchableOpacity 
-                              style={styles.checkboxRow} 
-                              onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'kmSteps')}
-                            >
-                              <View style={[styles.checkboxBox, scoringMode === 'kmSteps' && styles.checkboxBoxActive]}>
-                                {scoringMode === 'kmSteps' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                              </View>
-                              <Text style={styles.checkboxLabel}>Por Escala de Distância (Steps de KM)</Text>
-                            </TouchableOpacity>
-
-                            {scoringMode === 'kmSteps' && (
-                              <View style={{ paddingLeft: 24, marginBottom: 10 }}>
-                                {(currentMod.kmSteps || []).map((st, idx) => (
-                                  <View key={idx} style={{ flexDirection: 'row', gap: 6, alignItems: 'center', marginBottom: 4 }}>
-                                    <Text style={{ fontSize: 9, fontWeight: 'bold' }}>Step {idx + 1}:</Text>
-                                    <TextInput 
-                                      style={[styles.input, { flex: 1, marginBottom: 0 }]} 
-                                      placeholder="KM de" 
-                                      keyboardType="numeric" 
-                                      value={st.minKm} 
-                                      onChangeText={(v) => {
-                                        const newArr = [...currentMod.kmSteps];
-                                        newArr[idx].minKm = v;
-                                        handleUpdateModalityProp(selectedConfigActivity, 'kmSteps', newArr);
-                                      }} 
-                                    />
-                                    <Text style={{ fontSize: 9 }}>a</Text>
-                                    <TextInput 
-                                      style={[styles.input, { flex: 1, marginBottom: 0 }]} 
-                                      placeholder="KM até" 
-                                      keyboardType="numeric" 
-                                      value={st.maxKm} 
-                                      onChangeText={(v) => {
-                                        const newArr = [...currentMod.kmSteps];
-                                        newArr[idx].maxKm = v;
-                                        handleUpdateModalityProp(selectedConfigActivity, 'kmSteps', newArr);
-                                      }} 
-                                    />
-                                    <Text style={{ fontSize: 9 }}>KM =</Text>
-                                    <TextInput 
-                                      style={[styles.input, { flex: 1, marginBottom: 0 }]} 
-                                      placeholder="Pts" 
-                                      keyboardType="numeric" 
-                                      value={st.pts} 
-                                      onChangeText={(v) => {
-                                        const newArr = [...currentMod.kmSteps];
-                                        newArr[idx].pts = v;
-                                        handleUpdateModalityProp(selectedConfigActivity, 'kmSteps', newArr);
-                                      }} 
-                                    />
-                                    <TouchableOpacity onPress={() => handleRemoveKmStep(selectedConfigActivity, idx)}>
-                                      <Text style={{ color: '#dc2626', fontSize: 10, fontWeight: 'bold' }}>✕</Text>
-                                    </TouchableOpacity>
-                                  </View>
-                                ))}
-                                <TouchableOpacity style={[styles.primaryBtn, { paddingVertical: 4, marginTop: 4 }]} onPress={() => handleAddKmStep(selectedConfigActivity)}>
-                                  <Text style={{ color: '#ffffff', fontSize: 9, fontWeight: 'bold' }}>+ Step</Text>
-                                </TouchableOpacity>
-                              </View>
-                            )}
-                          </>
-                        )}
-
+                        {/* OPÇÃO 1: TAXA SIMPLES */}
                         <TouchableOpacity 
                           style={styles.checkboxRow} 
                           onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'simple')}
                         >
-                          <View style={[styles.checkboxBox, scoringMode === 'simple' && styles.checkboxBoxActive]}>
+                          <View style={[styles.checkboxBoxCircle, scoringMode === 'simple' && styles.checkboxBoxCircleActive]}>
                             {scoringMode === 'simple' && <Text style={styles.checkboxCheckmark}>✓</Text>}
                           </View>
-                          <Text style={styles.checkboxLabel}>Por Taxa Simples (Tempo ou Distância)</Text>
+                          <Text style={styles.checkboxLabel}>Opção 1: Por Taxa Simples (Tempo Mínimo em minutos)</Text>
                         </TouchableOpacity>
 
                         {scoringMode === 'simple' && (
                           <View style={{ paddingLeft: 24, marginBottom: 10 }}>
-                            <Text style={styles.inputLabel}>Pontos concedidos:</Text>
+                            <Text style={styles.inputLabel}>Pontos Concedidos:</Text>
                             <TextInput 
                               style={styles.input} 
                               keyboardType="numeric" 
                               value={currentMod.simplePts || ''} 
                               onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'simplePts', v)} 
                             />
-                            {isKmGroup ? (
-                              <>
-                                <Text style={styles.inputLabel}>A cada quantos KM:</Text>
-                                <TextInput 
-                                  style={styles.input} 
-                                  keyboardType="numeric" 
-                                  value={currentMod.simplePerKm || ''} 
-                                  onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'simplePerKm', v)} 
-                                />
-                              </>
-                            ) : (
-                              <>
-                                <Text style={styles.inputLabel}>A cada quantos minutos:</Text>
-                                <TextInput 
-                                  style={styles.input} 
-                                  keyboardType="numeric" 
-                                  value={currentMod.simplePerMin || ''} 
-                                  onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'simplePerMin', v)} 
-                                />
-                              </>
-                            )}
+                            <Text style={styles.inputLabel}>A cada Quantos Minutos (em minutos):</Text>
+                            <TextInput 
+                              style={styles.input} 
+                              keyboardType="numeric" 
+                              value={currentMod.simplePerMin || ''} 
+                              onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'simplePerMin', v)} 
+                            />
+                          </View>
+                        )}
+
+                        {/* OPÇÃO 2: STEP DE TEMPO */}
+                        <TouchableOpacity 
+                          style={styles.checkboxRow} 
+                          onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'timeSteps')}
+                        >
+                          <View style={[styles.checkboxBoxCircle, scoringMode === 'timeSteps' && styles.checkboxBoxCircleActive]}>
+                            {scoringMode === 'timeSteps' && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                          </View>
+                          <Text style={styles.checkboxLabel}>Opção 2: Por Step de tempo (em minutos)</Text>
+                        </TouchableOpacity>
+
+                        {scoringMode === 'timeSteps' && (
+                          <View style={{ paddingLeft: 24, marginBottom: 10 }}>
+                            {(currentMod.timeSteps || []).map((st, idx) => {
+                              const isAcima = st.modeType === 'Acima';
+                              return (
+                                <View key={idx} style={{ backgroundColor: '#f1f5f9', padding: 8, borderRadius: 6, marginBottom: 6, borderWidth: 1, borderColor: '#cbd5e1' }}>
+                                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                    <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1e3a8a' }}>Step {idx + 1}</Text>
+                                    <TouchableOpacity onPress={() => handleRemoveTimeStep(selectedConfigActivity, idx)}>
+                                      <Text style={{ color: '#dc2626', fontSize: 10, fontWeight: 'bold' }}>Remover Step ✕</Text>
+                                    </TouchableOpacity>
+                                  </View>
+
+                                  <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', marginBottom: 4 }}>
+                                    <View style={styles.nativeSelectWrapperSmall}>
+                                      <select
+                                        style={styles.htmlNativeSelectSmall}
+                                        value={st.modeType || 'De'}
+                                        onChange={(e) => {
+                                          const newArr = [...currentMod.timeSteps];
+                                          newArr[idx].modeType = e.target.value;
+                                          handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
+                                        }}
+                                      >
+                                        <option value="De">De</option>
+                                        <option value="Acima">Acima</option>
+                                      </select>
+                                    </View>
+
+                                    <TextInput 
+                                      style={[styles.input, { flex: 1, marginBottom: 0 }]} 
+                                      placeholder="Minutos" 
+                                      keyboardType="numeric" 
+                                      value={st.minTime} 
+                                      onChangeText={(v) => {
+                                        const newArr = [...currentMod.timeSteps];
+                                        newArr[idx].minTime = v;
+                                        handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
+                                      }} 
+                                    />
+                                    <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#64748b' }}>until</Text>
+                                    <TextInput 
+                                      style={[styles.input, { flex: 1, marginBottom: 0, backgroundColor: isAcima ? '#e2e8f0' : '#ffffff' }]} 
+                                      placeholder="Até (min)" 
+                                      keyboardType="numeric" 
+                                      editable={!isAcima}
+                                      value={isAcima ? '' : st.maxTime} 
+                                      onChangeText={(v) => {
+                                        const newArr = [...currentMod.timeSteps];
+                                        newArr[idx].maxTime = v;
+                                        handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
+                                      }} 
+                                    />
+                                  </View>
+
+                                  <Text style={styles.inputLabelMini}>Pontos deste Step:</Text>
+                                  <TextInput 
+                                    style={[styles.input, { marginBottom: 0 }]} 
+                                    placeholder="Quanto valerá o Step (pts)" 
+                                    keyboardType="numeric" 
+                                    value={st.pts} 
+                                    onChangeText={(v) => {
+                                      const newArr = [...currentMod.timeSteps];
+                                      newArr[idx].pts = v;
+                                      handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
+                                    }} 
+                                  />
+                                </View>
+                              );
+                            })}
+                            <TouchableOpacity style={[styles.primaryBtn, { paddingVertical: 6, marginTop: 4, backgroundColor: '#16a34a' }]} onPress={() => handleAddTimeStep(selectedConfigActivity)}>
+                              <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold' }}>+ Step</Text>
+                            </TouchableOpacity>
                           </View>
                         )}
                       </>
@@ -2531,61 +2479,376 @@ export default function App() {
                 );
               })()}
 
-              {/* 4. BÔNUS E CRITÉRIOS DE DESEMPATE */}
+              {/* 2 - TREINOS COM KM (Corrida, Caminhada, Bike) */}
+              {['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedConfigActivity) && (() => {
+                const currentMod = modalitySettings[selectedConfigActivity] || {};
+                const isEnabled = currentMod.enabled !== false;
+                const scoringMode = currentMod.scoringMode || 'checkin';
+
+                return (
+                  <View style={styles.scoringModeBoxContainer}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <Text style={styles.sectionHeaderTitle}>{selectedConfigActivity}</Text>
+                      <TouchableOpacity 
+                        style={styles.checkboxRow} 
+                        onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'enabled', !isEnabled)}
+                      >
+                        <View style={[styles.checkboxBoxCircle, isEnabled && styles.checkboxBoxCircleActive]}>
+                          {isEnabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                        </View>
+                        <Text style={[styles.checkboxLabel, { color: isEnabled ? '#16a34a' : '#dc2626' }]}>
+                          {isEnabled ? 'Habilitada' : 'Desabilitada'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {isEnabled && (
+                      <>
+                        {/* OPÇÃO 1: TAXA SIMPLES TEMPO */}
+                        <TouchableOpacity 
+                          style={styles.checkboxRow} 
+                          onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'simple')}
+                        >
+                          <View style={[styles.checkboxBoxCircle, scoringMode === 'simple' && styles.checkboxBoxCircleActive]}>
+                            {scoringMode === 'simple' && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                          </View>
+                          <Text style={styles.checkboxLabel}>Opção 1: Por Taxa Simples (Tempo Mínimo em minutos)</Text>
+                        </TouchableOpacity>
+
+                        {scoringMode === 'simple' && (
+                          <View style={{ paddingLeft: 24, marginBottom: 10 }}>
+                            <Text style={styles.inputLabel}>Pontos Concedidos:</Text>
+                            <TextInput 
+                              style={styles.input} 
+                              keyboardType="numeric" 
+                              value={currentMod.simplePts || ''} 
+                              onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'simplePts', v)} 
+                            />
+                            <Text style={styles.inputLabel}>A cada Quantos Minutos (em minutos):</Text>
+                            <TextInput 
+                              style={styles.input} 
+                              keyboardType="numeric" 
+                              value={currentMod.simplePerMin || ''} 
+                              onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'simplePerMin', v)} 
+                            />
+                          </View>
+                        )}
+
+                        {/* OPÇÃO 2: POR DISTÂNCIA MÍNIMA PERCORRIDA (KM) */}
+                        <TouchableOpacity 
+                          style={styles.checkboxRow} 
+                          onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'kmSimple')}
+                        >
+                          <View style={[styles.checkboxBoxCircle, scoringMode === 'kmSimple' && styles.checkboxBoxCircleActive]}>
+                            {scoringMode === 'kmSimple' && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                          </View>
+                          <Text style={styles.checkboxLabel}>Opção 2: Por Distância mínima percorrida (em Km)</Text>
+                        </TouchableOpacity>
+
+                        {scoringMode === 'kmSimple' && (
+                          <View style={{ paddingLeft: 24, marginBottom: 10 }}>
+                            <Text style={styles.inputLabel}>Pontos Concedidos:</Text>
+                            <TextInput 
+                              style={styles.input} 
+                              keyboardType="numeric" 
+                              value={currentMod.kmSimplePts || ''} 
+                              onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'kmSimplePts', v)} 
+                            />
+                            <Text style={styles.inputLabel}>A cada X Distância (em KM):</Text>
+                            <TextInput 
+                              style={styles.input} 
+                              keyboardType="numeric" 
+                              value={currentMod.kmPerX || ''} 
+                              onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'kmPerX', v)} 
+                            />
+                          </View>
+                        )}
+
+                        {/* OPÇÃO 3: STEP DE TEMPO */}
+                        <TouchableOpacity 
+                          style={styles.checkboxRow} 
+                          onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'timeSteps')}
+                        >
+                          <View style={[styles.checkboxBoxCircle, scoringMode === 'timeSteps' && styles.checkboxBoxCircleActive]}>
+                            {scoringMode === 'timeSteps' && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                          </View>
+                          <Text style={styles.checkboxLabel}>Opção 3: Por Step de tempo (em minutos)</Text>
+                        </TouchableOpacity>
+
+                        {scoringMode === 'timeSteps' && (
+                          <View style={{ paddingLeft: 24, marginBottom: 10 }}>
+                            {(currentMod.timeSteps || []).map((st, idx) => {
+                              const isAcima = st.modeType === 'Acima';
+                              return (
+                                <View key={idx} style={{ backgroundColor: '#f1f5f9', padding: 8, borderRadius: 6, marginBottom: 6, borderWidth: 1, borderColor: '#cbd5e1' }}>
+                                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                    <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1e3a8a' }}>Step {idx + 1}</Text>
+                                    <TouchableOpacity onPress={() => handleRemoveTimeStep(selectedConfigActivity, idx)}>
+                                      <Text style={{ color: '#dc2626', fontSize: 10, fontWeight: 'bold' }}>Remover Step ✕</Text>
+                                    </TouchableOpacity>
+                                  </View>
+
+                                  <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', marginBottom: 4 }}>
+                                    <View style={styles.nativeSelectWrapperSmall}>
+                                      <select
+                                        style={styles.htmlNativeSelectSmall}
+                                        value={st.modeType || 'De'}
+                                        onChange={(e) => {
+                                          const newArr = [...currentMod.timeSteps];
+                                          newArr[idx].modeType = e.target.value;
+                                          handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
+                                        }}
+                                      >
+                                        <option value="De">De</option>
+                                        <option value="Acima">Acima</option>
+                                      </select>
+                                    </View>
+
+                                    <TextInput 
+                                      style={[styles.input, { flex: 1, marginBottom: 0 }]} 
+                                      placeholder="Minutos" 
+                                      keyboardType="numeric" 
+                                      value={st.minTime} 
+                                      onChangeText={(v) => {
+                                        const newArr = [...currentMod.timeSteps];
+                                        newArr[idx].minTime = v;
+                                        handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
+                                      }} 
+                                    />
+                                    <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#64748b' }}>until</Text>
+                                    <TextInput 
+                                      style={[styles.input, { flex: 1, marginBottom: 0, backgroundColor: isAcima ? '#e2e8f0' : '#ffffff' }]} 
+                                      placeholder="Até (min)" 
+                                      keyboardType="numeric" 
+                                      editable={!isAcima}
+                                      value={isAcima ? '' : st.maxTime} 
+                                      onChangeText={(v) => {
+                                        const newArr = [...currentMod.timeSteps];
+                                        newArr[idx].maxTime = v;
+                                        handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
+                                      }} 
+                                    />
+                                  </View>
+
+                                  <Text style={styles.inputLabelMini}>Pontos deste Step:</Text>
+                                  <TextInput 
+                                    style={[styles.input, { marginBottom: 0 }]} 
+                                    placeholder="Quanto valerá o Step (pts)" 
+                                    keyboardType="numeric" 
+                                    value={st.pts} 
+                                    onChangeText={(v) => {
+                                      const newArr = [...currentMod.timeSteps];
+                                      newArr[idx].pts = v;
+                                      handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
+                                    }} 
+                                  />
+                                </View>
+                              );
+                            })}
+                            <TouchableOpacity style={[styles.primaryBtn, { paddingVertical: 6, marginTop: 4, backgroundColor: '#16a34a' }]} onPress={() => handleAddTimeStep(selectedConfigActivity)}>
+                              <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold' }}>+ Step</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+
+                        {/* OPÇÃO 4: STEP DE DISTÂNCIA PERCORRIDA (KM) */}
+                        <TouchableOpacity 
+                          style={styles.checkboxRow} 
+                          onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'kmSteps')}
+                        >
+                          <View style={[styles.checkboxBoxCircle, scoringMode === 'kmSteps' && styles.checkboxBoxCircleActive]}>
+                            {scoringMode === 'kmSteps' && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                          </View>
+                          <Text style={styles.checkboxLabel}>Opção 4: Por Step de Distância Percorrida (em KM)</Text>
+                        </TouchableOpacity>
+
+                        {scoringMode === 'kmSteps' && (
+                          <View style={{ paddingLeft: 24, marginBottom: 10 }}>
+                            {(currentMod.kmSteps || []).map((st, idx) => {
+                              const isAcima = st.modeType === 'Acima';
+                              return (
+                                <View key={idx} style={{ backgroundColor: '#f1f5f9', padding: 8, borderRadius: 6, marginBottom: 6, borderWidth: 1, borderColor: '#cbd5e1' }}>
+                                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                    <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1e3a8a' }}>Step KM {idx + 1}</Text>
+                                    <TouchableOpacity onPress={() => handleRemoveKmStep(selectedConfigActivity, idx)}>
+                                      <Text style={{ color: '#dc2626', fontSize: 10, fontWeight: 'bold' }}>Remover Step ✕</Text>
+                                    </TouchableOpacity>
+                                  </View>
+
+                                  <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', marginBottom: 4 }}>
+                                    <View style={styles.nativeSelectWrapperSmall}>
+                                      <select
+                                        style={styles.htmlNativeSelectSmall}
+                                        value={st.modeType || 'De'}
+                                        onChange={(e) => {
+                                          const newArr = [...currentMod.kmSteps];
+                                          newArr[idx].modeType = e.target.value;
+                                          handleUpdateModalityProp(selectedConfigActivity, 'kmSteps', newArr);
+                                        }}
+                                      >
+                                        <option value="De">De</option>
+                                        <option value="Acima">Acima</option>
+                                      </select>
+                                    </View>
+
+                                    <TextInput 
+                                      style={[styles.input, { flex: 1, marginBottom: 0 }]} 
+                                      placeholder="KM" 
+                                      keyboardType="numeric" 
+                                      value={st.minKm} 
+                                      onChangeText={(v) => {
+                                        const newArr = [...currentMod.kmSteps];
+                                        newArr[idx].minKm = v;
+                                        handleUpdateModalityProp(selectedConfigActivity, 'kmSteps', newArr);
+                                      }} 
+                                    />
+                                    <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#64748b' }}>until</Text>
+                                    <TextInput 
+                                      style={[styles.input, { flex: 1, marginBottom: 0, backgroundColor: isAcima ? '#e2e8f0' : '#ffffff' }]} 
+                                      placeholder="Até (KM)" 
+                                      keyboardType="numeric" 
+                                      editable={!isAcima}
+                                      value={isAcima ? '' : st.maxKm} 
+                                      onChangeText={(v) => {
+                                        const newArr = [...currentMod.kmSteps];
+                                        newArr[idx].maxKm = v;
+                                        handleUpdateModalityProp(selectedConfigActivity, 'kmSteps', newArr);
+                                      }} 
+                                    />
+                                  </View>
+
+                                  <Text style={styles.inputLabelMini}>Pontos deste Step:</Text>
+                                  <TextInput 
+                                    style={[styles.input, { marginBottom: 0 }]} 
+                                    placeholder="Quanto valerá o Step (pts)" 
+                                    keyboardType="numeric" 
+                                    value={st.pts} 
+                                    onChangeText={(v) => {
+                                      const newArr = [...currentMod.kmSteps];
+                                      newArr[idx].pts = v;
+                                      handleUpdateModalityProp(selectedConfigActivity, 'kmSteps', newArr);
+                                    }} 
+                                  />
+                                </View>
+                              );
+                            })}
+                            <TouchableOpacity style={[styles.primaryBtn, { paddingVertical: 6, marginTop: 4, backgroundColor: '#16a34a' }]} onPress={() => handleAddKmStep(selectedConfigActivity)}>
+                              <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold' }}>+ Step</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      </>
+                    )}
+                  </View>
+                );
+              })()}
+
+              {/* 3. BÔNUS E CRITÉRIOS DE DESEMPATE */}
               {selectedConfigActivity === '🎁 Bônus e Critérios de Desempate' && (
                 <View style={styles.scoringModeBoxContainer}>
                   <Text style={styles.sectionHeaderTitle}>🎁 Bônus e Critérios de Desempate</Text>
 
-                  <Text style={[styles.inputLabel, { color: '#f97316', marginTop: 6 }]}>Valores dos Bônus Especiais:</Text>
-                  <Text style={styles.inputLabel}>Bônus "O Inquebrável" (Pts):</Text>
-                  <TextInput style={styles.input} keyboardType="numeric" defaultValue="5000" />
-
-                  <Text style={styles.inputLabel}>Bônus "O Desperta" (Pts):</Text>
-                  <TextInput style={styles.input} keyboardType="numeric" defaultValue="3000" />
-
-                  <Text style={[styles.inputLabel, { color: '#1e3a8a', marginTop: 10, fontWeight: '900' }]}>
-                    Selecione os Critérios de Desempate Adotados na Liga:
-                  </Text>
-
+                  {/* BÔNUS O INQUEBRÁVEL */}
                   <TouchableOpacity 
                     style={styles.checkboxRow} 
-                    onPress={() => setTiebreakers({ ...tiebreakers, dailySteps: !tiebreakers.dailySteps })}
+                    onPress={() => setBonusConfig({ ...bonusConfig, inquebravelEnabled: !bonusConfig.inquebravelEnabled })}
                   >
-                    <View style={[styles.checkboxBox, tiebreakers.dailySteps && styles.checkboxBoxActive]}>
-                      {tiebreakers.dailySteps && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                    <View style={[styles.checkboxBoxCircle, bonusConfig.inquebravelEnabled && styles.checkboxBoxCircleActive]}>
+                      {bonusConfig.inquebravelEnabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
                     </View>
-                    <Text style={styles.checkboxLabel}>Passos Diários</Text>
+                    <Text style={styles.checkboxLabel}>Bônus "🪨 O Inquebrável"</Text>
                   </TouchableOpacity>
 
+                  {bonusConfig.inquebravelEnabled && (
+                    <View style={{ paddingLeft: 24, marginBottom: 10 }}>
+                      <Text style={styles.inputLabel}>Dias consecutivos exigidos para o bônus:</Text>
+                      <TextInput 
+                        style={styles.input} 
+                        keyboardType="numeric" 
+                        value={bonusConfig.inquebravelDays} 
+                        onChangeText={(v) => setBonusConfig({ ...bonusConfig, inquebravelDays: v })} 
+                      />
+                      <Text style={styles.inputLabel}>Pontos concedidos (Bônus O Inquebrável):</Text>
+                      <TextInput 
+                        style={styles.input} 
+                        keyboardType="numeric" 
+                        value={bonusConfig.inquebravelPts} 
+                        onChangeText={(v) => setBonusConfig({ ...bonusConfig, inquebravelPts: v })} 
+                      />
+                    </View>
+                  )}
+
+                  {/* BÔNUS O DESPERTA */}
                   <TouchableOpacity 
                     style={styles.checkboxRow} 
-                    onPress={() => setTiebreakers({ ...tiebreakers, bankPoints: !tiebreakers.bankPoints })}
+                    onPress={() => setBonusConfig({ ...bonusConfig, despertaEnabled: !bonusConfig.despertaEnabled })}
                   >
-                    <View style={[styles.checkboxBox, tiebreakers.bankPoints && styles.checkboxBoxActive]}>
-                      {tiebreakers.bankPoints && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                    <View style={[styles.checkboxBoxCircle, bonusConfig.despertaEnabled && styles.checkboxBoxCircleActive]}>
+                      {bonusConfig.despertaEnabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
                     </View>
-                    <Text style={styles.checkboxLabel}>Banco de Pontos</Text>
+                    <Text style={styles.checkboxLabel}>Bônus "⏰ O Desperta"</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity 
-                    style={styles.checkboxRow} 
-                    onPress={() => setTiebreakers({ ...tiebreakers, totalKm: !tiebreakers.totalKm })}
-                  >
-                    <View style={[styles.checkboxBox, tiebreakers.totalKm && styles.checkboxBoxActive]}>
-                      {tiebreakers.totalKm && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                  {bonusConfig.despertaEnabled && (
+                    <View style={{ paddingLeft: 24, marginBottom: 10 }}>
+                      <Text style={styles.inputLabel}>Horário limite para postar o treino (formato 24h, ex: 08:00):</Text>
+                      <TextInput 
+                        style={styles.input} 
+                        placeholder="08:00"
+                        value={bonusConfig.despertaLimitTime} 
+                        onChangeText={(v) => setBonusConfig({ ...bonusConfig, despertaLimitTime: v })} 
+                      />
+                      <Text style={styles.inputLabel}>Pontos concedidos (Bônus O Desperta):</Text>
+                      <TextInput 
+                        style={styles.input} 
+                        keyboardType="numeric" 
+                        value={bonusConfig.despertaPts} 
+                        onChangeText={(v) => setBonusConfig({ ...bonusConfig, despertaPts: v })} 
+                      />
                     </View>
-                    <Text style={styles.checkboxLabel}>Km Total Percorrido</Text>
-                  </TouchableOpacity>
+                  )}
 
-                  <TouchableOpacity 
-                    style={styles.checkboxRow} 
-                    onPress={() => setTiebreakers({ ...tiebreakers, activeDays: !tiebreakers.activeDays })}
-                  >
-                    <View style={[styles.checkboxBox, tiebreakers.activeDays && styles.checkboxBoxActive]}>
-                      {tiebreakers.activeDays && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                  <Text style={[styles.sectionHeaderTitle, { marginTop: 12 }]}>Selecione os Critérios de Desempate:</Text>
+                  <Text style={{ fontSize: 9, color: '#64748b', marginBottom: 6 }}>Marque para habilitar e defina a ordem de preferência:</Text>
+
+                  {tiebreakers.map((tb, index) => (
+                    <View key={tb.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#ffffff', padding: 8, borderRadius: 6, marginBottom: 6, borderWidth: 1, borderColor: '#cbd5e1' }}>
+                      <TouchableOpacity 
+                        style={styles.checkboxRow} 
+                        onPress={() => {
+                          const updated = [...tiebreakers];
+                          updated[index].enabled = !updated[index].enabled;
+                          setTiebreakers(updated);
+                        }}
+                      >
+                        <View style={[styles.checkboxBoxCircle, tb.enabled && styles.checkboxBoxCircleActive]}>
+                          {tb.enabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                        </View>
+                        <Text style={styles.checkboxLabel}>{tb.label}</Text>
+                      </TouchableOpacity>
+
+                      <View style={{ width: 90 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#1e3a8a' }}>Ordem:</span>
+                          <select
+                            style={{ width: '45px', padding: '4px', fontSize: '10px', fontWeight: 'bold', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                            value={tb.order}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10);
+                              const updated = [...tiebreakers];
+                              updated[index].order = val;
+                              setTiebreakers(updated);
+                            }}
+                          >
+                            <option value={1}>1º</option>
+                            <option value={2}>2º</option>
+                            <option value={3}>3º</option>
+                            <option value={4}>4º</option>
+                          </select>
+                        </div>
+                      </View>
                     </View>
-                    <Text style={styles.checkboxLabel}>Dias em atividade</Text>
-                  </TouchableOpacity>
+                  ))}
                 </View>
               )}
 
@@ -2664,7 +2927,7 @@ export default function App() {
             <TextInput style={styles.input} placeholder="Ex: MUV2026" autoCapitalize="characters" value={newChallengeCode} onChangeText={setNewChallengeCode} />
 
             <TouchableOpacity style={styles.checkboxRow} onPress={() => setHasCapToggle(!hasCapToggle)}>
-              <View style={[styles.checkboxBox, hasCapToggle && styles.checkboxBoxActive]}>{hasCapToggle && <Text style={styles.checkboxCheckmark}>✓</Text>}</View>
+              <View style={[styles.checkboxBoxCircle, hasCapToggle && styles.checkboxBoxCircleActive]}>{hasCapToggle && <Text style={styles.checkboxCheckmark}>✓</Text>}</View>
               <Text style={styles.checkboxLabel}>Ativar Teto Diário de Pontos?</Text>
             </TouchableOpacity>
 
@@ -2695,7 +2958,7 @@ export default function App() {
               <Text style={styles.modalTitle}>Registrar Treino ({selectedChallenge?.title || 'MuvFit'})</Text>
 
               <View style={styles.rulesCardBox}>
-                <Text style={styles.rulesCardTitle}>📜 Regras Ativas:</Text>
+                <Text style={styles.rulesCardTitle}>📜 Regras Ativas & Bônus Automáticos:</Text>
                 {getDynamicActiveRulesText().map((ruleText, idx) => (
                   <Text key={idx} style={styles.rulesCardItem}>{ruleText}</Text>
                 ))}
@@ -2856,6 +3119,9 @@ const styles = StyleSheet.create({
   nativeSelectWrapper: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, marginBottom: 6, overflow: 'hidden' },
   htmlNativeSelect: { width: '100%', padding: 8, fontSize: 11, fontWeight: 'bold', color: '#0f172a', backgroundColor: 'transparent', border: 'none', outline: 'none', cursor: 'pointer' },
 
+  nativeSelectWrapperSmall: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, overflow: 'hidden', width: 85 },
+  htmlNativeSelectSmall: { width: '100%', padding: 6, fontSize: 10, fontWeight: 'bold', color: '#0f172a', backgroundColor: 'transparent', border: 'none', outline: 'none', cursor: 'pointer' },
+
   floatingDropdownContainer: { backgroundColor: '#ffffff', borderWidth: 2, borderColor: '#f97316', borderRadius: 6, marginBottom: 8, elevation: 10 },
   dropdownOptionRow: { flexDirection: 'row', alignItems: 'center', padding: 10, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', backgroundColor: '#ffffff' },
 
@@ -2945,8 +3211,8 @@ const styles = StyleSheet.create({
   chipTextActive: { color: '#ffffff' },
 
   checkboxRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 6, gap: 8 },
-  checkboxBox: { width: 18, height: 18, borderWidth: 2, borderColor: '#1e3a8a', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' },
-  checkboxBoxActive: { backgroundColor: '#f97316', borderColor: '#f97316' },
+  checkboxBoxCircle: { width: 18, height: 18, borderWidth: 2, borderColor: '#1e3a8a', borderRadius: 9, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' },
+  checkboxBoxCircleActive: { backgroundColor: '#f97316', borderColor: '#f97316' },
   checkboxCheckmark: { color: '#ffffff', fontSize: 10, fontWeight: 'bold' },
   checkboxLabel: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
 
