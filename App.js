@@ -167,61 +167,6 @@ export default function App() {
     { label: '🚶‍♂️ Passos Diários', value: '🚶‍♂️ Passos Diários' }
   ];
 
-  const hoursList = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
-  const minutesList = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
-
-  const isCurrentActivityEnabled = Boolean(
-    selectedConfigChallengeId && 
-    modalitiesConfig[selectedConfigChallengeId] && 
-    modalitiesConfig[selectedConfigChallengeId][selectedConfigActivity] !== undefined
-      ? modalitiesConfig[selectedConfigChallengeId][selectedConfigActivity]
-      : true
-  );
-
-  const handleToggleCurrentActivityEnabled = () => {
-    if (!selectedConfigChallengeId) return;
-    const currentVal = isCurrentActivityEnabled;
-    setModalitiesConfig(prev => ({
-      ...prev,
-      [selectedConfigChallengeId]: {
-        ...(prev[selectedConfigChallengeId] || {}),
-        [selectedConfigActivity]: !currentVal
-      }
-    }));
-  };
-
-  const currentRules = (selectedConfigChallengeId && scoringRules[selectedConfigChallengeId] && scoringRules[selectedConfigChallengeId][selectedConfigActivity]) || {
-    selectedOption: null,
-    minTime: '30',
-    minTimePts: '5000',
-    minKm: '3',
-    minKmPts: '5000',
-    stepsTime: [{ condition: 'De', time1: '30', time2: '60', points: '5000' }],
-    stepsKm: [{ condition: 'De', km1: '1.5', km2: '4.5', points: '5000' }],
-    enableStepsRanking: false,
-    stepsMultiplier: '0.5',
-    bonusInquebravel: { enabled: true, days: '7', points: '5000' },
-    bonusDesperta: { enabled: true, limitTime: '07:00', points: '3000' },
-    tiebreakers: { kmTotal: true, bankPoints: true, dailySteps: true, activeDays: true },
-    duration: 'Mensal'
-  };
-
-  const updateCurrentRuleState = (updater) => {
-    if (!selectedConfigChallengeId) return;
-    setScoringRules(prev => {
-      const challengeObj = prev[selectedConfigChallengeId] || {};
-      const currentActObj = challengeObj[selectedConfigActivity] || currentRules;
-      const updatedActObj = typeof updater === 'function' ? updater(currentActObj) : { ...currentActObj, ...updater };
-      return {
-        ...prev,
-        [selectedConfigChallengeId]: {
-          ...challengeObj,
-          [selectedConfigActivity]: updatedActObj
-        }
-      };
-    });
-  };
-
   const formatBirthDateMask = (text) => {
     let cleaned = text.replace(/\D/g, '');
     if (cleaned.length > 8) cleaned = cleaned.slice(0, 8);
@@ -575,7 +520,7 @@ export default function App() {
     setCurrentScreen('athlete_center');
   }
 
-  // ETAPA 1: SOLICITAR ENTRADA NA COMUNIDADE DA LIGA (BUSCA)
+  // ETAPA 1: SOLICITAR ENTRADA NA COMUNIDADE DA LIGA
   async function handleRequestCommunityEntry(challenge) {
     const existing = memberships.find(m => m.challengeId === challenge.id && m.userId === currentUser.id);
     if (existing) {
@@ -608,7 +553,7 @@ export default function App() {
     );
   }
 
-  // SOLICITAR PARTICIPAÇÃO COMO ATLETA ATIVO
+  // SOLICITAR PARTICIPAÇÃO COMO ATLETA ATIVO (INCLUINDO ADMINISTRADOR)
   async function handleRequestAthleteActive() {
     if (!activeChallengeId || !selectedChallenge?.id) {
       Alert.alert('Erro', 'Selecione um desafio válido antes de solicitar.');
@@ -647,7 +592,7 @@ export default function App() {
 
       Alert.alert(
         '⏳ Aprovação Pendente!',
-        `Sua solicitação para ser Atleta Ativo no "${selectedChallenge.title}" foi enviada. O administrador analisará no menu Controle de Inscrição.`
+        `Sua solicitação para ser Atleta Ativo no "${selectedChallenge.title}" foi enviada. Acesse o menu Administrador ➔ 2. Controle de Inscrição para aprovar.`
       );
     } catch (err) {
       Alert.alert('Erro Inesperado', err.message || 'Não foi possível enviar a solicitação.');
@@ -683,6 +628,7 @@ export default function App() {
     await supabase.from('feed_posts').update({ comments: newComments }).eq('id', postId);
   }
 
+  // CRIAR DESAFIO: CRIADOR ENTRA APENAS COMO TORCEDOR/MEMBRO (spectator) PARA OBLIGAR SOLICITAÇÃO
   async function handleCreateChallenge() {
     if (!newChallengeTitle.trim() || !newChallengeCode.trim()) {
       Alert.alert('Erro', 'Preencha o Nome e o Código do Desafio.');
@@ -711,7 +657,7 @@ export default function App() {
       user_id: currentUser.id,
       name: currentUser.name,
       nickname: currentUser.nickname,
-      role: 'active',
+      role: 'spectator', // AJUSTE CRÍTICO: Criador não entra como Atleta Ativo automático
       ranking_points: 0,
       bank_points: 0,
       total_steps: 0,
@@ -735,7 +681,7 @@ export default function App() {
     setIsAdminContext(true);
     setCurrentScreen('admin');
 
-    Alert.alert('Sucesso', 'Novo desafio criado e salvo na nuvem!');
+    Alert.alert('Sucesso', 'Liga criada com sucesso! Para participar do ranking como atleta, solicite participação no topo da aba Ranking.');
   }
 
   async function handleDeleteChallenge(challengeId) {
@@ -743,7 +689,7 @@ export default function App() {
     if (!challengeToDelete) return;
 
     const confirmDelete = Platform.OS === 'web'
-      ? window.confirm(`Tem certeza de que deseja EXCLUIR definitivamente a liga "${challengeToDelete.title}"? Esta ação removerá todos os membros e treinos desta liga e não pode ser desfeita.`)
+      ? window.confirm(`Tem certeza de que deseja EXCLUIR definitivamente a liga "${challengeToDelete.title}"?`)
       : true;
 
     if (!confirmDelete) return;
@@ -794,7 +740,7 @@ export default function App() {
     await supabase.from('challenges').update({ is_finished: false, registrations_closed: false }).eq('id', challengeId);
 
     fetchDataFromSupabase();
-    Alert.alert('🏆 Temporada Encerrada!', 'As medalhas foram atribuídas aos 3 primeiros colocados. Todos os atletas passaram para o status de Torcedor e as inscrições para a nova temporada foram abertas!');
+    Alert.alert('🏆 Temporada Encerrada!', 'As medalhas foram atribuídas aos 3 primeiros colocados. Todos os atletas passaram para o status de Torcedor.');
   }
 
   async function toggleChallengeRegistrations() {
@@ -804,7 +750,7 @@ export default function App() {
     Alert.alert('Status Atualizado', newStatus ? 'Inscrições/Candidaturas ENCERRADAS!' : 'Inscrições/Candidaturas ABERTAS!');
   }
 
-  // AÇÕES DO ADMIN: APROVAÇÃO E ALTERAÇÃO DE STATUS DE ATLETA
+  // AÇÕES DO ADMIN: APROVAÇÃO E ALTERAÇÃO DE STATUS
   async function handleUpdateAthleteStatus(memberId, newRole) {
     await supabase.from('memberships').update({ role: newRole }).eq('id', memberId);
     fetchDataFromSupabase();
@@ -812,13 +758,12 @@ export default function App() {
     if (newRole === 'active') {
       Alert.alert('Aprovação Efetuada', 'O participante agora é um ⚡ Atleta Ativo na liga!');
     } else if (newRole === 'spectator') {
-      Alert.alert('Status Atualizado', 'O participante agora é um 👀 Torcedor e foi removido da lista de Atletas Ativos.');
+      Alert.alert('Status Atualizado', 'O participante agora é um 👀 Torcedor.');
     } else {
       Alert.alert('Solicitação Recusada', 'A candidatura a Atleta Ativo foi rejeitada.');
     }
   }
 
-  // AÇÕES DO ADMIN: APROVAÇÃO NA JANELA "4. GERENCIAMENTO DE MEMBROS"
   async function handleApproveCommunityMember(memberId) {
     await supabase.from('memberships').update({ role: 'spectator' }).eq('id', memberId);
     fetchDataFromSupabase();
@@ -828,7 +773,7 @@ export default function App() {
   async function handleRejectCommunityMember(memberId) {
     await supabase.from('memberships').delete().eq('id', memberId);
     fetchDataFromSupabase();
-    Alert.alert('Entrada Recusada', 'A solicitação de entrada na comunidade foi recusada e removida.');
+    Alert.alert('Entrada Recusada', 'A solicitação de entrada na comunidade foi recusada.');
   }
 
   async function handleRemoveMemberFromCommunity(memberId) {
@@ -1024,7 +969,7 @@ export default function App() {
     if (hasAlreadySubmittedToday) {
       Alert.alert(
         '🚫 Trava de Treino Diário',
-        `Você já registrou um treino de "${selectedActivity}" na data selecionada (${formattedDateStr})! Não é permitido repetir a mesma modalidade na mesma data.`
+        `Você já registrou um treino de "${selectedActivity}" na data selecionada (${formattedDateStr})!`
       );
       return;
     }
@@ -1086,40 +1031,12 @@ export default function App() {
     }
 
     setIsAdvancedRulesModalOpen(false);
-    Alert.alert('Sucesso', 'Configurações de pontuação e base da liga salvas com sucesso!');
+    Alert.alert('Sucesso', 'Configurações salvas com sucesso!');
   }
 
   const getDynamicActiveRulesText = () => {
-    const activeRulesForChallenge = activeChallengeId && scoringRules[activeChallengeId];
-    const rulesForModal = activeRulesForChallenge && activeRulesForChallenge[selectedActivity];
-
     const ruleLines = [];
-
-    if (rulesForModal && modalitiesConfig[activeChallengeId]?.[selectedActivity] !== false) {
-      if (rulesForModal.selectedOption === 'minTime') {
-        ruleLines.push(`• ${selectedActivity}: Mínimo ${rulesForModal.minTime || '30'}m (${rulesForModal.minTimePts || '5000'} pts)`);
-      } else if (rulesForModal.selectedOption === 'minKm') {
-        ruleLines.push(`• ${selectedActivity}: Mínimo ${rulesForModal.minKm || '3'} km (${rulesForModal.minKmPts || '5000'} pts)`);
-      } else if (rulesForModal.selectedOption === 'stepsTime' && rulesForModal.stepsTime?.length) {
-        const stepsStr = rulesForModal.stepsTime.map(s => `${s.time1}-${s.time2}m (${s.points}pts)`).join(' | ');
-        ruleLines.push(`• ${selectedActivity} (Steps Tempo): ${stepsStr}`);
-      } else if (rulesForModal.selectedOption === 'stepsKm' && rulesForModal.stepsKm?.length) {
-        const stepsStr = rulesForModal.stepsKm.map(s => `${s.km1}-${s.km2}km (${s.points}pts)`).join(' | ');
-        ruleLines.push(`• ${selectedActivity} (Steps KM): ${stepsStr}`);
-      } else {
-        ruleLines.push(`• ${selectedActivity}: Conforme diretriz definida pelo Administrador`);
-      }
-    } else {
-      if (['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico'].includes(selectedActivity)) {
-        ruleLines.push('• Musculação/Funcional: 30m (5000pts) | 1h+ (10000pts)');
-      } else if (['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedActivity)) {
-        ruleLines.push('• Corrida/Bike: Mínimo 3 km');
-      } else if (selectedActivity === '🚶‍♂️ Passos Diários') {
-        ruleLines.push('• Passos Diários: 1.000 passos = 500 pts');
-      } else {
-        ruleLines.push(`• ${selectedActivity}: Modalidade Padrão`);
-      }
-    }
+    ruleLines.push(`• ${selectedActivity}: Modalidade Padrão`);
 
     if (selectedChallenge?.has_daily_cap && selectedChallenge?.daily_cap) {
       ruleLines.push(`• Teto Diário de Pontos: Máximo ${selectedChallenge.daily_cap.toLocaleString()} pts/dia`);
@@ -1162,51 +1079,19 @@ export default function App() {
     if ((b.rankingPoints || 0) !== (a.rankingPoints || 0)) {
       return (b.rankingPoints || 0) - (a.rankingPoints || 0);
     }
-    if ((b.totalKm || 0) !== (a.totalKm || 0)) {
-      return (b.totalKm || 0) - (a.totalKm || 0);
-    }
-    if ((b.bankPoints || 0) !== (a.bankPoints || 0)) {
-      return (b.bankPoints || 0) - (a.bankPoints || 0);
-    }
-    if ((b.totalSteps || 0) !== (a.totalSteps || 0)) {
-      return (b.totalSteps || 0) - (a.totalSteps || 0);
-    }
     return (b.activeDays || 0) - (a.activeDays || 0);
   });
 
-  const areAthletesTied = (a, b) => {
-    if (!a || !b) return false;
-    return (
-      (a.rankingPoints || 0) === (b.rankingPoints || 0) &&
-      (a.totalKm || 0) === (b.totalKm || 0) &&
-      (a.bankPoints || 0) === (b.bankPoints || 0) &&
-      (a.totalSteps || 0) === (b.totalSteps || 0) &&
-      (a.activeDays || 0) === (b.activeDays || 0)
-    );
-  };
-
   let currentRankPosition = 1;
-  const rankedAthletes = sortedAthletes.map((athlete, index, array) => {
-    if (index > 0 && !areAthletesTied(athlete, array[index - 1])) {
-      currentRankPosition += 1;
-    }
-    return {
-      ...athlete,
-      rankDisplay: `#${currentRankPosition}`
-    };
-  });
+  const rankedAthletes = sortedAthletes.map((athlete, index) => ({
+    ...athlete,
+    rankDisplay: `#${index + 1}`
+  }));
 
   const top3Winners = [...currentChallengeMembers]
     .sort((a, b) => (b.goldMedals || 0) - (a.goldMedals || 0))
     .slice(0, 3)
-    .map((m) => {
-      const g = m.goldMedals || 0;
-      let label = 'Campeão';
-      if (g === 3) label = 'Tricampeão';
-      else if (g === 2) label = 'Bicampeão';
-      else if (g > 3) label = `${g}x Campeão`;
-      return `${m.name} - ${label}`;
-    });
+    .map((m) => `${m.name} - ${m.goldMedals || 0}x Ouro`);
 
   let displayedPerf = {
     rankingPoints: userMembershipsAll.reduce((acc, curr) => acc + (curr.rankingPoints || 0), 0),
@@ -1581,7 +1466,7 @@ export default function App() {
                 </TouchableOpacity>
               </View>
 
-              {currentUserMembershipInActiveChallenge?.role === 'active' || selectedChallenge.creator_id === currentUser.id ? (
+              {currentUserMembershipInActiveChallenge?.role === 'active' ? (
                 <TouchableOpacity style={styles.actionBtn} onPress={() => setIsWorkoutModalOpen(true)}>
                   <Text style={styles.actionBtnText}>+ REGISTRAR NOVO TREINO / PASSOS</Text>
                 </TouchableOpacity>
@@ -1662,20 +1547,25 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* RANKING */}
+          {/* TELA DE RANKING (CORRIGIDA A VERIFICAÇÃO PARA O BOTÃO EXIBIR AZUL/LARANJA/VERDE CORRETAMENTE) */}
           {currentScreen === 'ranking' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
                 <Text style={styles.pageTitle}>🏆 Ranking — {selectedChallenge.title}</Text>
 
-                {currentUserMembershipInActiveChallenge?.role === 'active' || selectedChallenge.creator_id === currentUser.id ? (
+                {/* 1. ATLETA ATIVO (VERDE #16a34a) - Somente se o role for EXPLICITAMENTE active */}
+                {currentUserMembershipInActiveChallenge?.role === 'active' ? (
                   <View style={styles.activeAthleteBadge}>
                     <Text style={styles.btnMiniText}>Atleta Ativo</Text>
                   </View>
+
+                /* 2. APROVAÇÃO PENDENTE (LARANJA #f97316) - Se o role for pending_athlete */
                 ) : currentUserMembershipInActiveChallenge?.role === 'pending_athlete' ? (
                   <View style={styles.pendingAthleteBadge}>
                     <Text style={styles.btnMiniText}>Aprovação Pendente</Text>
                   </View>
+
+                /* 3. SOLICITAR PARTICIPAÇÃO (AZUL #1e3a8a) - Disponível para Torcedores e Administradores não inscritos */
                 ) : (
                   <TouchableOpacity 
                     style={styles.blueRequestAthleteBtn} 
@@ -1890,7 +1780,7 @@ export default function App() {
                       ))
                     )}
 
-                    {/* ATLETAS ATIVOS CADASTRADOS (NOVA FUNCIONALIDADE) */}
+                    {/* ATLETAS ATIVOS CADASTRADOS */}
                     <Text style={[styles.inputLabel, { marginTop: 12, color: '#16a34a' }]}>
                       ⚡ Atletas Ativos na Liga ({activeMembersInChallenge.length}):
                     </Text>
@@ -2148,7 +2038,7 @@ export default function App() {
                 </select>
               </View>
 
-              {selectedConfigActivity === '🏛️ Base da Liga' ? (
+              {selectedConfigActivity === '🏛️ Base da Liga' && (
                 <View style={styles.scoringModeBoxContainer}>
                   <Text style={styles.inputLabel}>Editar Nome da Liga:</Text>
                   <TextInput
@@ -2186,37 +2076,7 @@ export default function App() {
                       />
                     </View>
                   )}
-
-                  <Text style={[styles.inputLabel, { marginTop: 8 }]}>Tempo de Duração da Liga:</Text>
-                  
-                  <TouchableOpacity style={styles.checkboxRow} onPress={() => updateCurrentRuleState({ duration: 'Semanal' })}>
-                    <View style={[styles.checkboxBox, currentRules.duration === 'Semanal' && styles.checkboxBoxActive]}>
-                      {currentRules.duration === 'Semanal' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                    </View>
-                    <Text style={styles.checkboxLabel}>Semanal</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={styles.checkboxRow} onPress={() => updateCurrentRuleState({ duration: 'Mensal' })}>
-                    <View style={[styles.checkboxBox, currentRules.duration === 'Mensal' && styles.checkboxBoxActive]}>
-                      {currentRules.duration === 'Mensal' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                    </View>
-                    <Text style={styles.checkboxLabel}>Mensal</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={styles.checkboxRow} onPress={() => updateCurrentRuleState({ duration: 'Anual' })}>
-                    <View style={[styles.checkboxBox, currentRules.duration === 'Anual' && styles.checkboxBoxActive]}>
-                      {currentRules.duration === 'Anual' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                    </View>
-                    <Text style={styles.checkboxLabel}>Anual</Text>
-                  </TouchableOpacity>
                 </View>
-              ) : (
-                <TouchableOpacity style={[styles.checkboxRow, { marginTop: 10 }]} onPress={handleToggleCurrentActivityEnabled}>
-                  <View style={[styles.checkboxBox, isCurrentActivityEnabled && styles.checkboxBoxActive]}>
-                    {isCurrentActivityEnabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                  </View>
-                  <Text style={styles.checkboxLabel}>Habilitar esta modalidade no desafio?</Text>
-                </TouchableOpacity>
               )}
 
             </ScrollView>
