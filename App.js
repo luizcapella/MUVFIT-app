@@ -38,6 +38,63 @@ function calculateAge(birthDateString) {
   return isNaN(age) ? null : age;
 }
 
+// CÁLCULO DE DATAS DA TEMPORADA/ÉPOCA
+function calculateSeasonDates(periodType, isRenewal = false, referenceDate = new Date()) {
+  const year = referenceDate.getFullYear();
+  const month = referenceDate.getMonth();
+  
+  let startDateObj = new Date(referenceDate);
+  let endDateObj = new Date(referenceDate);
+
+  if (periodType === 'Weekly') {
+    if (isRenewal) {
+      const dayOfWeek = referenceDate.getDay();
+      startDateObj.setDate(referenceDate.getDate() - dayOfWeek); // Domingo
+    }
+    const dayOfWeek = startDateObj.getDay();
+    const distanceToSaturday = 6 - dayOfWeek;
+    endDateObj = new Date(startDateObj);
+    endDateObj.setDate(startDateObj.getDate() + distanceToSaturday); // Sábado
+  } else if (periodType === 'Yearly') {
+    if (isRenewal) {
+      startDateObj = new Date(year, 0, 1); // 01/01
+    }
+    endDateObj = new Date(year, 11, 31); // 31/12
+  } else {
+    // Monthly (Padrão)
+    if (isRenewal) {
+      startDateObj = new Date(year, month, 1); // 01 do mês
+    }
+    endDateObj = new Date(year, month + 1, 0); // Último dia do mês
+  }
+
+  const formatDate = (date) => {
+    const d = String(date.getDate()).padStart(2, '0');
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const y = date.getFullYear();
+    return `${d}/${m}/${y}`;
+  };
+
+  return {
+    startDateStr: formatDate(startDateObj),
+    endDateStr: formatDate(endDateObj),
+    startDateObj,
+    endDateObj
+  };
+}
+
+// FORMATADOR DE TÍTULOS DO HALL DA FAMA
+function getChampionTitle(goldCount) {
+  if (goldCount <= 0) return '';
+  if (goldCount === 1) return 'Campeão';
+  if (goldCount === 2) return 'Bi-campeão';
+  if (goldCount === 3) return 'Tri-campeão';
+  if (goldCount === 4) return 'Tetra-campeão';
+  if (goldCount === 5) return 'Penta-campeão';
+  if (goldCount === 6) return 'Hexa-campeão';
+  return `${goldCount}x Campeão`;
+}
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
@@ -126,6 +183,7 @@ export default function App() {
   const [newChallengeCode, setNewChallengeCode] = useState('');
   const [hasCapToggle, setHasCapToggle] = useState(false);
   const [newChallengeCap, setNewChallengeCap] = useState('22000');
+  const [newChallengePeriod, setNewChallengePeriod] = useState('Monthly');
 
   // ESTADOS DO PAINEL DO ADMINISTRADOR
   const [expandedSec1, setExpandedSec1] = useState(true);
@@ -712,6 +770,7 @@ export default function App() {
     await supabase.from('feed_posts').update({ comments: newComments }).eq('id', postId);
   }
 
+  // CRIAÇÃO DE DESAFIO COM DATAS DINÂMICAS DE ACORDO COM A PERIODICIDADE
   async function handleCreateChallenge() {
     if (!newChallengeTitle.trim() || !newChallengeCode.trim()) {
       Alert.alert('Erro', 'Preencha o Nome e o Código do Desafio.');
@@ -724,8 +783,11 @@ export default function App() {
       bonusConfig,
       dailyStepsConfig,
       tiebreakers,
-      leaguePeriod
+      leaguePeriod: newChallengePeriod
     };
+
+    // CALCULA DATAS DINÂMICAS BASEADAS NA DATA ATUAL DE CRIAÇÃO (IS_RENEWAL = FALSE)
+    const dates = calculateSeasonDates(newChallengePeriod, false, new Date());
 
     const newObj = {
       id: newId,
@@ -736,8 +798,8 @@ export default function App() {
       daily_cap: hasCapToggle ? (parseInt(newChallengeCap, 10) || 22000) : null,
       registrations_closed: false,
       is_finished: false,
-      start_date: '01/10/2026',
-      end_date: '31/10/2026',
+      start_date: dates.startDateStr,
+      end_date: dates.endDateStr,
       tiebreaker_enabled: true,
       rules_config: initialRulesConfig
     };
@@ -773,7 +835,7 @@ export default function App() {
     setIsAdminContext(true);
     setCurrentScreen('admin');
 
-    Alert.alert('Sucesso', 'Liga criada com sucesso! As regras configuradas foram salvas no Supabase.');
+    Alert.alert('Sucesso', `Liga criada com sucesso! Vigência inicial: ${dates.startDateStr} até ${dates.endDateStr}`);
   }
 
   async function handleDeleteChallenge(challengeId) {
@@ -811,28 +873,60 @@ export default function App() {
     }
   }
 
+  // ENCERRAMENTO E REINÍCIO AUTOMÁTICO DE TEMPORADA
   async function handleFinishChallenge(challengeId) {
+    const targetChallenge = challenges.find(c => c.id === challengeId);
+    if (!targetChallenge) return;
+
     const challengeMembers = memberships.filter(m => m.challengeId === challengeId && m.role === 'active');
     const sorted = [...challengeMembers].sort((a, b) => (b.rankingPoints || 0) - (a.rankingPoints || 0));
 
+    // ATRIBUIÇÃO DE MEDALHAS NO PERFIL E NA LIGA
     if (sorted[0]) {
-      await supabase.from('memberships').update({ gold_medals: (sorted[0].goldMedals || 0) + 1 }).eq('id', sorted[0].id);
-      await supabase.from('profiles').update({ gold_medals: (sorted[0].goldMedals || 0) + 1 }).eq('id', sorted[0].userId);
+      const newGold = (sorted[0].goldMedals || 0) + 1;
+      await supabase.from('memberships').update({ gold_medals: newGold }).eq('id', sorted[0].id);
+      await supabase.from('profiles').update({ gold_medals: newGold }).eq('id', sorted[0].userId);
     }
     if (sorted[1]) {
-      await supabase.from('memberships').update({ silver_medals: (sorted[1].silverMedals || 0) + 1 }).eq('id', sorted[1].id);
-      await supabase.from('profiles').update({ silver_medals: (sorted[1].silverMedals || 0) + 1 }).eq('id', sorted[1].userId);
+      const newSilver = (sorted[1].silverMedals || 0) + 1;
+      await supabase.from('memberships').update({ silver_medals: newSilver }).eq('id', sorted[1].id);
+      await supabase.from('profiles').update({ silver_medals: newSilver }).eq('id', sorted[1].userId);
     }
     if (sorted[2]) {
-      await supabase.from('memberships').update({ bronze_medals: (sorted[2].bronzeMedals || 0) + 1 }).eq('id', sorted[2].id);
-      await supabase.from('profiles').update({ bronze_medals: (sorted[2].bronzeMedals || 0) + 1 }).eq('id', sorted[2].userId);
+      const newBronze = (sorted[2].bronzeMedals || 0) + 1;
+      await supabase.from('memberships').update({ bronze_medals: newBronze }).eq('id', sorted[2].id);
+      await supabase.from('profiles').update({ bronze_medals: newBronze }).eq('id', sorted[2].userId);
     }
 
-    await supabase.from('memberships').update({ role: 'spectator', ranking_points: 0, bank_points: 0 }).eq('challenge_id', challengeId);
-    await supabase.from('challenges').update({ is_finished: false, registrations_closed: false }).eq('id', challengeId);
+    // RESET DOS ATLETAS ATIVOS PARA TORCEDOR E ZERAMENTO DE PONTOS
+    await supabase.from('memberships').update({ 
+      role: 'spectator', 
+      ranking_points: 0, 
+      bank_points: 0,
+      total_steps: 0,
+      total_km: 0
+    }).eq('challenge_id', challengeId);
+
+    // CALCULA A NOVA TEMPORADA (IS_RENEWAL = TRUE, DATA DO DIA SEGUINTE)
+    const period = targetChallenge.rules_config?.leaguePeriod || 'Monthly';
+    const nextDayDate = new Date();
+    nextDayDate.setDate(nextDayDate.getDate() + 1);
+
+    const newSeasonDates = calculateSeasonDates(period, true, nextDayDate);
+
+    // ATUALIZA A LIGA NO SUPABASE COM AS NOVAS DATAS E ABERTA PARA CANDIDATURAS
+    await supabase.from('challenges').update({ 
+      is_finished: false, 
+      registrations_closed: false,
+      start_date: newSeasonDates.startDateStr,
+      end_date: newSeasonDates.endDateStr
+    }).eq('id', challengeId);
 
     fetchDataFromSupabase();
-    Alert.alert('🏆 Temporada Encerrada!', 'As medalhas foram atribuídas aos 3 primeiros colocados. Todos os atletas passaram para o status de Torcedor.');
+    Alert.alert(
+      '🏆 Temporada Encerrada!', 
+      `As medalhas foram distribuídas no Hall da Fama e perfis! Os atletas voltaram ao status de Torcedor. Nova Época Iniciada: ${newSeasonDates.startDateStr} até ${newSeasonDates.endDateStr}`
+    );
   }
 
   async function toggleChallengeRegistrations() {
@@ -1364,10 +1458,12 @@ export default function App() {
     rankDisplay: `#${index + 1}`
   }));
 
+  // HALL DA FAMA: FILTRA OS 3 MAIORES CAMPEÕES DE OURO DESTA LIGA ESPECÍFICA
   const top3Winners = [...currentChallengeMembers]
+    .filter(m => (m.goldMedals || 0) > 0)
     .sort((a, b) => (b.goldMedals || 0) - (a.goldMedals || 0))
     .slice(0, 3)
-    .map((m) => `${m.name} - ${m.goldMedals || 0}x Ouro`);
+    .map((m) => `${m.name} (${m.nickname}) - ${getChampionTitle(m.goldMedals)} (${m.goldMedals}x)`);
 
   let displayedPerf = {
     rankingPoints: userMembershipsAll.reduce((acc, curr) => acc + (curr.rankingPoints || 0), 0),
@@ -1700,7 +1796,7 @@ export default function App() {
 
                       {!c.is_finished && (
                         <TouchableOpacity style={styles.dashboardActionBtnOrange} onPress={() => handleFinishChallenge(c.id)}>
-                          <Text style={styles.dashboardActionBtnText}>🏆 ENCERRAR</Text>
+                          <Text style={styles.dashboardActionBtnText}>🏆 ENCERRAR TEMPORADA</Text>
                         </TouchableOpacity>
                       )}
 
@@ -1834,7 +1930,7 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* TELA DE RANKING */}
+          {/* TELA DE RANKING COM HALL DA FAMA DEDICADO */}
           {currentScreen === 'ranking' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
@@ -1853,16 +1949,23 @@ export default function App() {
                     style={styles.blueRequestAthleteBtn} 
                     onPress={handleRequestAthleteActive}
                   >
-                    <Text style={styles.btnMiniText}>Solicitação de Participação - {selectedChallenge.title}</Text>
+                    <Text style={styles.btnMiniText}>SOLICITAR PARTICIPAÇÃO - {selectedChallenge.title}</Text>
                   </TouchableOpacity>
                 )}
               </View>
               
+              {/* HALL DA FAMA */}
               <View style={styles.topWinnersBannerBox}>
-                <Text style={styles.topWinnersBannerTitle}>🥇 MAIORES VENCEDORES DA LIGA</Text>
-                <Text style={styles.topWinnersBannerList}>
-                  {top3Winners.length > 0 ? top3Winners.join('; ') : 'Nenhum campeão registrado ainda'}
-                </Text>
+                <Text style={styles.topWinnersBannerTitle}>👑 HALL DA FAMA - {selectedChallenge.title.toUpperCase()}</Text>
+                {top3Winners.length > 0 ? (
+                  top3Winners.map((winnerStr, idx) => (
+                    <Text key={idx} style={styles.topWinnersBannerList}>
+                      {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'} {winnerStr}
+                    </Text>
+                  ))
+                ) : (
+                  <Text style={styles.topWinnersBannerList}>Nenhum campeão com medalhas de ouro nesta liga ainda.</Text>
+                )}
               </View>
 
               <Text style={styles.sectionHeaderTitle}>⚡ Atletas Ativos ({rankedAthletes.length})</Text>
@@ -2980,7 +3083,7 @@ export default function App() {
         </TouchableOpacity>
       </Modal>
 
-      {/* MODAL CRIAR DESAFIO */}
+      {/* MODAL CRIAR DESAFIO COM SELEÇÃO DE PERIODICIDADE DA ÉPOCA */}
       <Modal visible={isCreateChallengeOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={styles.modalContent}>
@@ -2991,6 +3094,19 @@ export default function App() {
 
             <Text style={styles.inputLabel}>Código de Acesso / Convite:</Text>
             <TextInput style={styles.input} placeholder="Ex: MUV2026" autoCapitalize="characters" value={newChallengeCode} onChangeText={setNewChallengeCode} />
+
+            <Text style={styles.inputLabel}>Periodicidade da Temporada:</Text>
+            <View style={styles.nativeSelectWrapper}>
+              <select
+                style={styles.htmlNativeSelect}
+                value={newChallengePeriod}
+                onChange={(e) => setNewChallengePeriod(e.target.value)}
+              >
+                <option value="Weekly">Semanal (Até o sábado da semana)</option>
+                <option value="Monthly">Mensal (Até o último dia do mês)</option>
+                <option value="Yearly">Anual (Até 31/12 do ano corrente)</option>
+              </select>
+            </View>
 
             <TouchableOpacity style={styles.checkboxRow} onPress={() => setHasCapToggle(!hasCapToggle)}>
               <View style={[styles.checkboxBoxCircle, hasCapToggle && styles.checkboxBoxCircleActive]}>{hasCapToggle && <Text style={styles.checkboxCheckmark}>✓</Text>}</View>
@@ -3308,7 +3424,7 @@ const styles = StyleSheet.create({
 
   topWinnersBannerBox: { backgroundColor: '#fef3c7', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: '#d97706', marginBottom: 10 },
   topWinnersBannerTitle: { fontSize: 10, fontWeight: '900', color: '#b45309', marginBottom: 2 },
-  topWinnersBannerList: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
+  topWinnersBannerList: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a', marginTop: 2 },
 
   sidebar: { width: 110, backgroundColor: '#f8fafc', borderRightWidth: 1, borderRightColor: '#cbd5e1', paddingVertical: 10 },
   sidebarBtn: { paddingVertical: 12, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 4 },
