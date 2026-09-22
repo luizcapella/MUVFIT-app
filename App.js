@@ -38,6 +38,14 @@ function calculateAge(birthDateString) {
   return isNaN(age) ? null : age;
 }
 
+// FORMATADOR DE DATA BRASILEIRA (DD/MM/AAAA)
+function formatDateBR(dateObj) {
+  const d = String(dateObj.getDate()).padStart(2, '0');
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const y = dateObj.getFullYear();
+  return `${d}/${m}/${y}`;
+}
+
 // CÁLCULO DE DATAS DA TEMPORADA/ÉPOCA
 function calculateSeasonDates(periodType, isRenewal = false, referenceDate = new Date()) {
   const year = referenceDate.getFullYear();
@@ -68,16 +76,9 @@ function calculateSeasonDates(periodType, isRenewal = false, referenceDate = new
     endDateObj = new Date(year, month + 1, 0); // Último dia do mês
   }
 
-  const formatDate = (date) => {
-    const d = String(date.getDate()).padStart(2, '0');
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const y = date.getFullYear();
-    return `${d}/${m}/${y}`;
-  };
-
   return {
-    startDateStr: formatDate(startDateObj),
-    endDateStr: formatDate(endDateObj),
+    startDateStr: formatDateBR(startDateObj),
+    endDateStr: formatDateBR(endDateObj),
     startDateObj,
     endDateObj
   };
@@ -107,8 +108,9 @@ export default function App() {
   const [genderInput, setGenderInput] = useState('Masculino');
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
-  // EDIÇÃO DE PERFIL
+  // EDIÇÃO DE PERFIL AMPLADA
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [editFullName, setEditFullName] = useState('');
   const [editNickname, setEditNickname] = useState('');
   const [editBirthDate, setEditBirthDate] = useState('');
   const [editGender, setEditGender] = useState('Masculino');
@@ -172,7 +174,7 @@ export default function App() {
   const [stepsInput, setStepsInput] = useState('');
   const [workoutCaption, setWorkoutCaption] = useState('');
 
-  // FOTOS DE COMPROVAÇÃO
+  // FOTOS DE COMPROVAÇÃO DE TREINO
   const [photoStart, setPhotoStart] = useState(null);
   const [photoEvidence, setPhotoEvidence] = useState(null);
   const [photoEnd, setPhotoEnd] = useState(null);
@@ -443,6 +445,7 @@ export default function App() {
   }
 
   function handleOpenEditProfile() {
+    setEditFullName(currentUser.name || '');
     setEditNickname(currentUser.nickname || '');
     setEditBirthDate(currentUser.birth_date || '');
     setEditGender(currentUser.gender || 'Masculino');
@@ -451,8 +454,8 @@ export default function App() {
   }
 
   async function handleSaveProfile() {
-    if (!editNickname.trim()) {
-      Alert.alert('Atenção', 'O apelido não pode ficar vazio.');
+    if (!editNickname.trim() || !editFullName.trim()) {
+      Alert.alert('Atenção', 'Nome e Apelido não podem ficar vazios.');
       return;
     }
 
@@ -474,6 +477,7 @@ export default function App() {
         .upsert([
           {
             id: currentUser.id,
+            full_name: editFullName.trim(),
             nickname: editNickname.trim(),
             birth_date: dbBirthDate,
             age: computedAge || 0,
@@ -485,8 +489,18 @@ export default function App() {
       if (error) {
         Alert.alert('Erro', 'Não foi possível salvar o perfil: ' + error.message);
       } else {
+        // ATUALIZA OS DADOS DAS MEMBERSHIPS PARA REFLITA NO RANKING/HALL DA FAMA
+        await supabase.from('memberships').update({
+          name: editFullName.trim(),
+          nickname: editNickname.trim(),
+          avatar: editAvatar || currentUser.avatar,
+          age: computedAge || 0,
+          gender: editGender
+        }).eq('user_id', currentUser.id);
+
         const updatedUser = {
           ...currentUser,
+          name: editFullName.trim(),
           nickname: editNickname.trim(),
           birth_date: editBirthDate,
           age: computedAge || 0,
@@ -498,6 +512,7 @@ export default function App() {
         setViewedUser(updatedUser);
         setIsEditProfileOpen(false);
 
+        fetchDataFromSupabase();
         Alert.alert('🎉 Sucesso!', 'Perfil atualizado com sucesso!');
       }
     } catch (err) {
@@ -518,8 +533,8 @@ export default function App() {
       if (challengesData && challengesData.length > 0) {
         const formattedChallenges = challengesData.map(c => ({
           ...c,
-          startDate: c.start_date,
-          endDate: c.end_date,
+          startDate: c.start_date, // EXIBE A DATA INICIAL GRAVADA NO BANCO
+          endDate: c.end_date,     // EXIBE A DATA FINAL GRAVADA NO BANCO
           tiebreakerEnabled: c.tiebreaker_enabled
         }));
         setChallenges(formattedChallenges);
@@ -770,7 +785,7 @@ export default function App() {
     await supabase.from('feed_posts').update({ comments: newComments }).eq('id', postId);
   }
 
-  // CRIAÇÃO DE DESAFIO COM DATAS DINÂMICAS DE ACORDO COM A PERIODICIDADE
+  // CRIAÇÃO DE DESAFIO COM DATA DE INÍCIO DEFINIDA NA DATA ATUAL DE CRIAÇÃO
   async function handleCreateChallenge() {
     if (!newChallengeTitle.trim() || !newChallengeCode.trim()) {
       Alert.alert('Erro', 'Preencha o Nome e o Código do Desafio.');
@@ -786,7 +801,7 @@ export default function App() {
       leaguePeriod: newChallengePeriod
     };
 
-    // CALCULA DATAS DINÂMICAS BASEADAS NA DATA ATUAL DE CRIAÇÃO (IS_RENEWAL = FALSE)
+    // CALCULA DATAS DINÂMICAS: INÍCIO HOJE (CRIAÇÃO) ATÉ O FIM DA PERIODICIDADE
     const dates = calculateSeasonDates(newChallengePeriod, false, new Date());
 
     const newObj = {
@@ -873,7 +888,7 @@ export default function App() {
     }
   }
 
-  // ENCERRAMENTO E REINÍCIO AUTOMÁTICO DE TEMPORADA
+  // ENCERRAMENTO E REINÍCIO AUTOMÁTICO DA TEMPORADA
   async function handleFinishChallenge(challengeId) {
     const targetChallenge = challenges.find(c => c.id === challengeId);
     if (!targetChallenge) return;
@@ -1463,7 +1478,7 @@ export default function App() {
     .filter(m => (m.goldMedals || 0) > 0)
     .sort((a, b) => (b.goldMedals || 0) - (a.goldMedals || 0))
     .slice(0, 3)
-    .map((m) => `${m.name} (${m.nickname}) - ${getChampionTitle(m.goldMedals)} (${m.goldMedals}x)`);
+    .map((m) => `${m.nickname || m.name} - ${getChampionTitle(m.goldMedals)} (${m.goldMedals}x)`);
 
   let displayedPerf = {
     rankingPoints: userMembershipsAll.reduce((acc, curr) => acc + (curr.rankingPoints || 0), 0),
@@ -1656,8 +1671,8 @@ export default function App() {
                         >
                           <Image source={{ uri: athlete.avatar }} style={styles.avatarMini} />
                           <View style={{ marginLeft: 8, flex: 1 }}>
-                            <Text style={styles.searchResultTitle}>{athlete.name} ({athlete.nickname})</Text>
-                            <Text style={styles.searchResultSub}>Acessar Central do Atleta ➔</Text>
+                            <Text style={styles.searchResultTitle}>{athlete.nickname || athlete.name}</Text>
+                            <Text style={styles.searchResultSub}>Nome: {athlete.name} | Acessar Perfil ➔</Text>
                           </View>
                         </TouchableOpacity>
                       ))
@@ -1779,8 +1794,10 @@ export default function App() {
                         {c.is_finished ? '🏆 ENCERRADO' : c.registrations_closed ? '🔒 FECHADO' : '🟢 ABERTO'}
                       </Text>
                     </View>
+                    
+                    {/* EXIBE A DATA DINÂMICA GRAVADA NO BANCO */}
                     <Text style={styles.cardBoxSub}>
-                      Código: {c.invite_code} | {c.startDate} até {c.endDate}
+                      Código: {c.invite_code} | {c.startDate || c.start_date} até {c.endDate || c.end_date}
                     </Text>
 
                     {/* BOTÃO PRINCIPAL DE ENTRAR COMO ADMIN */}
@@ -1788,7 +1805,7 @@ export default function App() {
                       <Text style={styles.primaryBtnText}>ENTRAR COMO ADMIN ➔</Text>
                     </TouchableOpacity>
 
-                    {/* BOTÕES SECUNDÁRIOS ALINHADOS EM PILHA/UNIFORME */}
+                    {/* BOTÕES SECUNDÁRIOS ALINHADOS */}
                     <View style={{ flexDirection: 'column', gap: 6, marginTop: 4 }}>
                       <TouchableOpacity style={styles.dashboardActionBtnGreen} onPress={() => handleShareInvite(c)}>
                         <Text style={styles.dashboardActionBtnText}>🔗 CONVIDAR</Text>
@@ -1821,7 +1838,7 @@ export default function App() {
                       </Text>
                     </View>
                     <Text style={styles.cardBoxSub}>
-                      Código: {c.invite_code} | {c.startDate} até {c.endDate}
+                      Código: {c.invite_code} | {c.startDate || c.start_date} até {c.endDate || c.end_date}
                     </Text>
 
                     <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
@@ -1872,7 +1889,7 @@ export default function App() {
                       <TouchableOpacity style={styles.postHeader} onPress={() => handleOpenUserProfile(post.user_id)}>
                         <Image source={{ uri: post.user_avatar }} style={styles.avatarMini} />
                         <View style={{ marginLeft: 8 }}>
-                          <Text style={[styles.postAuthor, { textDecorationLine: 'underline' }]}>{post.user_name} ({post.user_nickname})</Text>
+                          <Text style={[styles.postAuthor, { textDecorationLine: 'underline' }]}>{post.user_nickname || post.user_name}</Text>
                           <Text style={styles.postTime}>{post.created_at} • ✅ Aprovado</Text>
                         </View>
                       </TouchableOpacity>
@@ -1930,7 +1947,7 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* TELA DE RANKING COM HALL DA FAMA DEDICADO */}
+          {/* TELA DE RANKING COM APELIDOS E HALL DA FAMA */}
           {currentScreen === 'ranking' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
@@ -1954,7 +1971,7 @@ export default function App() {
                 )}
               </View>
               
-              {/* HALL DA FAMA */}
+              {/* HALL DA FAMA DEDICADO */}
               <View style={styles.topWinnersBannerBox}>
                 <Text style={styles.topWinnersBannerTitle}>👑 HALL DA FAMA - {selectedChallenge.title.toUpperCase()}</Text>
                 {top3Winners.length > 0 ? (
@@ -1964,7 +1981,7 @@ export default function App() {
                     </Text>
                   ))
                 ) : (
-                  <Text style={styles.topWinnersBannerList}>Nenhum campeão com medalhas de ouro nesta liga ainda.</Text>
+                  <Text style={styles.topWinnersBannerList}>Nenhum campeão registrado nesta liga ainda.</Text>
                 )}
               </View>
 
@@ -1978,7 +1995,7 @@ export default function App() {
                     <Text style={styles.rankingPosNumber}>{member.rankDisplay}</Text>
                     <Image source={{ uri: member.avatar }} style={styles.avatarMini} />
                     <View style={{ flex: 1, marginLeft: 8 }}>
-                      <Text style={styles.rankingMemberName}>{member.name} ({member.nickname})</Text>
+                      <Text style={styles.rankingMemberName}>{member.nickname || member.name}</Text>
                       <Text style={styles.rankingMemberSub}>{(member.totalSteps || 0).toLocaleString()} passos | {(member.totalKm || 0).toFixed(1)} km</Text>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
@@ -2000,7 +2017,7 @@ export default function App() {
                     <TouchableOpacity key={spectator.userId} style={styles.spectatorRowCard} onPress={() => handleOpenUserProfile(spectator.userId)}>
                       <Image source={{ uri: spectator.avatar }} style={styles.avatarMini} />
                       <View style={{ flex: 1, marginLeft: 8 }}>
-                        <Text style={styles.rankingMemberName}>{spectator.name} ({spectator.nickname})</Text>
+                        <Text style={styles.rankingMemberName}>{spectator.nickname || spectator.name}</Text>
                         <Text style={{ fontSize: 9, color: '#64748b', fontStyle: 'italic' }}>
                           {spectator.role === 'pending_athlete' ? '⏳ Candidato a Atleta Ativo' : 'Acompanhando o desafio'}
                         </Text>
@@ -2015,12 +2032,19 @@ export default function App() {
             </ScrollView>
           )}
 
+          {/* CENTRAL DO ATLETA */}
           {currentScreen === 'athlete_center' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.profileHeaderCard}>
                 <Image source={{ uri: viewedUser.avatar }} style={styles.avatarLarge} />
-                <Text style={styles.profileName}>{viewedUser.name} ({viewedUser.nickname})</Text>
                 
+                {/* APELIDO LOGO ABAIXO DA FOTO */}
+                <Text style={styles.profileNicknameDisplay}>{viewedUser.nickname || viewedUser.name}</Text>
+                
+                {/* NOME COMPLETO DEPOIS */}
+                <Text style={styles.profileNameSub}>{viewedUser.name}</Text>
+                
+                {/* IDADE CALCULADA E GÊNERO */}
                 <Text style={styles.profileMeta}>
                   {viewedUser.age ? `${viewedUser.age} anos` : 'Idade não informada'} | {viewedUser.gender || 'Masculino'}
                 </Text>
@@ -2097,7 +2121,7 @@ export default function App() {
                             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
                               <Image source={{ uri: w.user_avatar }} style={styles.avatarMini} />
                               <View style={{ marginLeft: 8, flex: 1 }}>
-                                <Text style={styles.participantName}>{w.user_nickname} ({w.user_name})</Text>
+                                <Text style={styles.participantName}>{w.user_nickname || w.user_name}</Text>
                                 <Text style={styles.participantSub}>Modalidade: {w.activity_type}</Text>
                                 <Text style={{ fontSize: 9, color: '#1e3a8a', fontWeight: 'bold' }}>Data do Treino: {w.workout_date || w.created_at}</Text>
                               </View>
@@ -2176,7 +2200,7 @@ export default function App() {
                         <View key={m.id} style={styles.participantRow}>
                           <Image source={{ uri: m.avatar }} style={styles.avatarMini} />
                           <View style={{ flex: 1, marginLeft: 8 }}>
-                            <Text style={styles.participantName}>{m.name} ({m.nickname})</Text>
+                            <Text style={styles.participantName}>{m.nickname || m.name}</Text>
                             <Text style={{ fontSize: 8, color: '#d97706', fontWeight: 'bold' }}>Solicitou participação no Ranking</Text>
                           </View>
                           <View style={{ flexDirection: 'row', gap: 4 }}>
@@ -2204,7 +2228,7 @@ export default function App() {
                         <View key={m.id} style={styles.participantRow}>
                           <Image source={{ uri: m.avatar }} style={styles.avatarMini} />
                           <View style={{ flex: 1, marginLeft: 8 }}>
-                            <Text style={styles.participantName}>{m.name} ({m.nickname})</Text>
+                            <Text style={styles.participantName}>{m.nickname || m.name}</Text>
                             <Text style={styles.tagActiveText}>⚡ Atleta Ativo</Text>
                           </View>
                           <TouchableOpacity 
@@ -2231,7 +2255,6 @@ export default function App() {
                   <View style={styles.accordionBody}>
                     <Text style={styles.inputLabel}>Pór Atleta Ativo:</Text>
                     
-                    {/* SELETOR NATIVO DE ATLETAS (IGUAL À JANELA DE REGRAS) */}
                     <View style={styles.nativeSelectWrapper}>
                       <select
                         style={styles.htmlNativeSelect}
@@ -2241,7 +2264,7 @@ export default function App() {
                         <option value="">Clique para selecionar um atleta...</option>
                         {activeMembersInChallenge.map((m) => (
                           <option key={m.id} value={m.id}>
-                            {m.name} ({m.nickname})
+                            {m.nickname || m.name} ({m.name})
                           </option>
                         ))}
                       </select>
@@ -2345,7 +2368,7 @@ export default function App() {
                         <View key={p.id} style={styles.participantRow}>
                           <Image source={{ uri: p.avatar }} style={styles.avatarMini} />
                           <View style={{ flex: 1, marginLeft: 8 }}>
-                            <Text style={styles.participantName}>{p.name} ({p.nickname})</Text>
+                            <Text style={styles.participantName}>{p.nickname || p.name}</Text>
                             <Text style={{ fontSize: 8, color: '#64748b' }}>Solicitou entrar na comunidade da liga</Text>
                           </View>
                           <View style={{ flexDirection: 'row', gap: 4 }}>
@@ -2365,7 +2388,7 @@ export default function App() {
                       <View key={m.id} style={styles.participantRow}>
                         <Image source={{ uri: m.avatar }} style={styles.avatarMini} />
                         <View style={{ flex: 1, marginLeft: 8 }}>
-                          <Text style={styles.participantName}>{m.name} ({m.nickname})</Text>
+                          <Text style={styles.participantName}>{m.nickname || m.name}</Text>
                           <Text style={m.role === 'active' ? styles.tagActiveText : styles.participantSub}>
                             {m.role === 'active' ? '⚡ ATLETA ATIVO' : m.role === 'pending_athlete' ? '⏳ ATLETA PENDENTE' : '👀 TORCEDOR'}
                           </Text>
@@ -2587,7 +2610,7 @@ export default function App() {
                 </View>
               )}
 
-              {/* TREINOS COM TEMPO (Musculação, Crossfit, Aeróbico, Coletivos, Lutas) */}
+              {/* TREINOS COM TEMPO */}
               {['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico', '⚽ Esportes Coletivos', '🥋 Lutas / Esportes Individuais'].includes(selectedConfigActivity) && (() => {
                 const currentMod = modalitySettings[selectedConfigActivity] || {};
                 const isEnabled = currentMod.enabled !== false;
@@ -2736,7 +2759,7 @@ export default function App() {
                 );
               })()}
 
-              {/* TREINOS COM KM (Corrida, Caminhada, Bike) */}
+              {/* TREINOS COM KM */}
               {['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedConfigActivity) && (() => {
                 const currentMod = modalitySettings[selectedConfigActivity] || {};
                 const isEnabled = currentMod.enabled !== false;
@@ -3035,17 +3058,50 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL PERFIL */}
+      {/* MODAL EDITAR PERFIL AMPLADO COM FOTO, NOME, APELIDO E DATA DE NASCIMENTO */}
       <Modal visible={isEditProfileOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={styles.modalContent}>
             <Text style={styles.modalTitle}>✏️ Editar Perfil do Atleta</Text>
 
-            <Text style={styles.inputLabel}>Apelido (exibido no ranking):</Text>
-            <TextInput style={styles.input} placeholder="Digite seu apelido" value={editNickname} onChangeText={setEditNickname} />
+            {/* SELEÇÃO DE FOTO DE PERFIL */}
+            <Text style={styles.inputLabel}>Foto do Perfil:</Text>
+            <View style={{ alignItems: 'center', marginBottom: 10 }}>
+              <Image source={{ uri: editAvatar || currentUser.avatar }} style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: '#f97316', marginBottom: 8 }} />
+              <View style={{ flexDirection: 'row', gap: 6, justifyContent: 'center' }}>
+                <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setEditAvatar)}>
+                  <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setEditAvatar)}>
+                  <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <Text style={styles.inputLabel}>Nome Completo:</Text>
+            <TextInput style={styles.input} placeholder="Digite seu nome completo" value={editFullName} onChangeText={setEditFullName} />
+
+            <Text style={styles.inputLabel}>Apelido (exibido na Central, Ranking e Hall da Fama):</Text>
+            <TextInput style={styles.input} placeholder="Digite seu apelido público" value={editNickname} onChangeText={setEditNickname} />
 
             <Text style={styles.inputLabel}>Data de Nascimento (DD/MM/AAAA):</Text>
             <TextInput style={styles.input} placeholder="Ex: 08/11/1997" keyboardType="numeric" maxLength={10} value={editBirthDate} onChangeText={(text) => setEditBirthDate(formatBirthDateMask(text))} />
+
+            <Text style={styles.inputLabel}>Gênero:</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+              <TouchableOpacity
+                style={[styles.chipBtn, editGender === 'Masculino' && styles.chipBtnActive, { flex: 1, alignItems: 'center' }]}
+                onPress={() => setEditGender('Masculino')}
+              >
+                <Text style={[styles.chipText, editGender === 'Masculino' && styles.chipTextActive]}>Masculino</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.chipBtn, editGender === 'Feminino' && styles.chipBtnActive, { flex: 1, alignItems: 'center' }]}
+                onPress={() => setEditGender('Feminino')}
+              >
+                <Text style={[styles.chipText, editGender === 'Feminino' && styles.chipTextActive]}>Feminino</Text>
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity style={styles.primaryBtn} onPress={handleSaveProfile} disabled={savingProfile}>
               {savingProfile ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.primaryBtnText}>SALVAR ALTERAÇÕES</Text>}
@@ -3164,7 +3220,7 @@ export default function App() {
                 })}
               </View>
 
-              {/* 1. SELETOR DE DATA COM ÍCONE DE CALENDÁRIO */}
+              {/* SELETOR DE DATA */}
               <View style={{ marginVertical: 6 }}>
                 <Text style={styles.inputLabel}>📅 Data do Treino:</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -3187,13 +3243,12 @@ export default function App() {
                 </View>
               </View>
 
-              {/* 2. HORÁRIOS INÍCIO E FIM (PARA TODAS EXCETO PASSOS DIÁRIOS) */}
+              {/* HORÁRIOS INÍCIO E FIM (PARA TODAS EXCETO PASSOS DIÁRIOS) */}
               {!isStepsActive && (
                 <View style={{ backgroundColor: '#f8fafc', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginVertical: 6 }}>
                   <Text style={[styles.inputLabel, { color: '#1e3a8a', fontWeight: 'bold' }]}>⏱️ Horário de Início e Fim da Atividade:</Text>
                   
                   <View style={{ flexDirection: 'row', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
-                    {/* INÍCIO */}
                     <View style={{ flex: 1, minWidth: 120 }}>
                       <Text style={styles.inputLabelMini}>Horário Início:</Text>
                       <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
@@ -3215,7 +3270,6 @@ export default function App() {
                       </View>
                     </View>
 
-                    {/* FIM */}
                     <View style={{ flex: 1, minWidth: 120 }}>
                       <Text style={styles.inputLabelMini}>Horário Término:</Text>
                       <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
@@ -3238,7 +3292,6 @@ export default function App() {
                     </View>
                   </View>
 
-                  {/* CÁLCULO DE TEMPO ESTIMADO */}
                   {(() => {
                     const startM = (parseInt(startHour, 10) * 60) + parseInt(startMinute, 10);
                     const endM = (parseInt(endHour, 10) * 60) + parseInt(endMinute, 10);
@@ -3253,7 +3306,7 @@ export default function App() {
                 </View>
               )}
 
-              {/* 3. CAMPO DE DISTÂNCIA EM KM (CORRIDA, CAMINHADA E BIKE) */}
+              {/* DISTÂNCIA EM KM */}
               {isKmGroupActive && (
                 <View style={{ marginVertical: 4 }}>
                   <Text style={styles.inputLabel}>🏃 Distância Percorrida (em KM):</Text>
@@ -3267,7 +3320,6 @@ export default function App() {
                 </View>
               )}
 
-              {/* LEGENDA / COMENTÁRIO */}
               <Text style={styles.inputLabel}>Legenda / Comentário (Opcional):</Text>
               <TextInput 
                 style={[styles.input, { height: 60, textAlignVertical: 'top' }]} 
@@ -3277,14 +3329,12 @@ export default function App() {
                 onChangeText={setWorkoutCaption} 
               />
 
-              {/* 4. JANELAS DE FOTO / EVIDÊNCIAS DE IMAGEM */}
+              {/* FOTOS DE COMPROVAÇÃO */}
               <View style={{ marginVertical: 8 }}>
                 <Text style={[styles.inputLabel, { color: '#1e3a8a' }]}>📷 Comprovante(s) em Foto da Atividade:</Text>
 
-                {/* PARA MUSCULAÇÃO, CROSSFIT E AERÓBICO: 3 JANELAS */}
                 {isThreePhotosGroupActive ? (
                   <View style={{ gap: 10 }}>
-                    {/* FOTO 1: HORÁRIO INICIAL */}
                     <View style={styles.photoUploadBox}>
                       <Text style={styles.inputLabelMini}>1. Foto Horário Inicial (Obrigatória):</Text>
                       {photoStart && <Image source={{ uri: photoStart }} style={styles.photoPreviewMini} />}
@@ -3303,7 +3353,6 @@ export default function App() {
                       </View>
                     </View>
 
-                    {/* FOTO 2: EVIDÊNCIA DE TREINO */}
                     <View style={styles.photoUploadBox}>
                       <Text style={styles.inputLabelMini}>2. Foto Evidência do Treino (Obrigatória):</Text>
                       {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
@@ -3322,7 +3371,6 @@ export default function App() {
                       </View>
                     </View>
 
-                    {/* FOTO 3: HORÁRIO FINAL */}
                     <View style={styles.photoUploadBox}>
                       <Text style={styles.inputLabelMini}>3. Foto Horário Final (Obrigatória):</Text>
                       {photoEnd && <Image source={{ uri: photoEnd }} style={styles.photoPreviewMini} />}
@@ -3342,7 +3390,6 @@ export default function App() {
                     </View>
                   </View>
                 ) : (
-                  /* PARA CORRIDA, CAMINHADA, BIKE, PASSOS DIÁRIOS, LUTAS E COLETIVOS: 1 JANELA DE FOTO */
                   <View style={styles.photoUploadBox}>
                     <Text style={styles.inputLabelMini}>Foto / Print de Comprovação (Obrigatória):</Text>
                     {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
@@ -3545,7 +3592,8 @@ const styles = StyleSheet.create({
 
   profileHeaderCard: { backgroundColor: '#f8fafc', borderRadius: 10, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: '#cbd5e1', position: 'relative', marginBottom: 10 },
   avatarLarge: { width: 70, height: 70, borderRadius: 35, marginBottom: 6, borderWidth: 2, borderColor: '#f97316' },
-  profileName: { fontSize: 15, fontWeight: 'bold', color: '#0f172a' },
+  profileNicknameDisplay: { fontSize: 16, fontWeight: '900', color: '#1e3a8a', marginBottom: 2 },
+  profileNameSub: { fontSize: 12, fontWeight: 'bold', color: '#475569', marginBottom: 4 },
   profileMeta: { fontSize: 10, color: '#64748b', marginBottom: 4 },
 
   editProfileBtn: { backgroundColor: '#1e3a8a', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, marginVertical: 6 },
