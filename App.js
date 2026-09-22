@@ -550,7 +550,7 @@ export default function App() {
     );
   }
 
-  // PARTE 2 EXECUTADA: SOLICITAR PARTICIPAÇÃO COMO ATLETA ATIVO (VERIFICAÇÃO PRÉVIA NO SUPABASE)
+  // SOLICITAR PARTICIPAÇÃO COMO ATLETA ATIVO
   async function handleRequestAthleteActive() {
     if (!activeChallengeId || !selectedChallenge?.id) {
       Alert.alert('Erro', 'Selecione um desafio válido antes de solicitar.');
@@ -558,7 +558,6 @@ export default function App() {
     }
 
     try {
-      // 1. Consulta se o registro já existe no banco de dados para evitar conflito de chave única
       const { data: existingMember, error: fetchErr } = await supabase
         .from('memberships')
         .select('id, role')
@@ -573,7 +572,6 @@ export default function App() {
       let error = null;
 
       if (existingMember && existingMember.id) {
-        // Se já existe (ex: entrado como spectator ou criador), faz UPDATE do status para pending_athlete
         const res = await supabase
           .from('memberships')
           .update({
@@ -588,7 +586,6 @@ export default function App() {
         
         error = res.error;
       } else {
-        // Se não existe registro algum, insere um novo
         const res = await supabase
           .from('memberships')
           .insert([
@@ -615,7 +612,6 @@ export default function App() {
         return;
       }
 
-      // Atualiza o estado da aplicação imediatamente
       await fetchDataFromSupabase();
 
       Alert.alert(
@@ -1108,7 +1104,6 @@ export default function App() {
     return (b.activeDays || 0) - (a.activeDays || 0);
   });
 
-  let currentRankPosition = 1;
   const rankedAthletes = sortedAthletes.map((athlete, index) => ({
     ...athlete,
     rankDisplay: `#${index + 1}`
@@ -1352,7 +1347,7 @@ export default function App() {
                     )}
                   </View>
                 )}
-              </ScrollView>
+              ScrollView>
             </View>
           )}
         </View>
@@ -1573,25 +1568,20 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* TELA DE RANKING */}
+          {/* TELA DE RANKING (CORRIGIDO O SINTAXE DE COMENTÁRIOS NO JSX) */}
           {currentScreen === 'ranking' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
                 <Text style={styles.pageTitle}>🏆 Ranking — {selectedChallenge.title}</Text>
 
-                {/* 1. ATLETA ATIVO (VERDE #16a34a) */}
                 {currentUserMembershipInActiveChallenge?.role === 'active' ? (
                   <View style={styles.activeAthleteBadge}>
                     <Text style={styles.btnMiniText}>Atleta Ativo</Text>
                   </View>
-
-                /* 2. APROVAÇÃO PENDENTE (LARANJA #f97316) */}
                 ) : currentUserMembershipInActiveChallenge?.role === 'pending_athlete' ? (
                   <View style={styles.pendingAthleteBadge}>
                     <Text style={styles.btnMiniText}>Aprovação Pendente</Text>
                   </View>
-
-                /* 3. SOLICITAR PARTICIPAÇÃO (AZUL #1e3a8a) */}
                 ) : (
                   <TouchableOpacity 
                     style={styles.blueRequestAthleteBtn} 
@@ -1759,7 +1749,7 @@ export default function App() {
                 )}
               </View>
 
-              {/* 2. CONTROLE DE INSCRIÇÃO (SOLICITAÇÕES + LISTA DE ATLETAS ATIVOS) */}
+              {/* 2. CONTROLE DE INSCRIÇÃO */}
               <View style={styles.accordionCard}>
                 <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec2(!expandedSec2)}>
                   <Text style={styles.accordionTitle}>2. CONTROLE DE INSCRIÇÃO ({pendingAthleteMembers.length + activeMembersInChallenge.length})</Text>
@@ -1811,7 +1801,7 @@ export default function App() {
                       ⚡ Atletas Ativos na Liga ({activeMembersInChallenge.length}):
                     </Text>
                     {activeMembersInChallenge.length === 0 ? (
-                      <Text style={styles.emptyNoticeText}>Nenhum atleta ativo cadastrado nesta liga.</Text>
+                      <Text style={styles.emptyNoticeText}>Nenum atleta ativo cadastrado nesta liga.</Text>
                     ) : (
                       activeMembersInChallenge.map((m) => (
                         <View key={m.id} style={styles.participantRow}>
