@@ -99,7 +99,6 @@ export default function App() {
 
   // ESTADOS DO FORMULÁRIO DE NOVO TREINO
   const [isWorkoutModalOpen, setIsWorkoutModalOpen] = useState(false);
-  const [workoutActivityDropdownOpen, setWorkoutActivityDropdownOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState('💪 Musculação');
   
   const getTodayISO = () => {
@@ -149,7 +148,6 @@ export default function App() {
   const [checkBonusDesperta, setCheckBonusDesperta] = useState(false);
 
   const [isAthleteDropdownOpen, setIsAthleteDropdownOpen] = useState(false);
-  const [isActivityDropdownOpen, setIsActivityDropdownOpen] = useState(false);
 
   // MODAL DE CONFIGURAÇÃO AVANÇADA DE PONTOS
   const [isAdvancedRulesModalOpen, setIsAdvancedRulesModalOpen] = useState(false);
@@ -1088,21 +1086,6 @@ export default function App() {
 
   const selectedAthleteObject = activeMembersInChallenge.find(m => m.id === manualSelectedAthleteId);
 
-  // MANIPULADOR DE SELEÇÃO RÁPIDA E DIRETA
-  const handleSelectModalActivity = (activityLabel) => {
-    setSelectedActivity(activityLabel);
-    setTimeout(() => {
-      setWorkoutActivityDropdownOpen(false);
-    }, 50);
-  };
-
-  const handleSelectAdminActivity = (activityLabel) => {
-    setManualActivity(activityLabel);
-    setTimeout(() => {
-      setIsActivityDropdownOpen(false);
-    }, 50);
-  };
-
   if (loadingAuth) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1e3a8a' }}>
@@ -1731,7 +1714,7 @@ export default function App() {
                 )}
               </View>
 
-              {/* MÓDULO DE LANÇAMENTO MANUAL COM EVENTOS TÁTEIS CORRIGIDOS */}
+              {/* MÓDULO DE LANÇAMENTO MANUAL COM BOTÕES CLICÁVEIS */}
               <View style={styles.accordionCard}>
                 <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec3(!expandedSec3)}>
                   <Text style={styles.accordionTitle}>3. LANÇAMENTO MANUAL DE PONTOS, BÔNUS E PASSOS</Text>
@@ -1756,11 +1739,6 @@ export default function App() {
                           <TouchableOpacity
                             key={m.id}
                             style={styles.dropdownOptionRow}
-                            activeOpacity={0.7}
-                            onTouchStart={() => {
-                              setManualSelectedAthleteId(m.id);
-                              setTimeout(() => setIsAthleteDropdownOpen(false), 50);
-                            }}
                             onPress={() => {
                               setManualSelectedAthleteId(m.id);
                               setIsAthleteDropdownOpen(false);
@@ -1773,33 +1751,22 @@ export default function App() {
                       </View>
                     )}
 
-                    <Text style={styles.inputLabel}>Modalidade Realizada:</Text>
-                    <View style={{ position: 'relative', zIndex: 9999 }}>
-                      <TouchableOpacity 
-                        style={styles.dropdownSelectBox} 
-                        onPress={() => setIsActivityDropdownOpen(!isActivityDropdownOpen)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.dropdownSelectText}>{manualActivity} ▼</Text>
-                      </TouchableOpacity>
-
-                      {isActivityDropdownOpen && (
-                        <View style={styles.floatingDropdownContainer}>
-                          <ScrollView style={{ maxHeight: 220 }} keyboardShouldPersistTaps="always">
-                            {modalitiesList.map((item) => (
-                              <TouchableOpacity
-                                key={item.value}
-                                style={styles.dropdownOptionRow}
-                                activeOpacity={0.7}
-                                onTouchStart={() => handleSelectAdminActivity(item.label)}
-                                onPress={() => handleSelectAdminActivity(item.label)}
-                              >
-                                <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0f172a' }}>{item.label}</Text>
-                              </TouchableOpacity>
-                            ))}
-                          </ScrollView>
-                        </View>
-                      )}
+                    <Text style={[styles.inputLabel, { marginTop: 8 }]}>Selecione a Modalidade Realizada:</Text>
+                    <View style={styles.modalityGridContainer}>
+                      {modalitiesList.map((item) => {
+                        const isSelected = manualActivity === item.value;
+                        return (
+                          <TouchableOpacity
+                            key={item.value}
+                            style={[styles.modalityChipBtn, isSelected && styles.modalityChipBtnActive]}
+                            onPress={() => setManualActivity(item.value)}
+                          >
+                            <Text style={[styles.modalityChipText, isSelected && styles.modalityChipTextActive]}>
+                              {item.label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
                     </View>
 
                     <Text style={styles.inputLabel}>Pontos Ranking (Geral):</Text>
@@ -2479,214 +2446,201 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL DE REGISTRO DE TREINO COM SELEÇÃO FLUTUANTE INSTANTÂNEA */}
+      {/* MODAL DE REGISTRO DE TREINO COM BOTÕES DE SELEÇÃO CLICÁVEIS */}
       <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <ScrollView horizontal style={{ width: '100%' }} contentContainerStyle={{ flexGrow: 1 }}>
-              <ScrollView style={{ width: 340, maxHeight: 520 }} keyboardShouldPersistTaps="always">
-                <Text style={styles.modalTitle}>📷 Registrar Novo Treino</Text>
+            <ScrollView style={{ width: '100%', maxHeight: 540 }} keyboardShouldPersistTaps="handled">
+              <Text style={styles.modalTitle}>📷 Registrar Novo Treino</Text>
 
-                {/* 1. SELEÇÃO DE TIPO DE ATIVIDADE */}
-                <Text style={styles.inputLabel}>Tipo de Atividade:</Text>
-                <View style={{ position: 'relative', zIndex: 9999 }}>
-                  <TouchableOpacity 
-                    style={styles.dropdownSelectBox} 
-                    onPress={() => setWorkoutActivityDropdownOpen(!workoutActivityDropdownOpen)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.dropdownSelectText}>{selectedActivity} ▼</Text>
-                  </TouchableOpacity>
+              {/* 1. SELEÇÃO DE TIPO DE ATIVIDADE COM BOTÕES CLICÁVEIS */}
+              <Text style={styles.inputLabel}>Selecione o Tipo de Atividade:</Text>
+              <View style={styles.modalityGridContainer}>
+                {modalitiesList.filter(m => m.value !== '🎁 Bônus e Critérios de Desempate').map((item) => {
+                  const isSelected = selectedActivity === item.value;
+                  return (
+                    <TouchableOpacity
+                      key={item.value}
+                      style={[styles.modalityChipBtn, isSelected && styles.modalityChipBtnActive]}
+                      onPress={() => setSelectedActivity(item.value)}
+                    >
+                      <Text style={[styles.modalityChipText, isSelected && styles.modalityChipTextActive]}>
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
 
-                  {workoutActivityDropdownOpen && (
-                    <View style={styles.floatingDropdownContainer}>
-                      <ScrollView style={{ maxHeight: 220 }} keyboardShouldPersistTaps="always">
-                        {modalitiesList.filter(m => m.value !== '🎁 Bônus e Critérios de Desempate').map((item) => (
-                          <TouchableOpacity
-                            key={item.value}
-                            style={styles.dropdownOptionRow}
-                            activeOpacity={0.7}
-                            onTouchStart={() => handleSelectModalActivity(item.label)}
-                            onPress={() => handleSelectModalActivity(item.label)}
-                          >
-                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0f172a' }}>{item.label}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  )}
-                </View>
-
-                {/* 2. SELEÇÃO DE DATA COM CALENDÁRIO */}
-                <Text style={styles.inputLabel}>Data da Atividade:</Text>
-                <View style={styles.datePickerRow}>
-                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0f172a', flex: 1 }}>
-                    📅 {workoutDate ? workoutDate.split('-').reverse().join('/') : 'Selecione...'}
-                  </Text>
-                  {Platform.OS === 'web' ? (
-                    <input
-                      type="date"
-                      value={workoutDate}
-                      onChange={(e) => setWorkoutDate(e.target.value)}
-                      style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '14px' }}
-                    />
-                  ) : (
-                    <TextInput
-                      style={styles.inputMini}
-                      value={workoutDate}
-                      onChangeText={setWorkoutDate}
-                      placeholder="AAAA-MM-DD"
-                    />
-                  )}
-                </View>
-
-                {/* 3. HORÁRIOS DE INÍCIO E FIM */}
-                <Text style={styles.inputLabel}>Horário do Treino (Início e Fim):</Text>
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8, zIndex: 20 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.inputLabelMini}>⏰ Início:</Text>
-                    <View style={{ flexDirection: 'row', gap: 4 }}>
-                      <select
-                        style={styles.htmlNativeSelectMini}
-                        value={startHour}
-                        onChange={(e) => setStartHour(e.target.value)}
-                      >
-                        {hoursList.map(h => <option key={h} value={h}>{h}h</option>)}
-                      </select>
-                      <select
-                        style={styles.htmlNativeSelectMini}
-                        value={startMinute}
-                        onChange={(e) => setStartMinute(e.target.value)}
-                      >
-                        {minutesList.map(m => <option key={m} value={m}>{m}m</option>)}
-                      </select>
-                    </View>
-                  </View>
-
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.inputLabelMini}>⏰ Fim:</Text>
-                    <View style={{ flexDirection: 'row', gap: 4 }}>
-                      <select
-                        style={styles.htmlNativeSelectMini}
-                        value={endHour}
-                        onChange={(e) => setEndHour(e.target.value)}
-                      >
-                        {hoursList.map(h => <option key={h} value={h}>{h}h</option>)}
-                      </select>
-                      <select
-                        style={styles.htmlNativeSelectMini}
-                        value={endMinute}
-                        onChange={(e) => setEndMinute(e.target.value)}
-                      >
-                        {minutesList.map(m => <option key={m} value={m}>{m}m</option>)}
-                      </select>
-                    </View>
-                  </View>
-                </View>
-
-                {/* CAMPOS ESPECÍFICOS */}
-                {['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedActivity) && (
-                  <>
-                    <Text style={styles.inputLabel}>Distância Percorrida (KM):</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Ex: 5.5"
-                      keyboardType="numeric"
-                      value={kmInput}
-                      onChangeText={setKmInput}
-                    />
-                  </>
-                )}
-
-                {selectedActivity === '🚶‍♂️ Passos Diários' && (
-                  <>
-                    <Text style={styles.inputLabel}>Quantidade de Passos:</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Ex: 10000"
-                      keyboardType="numeric"
-                      value={stepsInput}
-                      onChangeText={setStepsInput}
-                    />
-                  </>
-                )}
-
-                <Text style={styles.inputLabel}>Legenda / Comentário (Opcional):</Text>
-                <TextInput
-                  style={[styles.input, { height: 60, textAlignVertical: 'top' }]}
-                  placeholder="Escreva algo sobre o treino..."
-                  multiline
-                  value={workoutCaption}
-                  onChangeText={setWorkoutCaption}
-                />
-
-                {/* JANELAS DE FOTOS */}
-                {['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico'].includes(selectedActivity) ? (
-                  <View style={{ gap: 8, marginVertical: 8 }}>
-                    <Text style={styles.inputLabelMini}>1. Foto do Início da Atividade (Obrigatório):</Text>
-                    <View style={styles.photoUploadBox}>
-                      {photoStart && <Image source={{ uri: photoStart }} style={styles.photoPreviewMini} />}
-                      <View style={{ flexDirection: 'row', gap: 6 }}>
-                        <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Inicio', setPhotoStart)}>
-                          <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Inicio_Galeria', setPhotoStart)}>
-                          <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-
-                    <Text style={styles.inputLabelMini}>2. Foto da Evidência de Treino (Obrigatório):</Text>
-                    <View style={styles.photoUploadBox}>
-                      {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
-                      <View style={{ flexDirection: 'row', gap: 6 }}>
-                        <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Evidencia', setPhotoEvidence)}>
-                          <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Evidencia_Galeria', setPhotoEvidence)}>
-                          <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-
-                    <Text style={styles.inputLabelMini}>3. Foto do Fim da Atividade (Obrigatório):</Text>
-                    <View style={styles.photoUploadBox}>
-                      {photoEnd && <Image source={{ uri: photoEnd }} style={styles.photoPreviewMini} />}
-                      <View style={{ flexDirection: 'row', gap: 6 }}>
-                        <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Fim', setPhotoEnd)}>
-                          <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Fim_Galeria', setPhotoEnd)}>
-                          <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </View>
+              {/* 2. SELEÇÃO DE DATA COM CALENDÁRIO */}
+              <Text style={styles.inputLabel}>Data da Atividade:</Text>
+              <View style={styles.datePickerRow}>
+                <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0f172a', flex: 1 }}>
+                  📅 {workoutDate ? workoutDate.split('-').reverse().join('/') : 'Selecione...'}
+                </Text>
+                {Platform.OS === 'web' ? (
+                  <input
+                    type="date"
+                    value={workoutDate}
+                    onChange={(e) => setWorkoutDate(e.target.value)}
+                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '14px' }}
+                  />
                 ) : (
-                  <View style={{ marginVertical: 8 }}>
-                    <Text style={styles.inputLabelMini}>Comprovante de Treino (Foto / Print):</Text>
-                    <View style={styles.photoUploadBox}>
-                      {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
-                      <View style={{ flexDirection: 'row', gap: 6 }}>
-                        <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Evidencia', setPhotoEvidence)}>
-                          <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Evidencia_Galeria', setPhotoEvidence)}>
-                          <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
-                        </TouchableOpacity>
-                      </View>
+                  <TextInput
+                    style={styles.inputMini}
+                    value={workoutDate}
+                    onChangeText={setWorkoutDate}
+                    placeholder="AAAA-MM-DD"
+                  />
+                )}
+              </View>
+
+              {/* 3. HORÁRIOS DE INÍCIO E FIM */}
+              <Text style={styles.inputLabel}>Horário do Treino (Início e Fim):</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabelMini}>⏰ Início:</Text>
+                  <View style={{ flexDirection: 'row', gap: 4 }}>
+                    <select
+                      style={styles.htmlNativeSelectMini}
+                      value={startHour}
+                      onChange={(e) => setStartHour(e.target.value)}
+                    >
+                      {hoursList.map(h => <option key={h} value={h}>{h}h</option>)}
+                    </select>
+                    <select
+                      style={styles.htmlNativeSelectMini}
+                      value={startMinute}
+                      onChange={(e) => setStartMinute(e.target.value)}
+                    >
+                      {minutesList.map(m => <option key={m} value={m}>{m}m</option>)}
+                    </select>
+                  </View>
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabelMini}>⏰ Fim:</Text>
+                  <View style={{ flexDirection: 'row', gap: 4 }}>
+                    <select
+                      style={styles.htmlNativeSelectMini}
+                      value={endHour}
+                      onChange={(e) => setEndHour(e.target.value)}
+                    >
+                      {hoursList.map(h => <option key={h} value={h}>{h}h</option>)}
+                    </select>
+                    <select
+                      style={styles.htmlNativeSelectMini}
+                      value={endMinute}
+                      onChange={(e) => setEndMinute(e.target.value)}
+                    >
+                      {minutesList.map(m => <option key={m} value={m}>{m}m</option>)}
+                    </select>
+                  </View>
+                </View>
+              </View>
+
+              {/* CAMPOS ESPECÍFICOS */}
+              {['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedActivity) && (
+                <>
+                  <Text style={styles.inputLabel}>Distância Percorrida (KM):</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: 5.5"
+                    keyboardType="numeric"
+                    value={kmInput}
+                    onChangeText={setKmInput}
+                  />
+                </>
+              )}
+
+              {selectedActivity === '🚶‍♂️ Passos Diários' && (
+                <>
+                  <Text style={styles.inputLabel}>Quantidade de Passos:</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: 10000"
+                    keyboardType="numeric"
+                    value={stepsInput}
+                    onChangeText={setStepsInput}
+                  />
+                </>
+              )}
+
+              <Text style={styles.inputLabel}>Legenda / Comentário (Opcional):</Text>
+              <TextInput
+                style={[styles.input, { height: 60, textAlignVertical: 'top' }]}
+                placeholder="Escreva algo sobre o treino..."
+                multiline
+                value={workoutCaption}
+                onChangeText={setWorkoutCaption}
+              />
+
+              {/* JANELAS DE FOTOS */}
+              {['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico'].includes(selectedActivity) ? (
+                <View style={{ gap: 8, marginVertical: 8 }}>
+                  <Text style={styles.inputLabelMini}>1. Foto do Início da Atividade (Obrigatório):</Text>
+                  <View style={styles.photoUploadBox}>
+                    {photoStart && <Image source={{ uri: photoStart }} style={styles.photoPreviewMini} />}
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Inicio', setPhotoStart)}>
+                        <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Inicio_Galeria', setPhotoStart)}>
+                        <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
-                )}
 
-                <TouchableOpacity style={styles.primaryBtn} onPress={handleSubmitWorkout}>
-                  <Text style={styles.primaryBtnText}>ENVIAR PARA APROVAÇÃO</Text>
-                </TouchableOpacity>
+                  <Text style={styles.inputLabelMini}>2. Foto da Evidência de Treino (Obrigatório):</Text>
+                  <View style={styles.photoUploadBox}>
+                    {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Evidencia', setPhotoEvidence)}>
+                        <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Evidencia_Galeria', setPhotoEvidence)}>
+                        <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
 
-                <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsWorkoutModalOpen(false)}>
-                  <Text style={styles.cancelBtnText}>CANCELAR</Text>
-                </TouchableOpacity>
-              </ScrollView>
+                  <Text style={styles.inputLabelMini}>3. Foto do Fim da Atividade (Obrigatório):</Text>
+                  <View style={styles.photoUploadBox}>
+                    {photoEnd && <Image source={{ uri: photoEnd }} style={styles.photoPreviewMini} />}
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Fim', setPhotoEnd)}>
+                        <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Fim_Galeria', setPhotoEnd)}>
+                        <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                <View style={{ marginVertical: 8 }}>
+                  <Text style={styles.inputLabelMini}>Comprovante de Treino (Foto / Print):</Text>
+                  <View style={styles.photoUploadBox}>
+                    {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Evidencia', setPhotoEvidence)}>
+                        <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Evidencia_Galeria', setPhotoEvidence)}>
+                        <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              <TouchableOpacity style={styles.primaryBtn} onPress={handleSubmitWorkout}>
+                <Text style={styles.primaryBtnText}>ENVIAR PARA APROVAÇÃO</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsWorkoutModalOpen(false)}>
+                <Text style={styles.cancelBtnText}>CANCELAR</Text>
+              </TouchableOpacity>
             </ScrollView>
           </View>
         </View>
@@ -2772,6 +2726,13 @@ const styles = StyleSheet.create({
   dropdownSelectBox: { backgroundColor: '#ffffff', borderWidth: 1.5, borderColor: '#f97316', borderRadius: 6, padding: 10, marginBottom: 4 },
   dropdownSelectText: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
 
+  // NOVOS ESTILOS PARA OS BOTÕES DAS MODALIDADES (GRID DE CHIPS)
+  modalityGridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginVertical: 6 },
+  modalityChipBtn: { backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#cbd5e1', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 6, width: '48%' },
+  modalityChipBtnActive: { backgroundColor: '#f97316', borderColor: '#c2410c' },
+  modalityChipText: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center' },
+  modalityChipTextActive: { color: '#ffffff' },
+
   datePickerRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 6, marginBottom: 6 },
 
   photoUploadBox: { backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', alignItems: 'center' },
@@ -2813,22 +2774,14 @@ const styles = StyleSheet.create({
   },
   
   floatingDropdownContainer: {
-    position: 'absolute',
-    top: 42,
-    left: 0,
-    right: 0,
     backgroundColor: '#ffffff',
     borderWidth: 2,
     borderColor: '#f97316',
     borderRadius: 6,
-    zIndex: 99999,
-    elevation: 25,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5
+    marginBottom: 8,
+    elevation: 10
   },
-  dropdownOptionRow: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', backgroundColor: '#ffffff' },
+  dropdownOptionRow: { flexDirection: 'row', alignItems: 'center', padding: 10, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', backgroundColor: '#ffffff' },
 
   participantRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#fed7aa', marginTop: 6 },
   participantName: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
