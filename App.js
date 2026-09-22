@@ -850,7 +850,6 @@ export default function App() {
       }
     }
 
-    // COMPILANDO TODAS AS IMAGENS ENVIADAS
     const imagesList = [];
     if (workout.photo_start) imagesList.push(workout.photo_start);
     if (workout.photo_evidence) imagesList.push(workout.photo_evidence);
@@ -1447,7 +1446,6 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* FEED DE PUBLICAÇÃO AUTOMÁTICA COM GALERIA DE FOTOS, CURTIR E COMENTAR */}
           {currentScreen === 'feed' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -1477,7 +1475,6 @@ export default function App() {
                         </View>
                       </TouchableOpacity>
 
-                      {/* PUBLICAÇÃO DE TODAS AS IMAGENS DO TREINO APROVADO */}
                       {photos.length > 1 ? (
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 200 }}>
                           {photos.map((imgUri, idx) => (
@@ -1492,7 +1489,6 @@ export default function App() {
                         <Text style={styles.postCaption}>{post.caption}</Text>
                         <Text style={styles.badgePts}>+{post.points_to_ranking} pts (Ranking)</Text>
 
-                        {/* BOTÕES DE CURTIR (CORAÇÃO) E COMENTAR */}
                         <View style={styles.socialBar}>
                           <TouchableOpacity style={styles.socialBtn} onPress={() => handleToggleLike(post.id)}>
                             <Text style={[styles.socialBtnText, post.isLiked && { color: '#dc2626' }]}>
@@ -2459,38 +2455,42 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL DE REGISTRO DE TREINO COM BARRAS DE ROLAGEM VERTICAL E HORIZONTAL */}
+      {/* MODAL DE REGISTRO DE TREINO COM CORREÇÃO DE SELEÇÃO E Z-INDEX */}
       <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <ScrollView horizontal style={{ width: '100%' }} contentContainerStyle={{ flexGrow: 1 }}>
-              <ScrollView style={{ width: 340, maxHeight: 520 }} keyboardShouldPersistTaps="handled">
+              <ScrollView style={{ width: 340, maxHeight: 520 }} keyboardShouldPersistTaps="always">
                 <Text style={styles.modalTitle}>📷 Registrar Novo Treino</Text>
 
                 {/* 1. SELEÇÃO DE TIPO DE ATIVIDADE */}
                 <Text style={styles.inputLabel}>Tipo de Atividade:</Text>
-                <View style={{ position: 'relative', zIndex: 50 }}>
+                <View style={{ position: 'relative', zIndex: 9999 }}>
                   <TouchableOpacity 
                     style={styles.dropdownSelectBox} 
                     onPress={() => setWorkoutActivityDropdownOpen(!workoutActivityDropdownOpen)}
+                    activeOpacity={0.7}
                   >
                     <Text style={styles.dropdownSelectText}>{selectedActivity} ▼</Text>
                   </TouchableOpacity>
 
                   {workoutActivityDropdownOpen && (
                     <View style={styles.floatingDropdownContainer}>
-                      {modalitiesList.filter(m => m.value !== '🎁 Bônus e Critérios de Desempate').map((item) => (
-                        <TouchableOpacity
-                          key={item.value}
-                          style={styles.dropdownOptionRow}
-                          onPress={() => {
-                            setSelectedActivity(item.label);
-                            setWorkoutActivityDropdownOpen(false);
-                          }}
-                        >
-                          <Text style={{ fontSize: 10, fontWeight: 'bold' }}>{item.label}</Text>
-                        </TouchableOpacity>
-                      ))}
+                      <ScrollView style={{ maxHeight: 200 }} keyboardShouldPersistTaps="always">
+                        {modalitiesList.filter(m => m.value !== '🎁 Bônus e Critérios de Desempate').map((item) => (
+                          <TouchableOpacity
+                            key={item.value}
+                            style={styles.dropdownOptionRow}
+                            activeOpacity={0.7}
+                            onPress={() => {
+                              setSelectedActivity(item.label);
+                              setWorkoutActivityDropdownOpen(false);
+                            }}
+                          >
+                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0f172a' }}>{item.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
                     </View>
                   )}
                 </View>
@@ -2747,8 +2747,8 @@ const styles = StyleSheet.create({
   workoutPendingCard: { backgroundColor: '#f8fafc', borderRadius: 6, padding: 8, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 8 },
   evidenceImagePreview: { width: '100%', height: 140, borderRadius: 6, marginVertical: 6 },
 
-  dropdownSelectBox: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 8, marginBottom: 4 },
-  dropdownSelectText: { fontSize: 10, fontWeight: 'bold', color: '#0f172a' },
+  dropdownSelectBox: { backgroundColor: '#ffffff', borderWidth: 1.5, borderColor: '#f97316', borderRadius: 6, padding: 10, marginBottom: 4 },
+  dropdownSelectText: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
 
   datePickerRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 6, marginBottom: 6 },
 
@@ -2792,17 +2792,21 @@ const styles = StyleSheet.create({
   
   floatingDropdownContainer: {
     position: 'absolute',
-    top: 40,
+    top: 42,
     left: 0,
     right: 0,
     backgroundColor: '#ffffff',
     borderWidth: 2,
     borderColor: '#f97316',
     borderRadius: 6,
-    zIndex: 9999,
-    elevation: 20
+    zIndex: 99999,
+    elevation: 25,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5
   },
-  dropdownOptionRow: { flexDirection: 'row', alignItems: 'center', padding: 10, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', backgroundColor: '#ffffff' },
+  dropdownOptionRow: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', backgroundColor: '#ffffff' },
 
   participantRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#fed7aa', marginTop: 6 },
   participantName: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
