@@ -2200,37 +2200,41 @@ export default function App() {
                   />
 
                   <Text style={[styles.inputLabel, { marginTop: 6 }]}>Período de Duração da Liga:</Text>
-                  <View style={{ flexDirection: 'row', gap: 10, marginVertical: 4 }}>
-                    <TouchableOpacity 
-                      style={styles.checkboxRow} 
-                      onPress={() => setLeaguePeriod('Weekly')}
-                    >
-                      <View style={[styles.checkboxBoxCircle, leaguePeriod === 'Weekly' && styles.checkboxBoxCircleActive]}>
-                        {leaguePeriod === 'Weekly' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                      </View>
-                      <Text style={styles.checkboxLabel}>Semanal (semana vigente)</Text>
-                    </TouchableOpacity>
+                  
+                  {/* BARRA DE ROLAGEM HORIZONTAL E OPÇÕES VERTICAIS (UMA EMBAIXO DA OUTRA) */}
+                  <ScrollView horizontal showsHorizontalScrollIndicator={true} style={{ marginVertical: 4 }}>
+                    <View style={{ minWidth: 260, gap: 8 }}>
+                      <TouchableOpacity 
+                        style={styles.checkboxRow} 
+                        onPress={() => setLeaguePeriod('Weekly')}
+                      >
+                        <View style={[styles.checkboxBoxCircle, leaguePeriod === 'Weekly' && styles.checkboxBoxCircleActive]}>
+                          {leaguePeriod === 'Weekly' && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                        </View>
+                        <Text style={styles.checkboxLabel}>Semanal (semana vigente)</Text>
+                      </TouchableOpacity>
 
-                    <TouchableOpacity 
-                      style={styles.checkboxRow} 
-                      onPress={() => setLeaguePeriod('Monthly')}
-                    >
-                      <View style={[styles.checkboxBoxCircle, leaguePeriod === 'Monthly' && styles.checkboxBoxCircleActive]}>
-                        {leaguePeriod === 'Monthly' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                      </View>
-                      <Text style={styles.checkboxLabel}>Mensal (mês vigente)</Text>
-                    </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={styles.checkboxRow} 
+                        onPress={() => setLeaguePeriod('Monthly')}
+                      >
+                        <View style={[styles.checkboxBoxCircle, leaguePeriod === 'Monthly' && styles.checkboxBoxCircleActive]}>
+                          {leaguePeriod === 'Monthly' && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                        </View>
+                        <Text style={styles.checkboxLabel}>Mensal (mês vigente)</Text>
+                      </TouchableOpacity>
 
-                    <TouchableOpacity 
-                      style={styles.checkboxRow} 
-                      onPress={() => setLeaguePeriod('Yearly')}
-                    >
-                      <View style={[styles.checkboxBoxCircle, leaguePeriod === 'Yearly' && styles.checkboxBoxCircleActive]}>
-                        {leaguePeriod === 'Yearly' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                      </View>
-                      <Text style={styles.checkboxLabel}>Anual</Text>
-                    </TouchableOpacity>
-                  </View>
+                      <TouchableOpacity 
+                        style={styles.checkboxRow} 
+                        onPress={() => setLeaguePeriod('Yearly')}
+                      >
+                        <View style={[styles.checkboxBoxCircle, leaguePeriod === 'Yearly' && styles.checkboxBoxCircleActive]}>
+                          {leaguePeriod === 'Yearly' && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                        </View>
+                        <Text style={styles.checkboxLabel}>Anual</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </ScrollView>
 
                   <TouchableOpacity 
                     style={[styles.checkboxRow, { marginTop: 8 }]} 
