@@ -1052,13 +1052,13 @@ export default function App() {
       return;
     }
 
-    const isGymGroup = ['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico', '⚽ Esportes Coletivos', '🥋 Lutas / Esportes Individuais'].includes(selectedActivity);
+    const isThreePhotosGroup = ['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico'].includes(selectedActivity);
     const isKmGroup = ['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedActivity);
     const isSteps = selectedActivity === '🚶‍♂️ Passos Diários';
 
-    if (isGymGroup) {
+    if (isThreePhotosGroup) {
       if (!photoStart || !photoEvidence || !photoEnd) {
-        Alert.alert('Comprovantes Obrigatórios', 'Para este treino, envie as 3 fotos obrigatórias: Foto Horário Inicial, Foto Evidência e Foto Horário Final.');
+        Alert.alert('Comprovantes Obrigatórios', 'Para esta modalidade, envie as 3 fotos obrigatórias: Foto Horário Inicial, Foto Evidência e Foto Horário Final.');
         return;
       }
     } else {
@@ -1416,7 +1416,8 @@ export default function App() {
     );
   }
 
-  const isGymGroupActive = ['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico', '⚽ Esportes Coletivos', '🥋 Lutas / Esportes Individuais'].includes(selectedActivity);
+  // APENAS MUSCULAÇÃO, CROSSFIT E AERÓBICO EXIGEM 3 FOTOS
+  const isThreePhotosGroupActive = ['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico'].includes(selectedActivity);
   const isKmGroupActive = ['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedActivity);
   const isStepsActive = selectedActivity === '🚶‍♂️ Passos Diários';
 
@@ -1948,7 +1949,6 @@ export default function App() {
                               <Text style={styles.tagActiveText}>+{w.points_to_ranking} pts</Text>
                             </View>
 
-                            {/* EXIBIÇÃO DE TEMPO E DISTÂNCIA SE APLICÁVEL */}
                             <View style={{ backgroundColor: '#eff6ff', padding: 6, borderRadius: 6, marginVertical: 4 }}>
                               {w.duration_minutes > 0 && (
                                 <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>
@@ -1967,7 +1967,6 @@ export default function App() {
                               ) : null}
                             </View>
 
-                            {/* ANEXOS DE FOTOS ENVIADAS PELO ATLETA */}
                             <Text style={[styles.inputLabelMini, { marginTop: 4 }]}>Imagens de Comprovação Anexadas:</Text>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 4 }}>
                               {pendingImages.map((imgObj, idx) => (
@@ -2044,7 +2043,7 @@ export default function App() {
                       ⚡ Atletas Ativos na Liga ({activeMembersInChallenge.length}):
                     </Text>
                     {activeMembersInChallenge.length === 0 ? (
-                      <Text style={styles.emptyNoticeText}>Nenhum atleta ativo cadastrado nesta liga.</Text>
+                      <Text style={styles.emptyNoticeText}>Nenum atleta ativo cadastrado nesta liga.</Text>
                     ) : (
                       activeMembersInChallenge.map((m) => (
                         <View key={m.id} style={styles.participantRow}>
@@ -2974,7 +2973,7 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL REGISTRO TREINO RECONSTRUÍDO COM REGRAS ESPECÍFICAS */}
+      {/* MODAL REGISTRO TREINO RECONSTRUÍDO */}
       <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -3124,20 +3123,25 @@ export default function App() {
               <View style={{ marginVertical: 8 }}>
                 <Text style={[styles.inputLabel, { color: '#1e3a8a' }]}>📷 Comprovante(s) em Foto da Atividade:</Text>
 
-                {/* PARA MUSCULAÇÃO, CROSSFIT, AERÓBICO, LUTAS, COLETIVOS: 3 JANELAS */}
-                {isGymGroupActive ? (
+                {/* PARA MUSCULAÇÃO, CROSSFIT E AERÓBICO: 3 JANELAS */}
+                {isThreePhotosGroupActive ? (
                   <View style={{ gap: 10 }}>
                     {/* FOTO 1: HORÁRIO INICIAL */}
                     <View style={styles.photoUploadBox}>
                       <Text style={styles.inputLabelMini}>1. Foto Horário Inicial (Obrigatória):</Text>
                       {photoStart && <Image source={{ uri: photoStart }} style={styles.photoPreviewMini} />}
-                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                      <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
                         <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setPhotoStart)}>
                           <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setPhotoStart)}>
                           <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
                         </TouchableOpacity>
+                        {photoStart && (
+                          <TouchableOpacity style={styles.removePhotoBtn} onPress={() => setPhotoStart(null)}>
+                            <Text style={styles.removePhotoBtnText}>🗑️ REMOVER</Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
                     </View>
 
@@ -3145,13 +3149,18 @@ export default function App() {
                     <View style={styles.photoUploadBox}>
                       <Text style={styles.inputLabelMini}>2. Foto Evidência do Treino (Obrigatória):</Text>
                       {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
-                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                      <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
                         <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setPhotoEvidence)}>
                           <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setPhotoEvidence)}>
                           <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
                         </TouchableOpacity>
+                        {photoEvidence && (
+                          <TouchableOpacity style={styles.removePhotoBtn} onPress={() => setPhotoEvidence(null)}>
+                            <Text style={styles.removePhotoBtnText}>🗑️ REMOVER</Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
                     </View>
 
@@ -3159,28 +3168,38 @@ export default function App() {
                     <View style={styles.photoUploadBox}>
                       <Text style={styles.inputLabelMini}>3. Foto Horário Final (Obrigatória):</Text>
                       {photoEnd && <Image source={{ uri: photoEnd }} style={styles.photoPreviewMini} />}
-                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                      <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
                         <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setPhotoEnd)}>
                           <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setPhotoEnd)}>
                           <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
                         </TouchableOpacity>
+                        {photoEnd && (
+                          <TouchableOpacity style={styles.removePhotoBtn} onPress={() => setPhotoEnd(null)}>
+                            <Text style={styles.removePhotoBtnText}>🗑️ REMOVER</Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
                     </View>
                   </View>
                 ) : (
-                  /* PARA CORRIDA, CAMINHADA, BIKE E PASSOS DIÁRIOS: 1 JANELA DE FOTO */
+                  /* PARA CORRIDA, CAMINHADA, BIKE, PASSOS DIÁRIOS, LUTAS E COLETIVOS: 1 JANELA DE FOTO */
                   <View style={styles.photoUploadBox}>
                     <Text style={styles.inputLabelMini}>Foto / Print de Comprovação (Obrigatória):</Text>
                     {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
-                    <View style={{ flexDirection: 'row', gap: 6, justifyContent: 'center' }}>
+                    <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
                       <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setPhotoEvidence)}>
                         <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
                       </TouchableOpacity>
                       <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setPhotoEvidence)}>
                         <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
                       </TouchableOpacity>
+                      {photoEvidence && (
+                        <TouchableOpacity style={styles.removePhotoBtn} onPress={() => setPhotoEvidence(null)}>
+                          <Text style={styles.removePhotoBtnText}>🗑️ REMOVER</Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </View>
                 )}
@@ -3307,6 +3326,8 @@ const styles = StyleSheet.create({
   photoBtnText: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
   photoBtnSecondary: { backgroundColor: '#1e3a8a', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 4 },
   photoBtnTextSecondary: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
+  removePhotoBtn: { backgroundColor: '#dc2626', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 4 },
+  removePhotoBtnText: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
 
   nativeSelectWrapper: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, marginBottom: 6, overflow: 'hidden' },
   htmlNativeSelect: { width: '100%', padding: 8, fontSize: 11, fontWeight: 'bold', color: '#0f172a', backgroundColor: 'transparent', border: 'none', outline: 'none', cursor: 'pointer' },
