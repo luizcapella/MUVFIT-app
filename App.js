@@ -2519,7 +2519,7 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL DE REGISTRO DE TREINO COM REGRAS DINÂMICAS E REMOÇÃO DE IMAGEM */}
+      {/* MODAL DE REGISTRO DE TREINO SEM A MODALIDADE ENTRE PARÊNTESES NO TÍTULO */}
       <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -2529,9 +2529,9 @@ export default function App() {
                 Registrar Treino ({selectedChallenge?.title || 'MuvFit'})
               </Text>
 
-              {/* CAIXA DE REGRAS ATIVAS DINÂMICAS QUE LÊ AS CONFIGURAÇÕES DA LIGA */}
+              {/* CAIXA DE REGRAS ATIVAS DINÂMICAS - TÍTULO LIMPO */}
               <View style={styles.rulesCardBox}>
-                <Text style={styles.rulesCardTitle}>📜 Regras Ativas ({selectedActivity}):</Text>
+                <Text style={styles.rulesCardTitle}>📜 Regras Ativas:</Text>
                 {getDynamicActiveRulesText().map((ruleText, idx) => (
                   <Text key={idx} style={styles.rulesCardItem}>{ruleText}</Text>
                 ))}
