@@ -143,8 +143,6 @@ export default function App() {
   const [checkBonusInquebravel, setCheckBonusInquebravel] = useState(false);
   const [checkBonusDesperta, setCheckBonusDesperta] = useState(false);
 
-  const [isAthleteDropdownOpen, setIsAthleteDropdownOpen] = useState(false);
-
   // ESTADOS DO MODAL DE CONFIGURAÇÃO AVANÇADA DE PONTOS
   const [isAdvancedRulesModalOpen, setIsAdvancedRulesModalOpen] = useState(false);
   const [selectedConfigChallengeId, setSelectedConfigChallengeId] = useState(null);
@@ -2074,33 +2072,23 @@ export default function App() {
 
                 {expandedSec3 && (
                   <View style={styles.accordionBody}>
-                    <Text style={styles.inputLabel}>Selecionar Atleta Ativo:</Text>
-                    <TouchableOpacity 
-                      style={styles.dropdownSelectBox} 
-                      onPress={() => setIsAthleteDropdownOpen(!isAthleteDropdownOpen)}
-                    >
-                      <Text style={styles.dropdownSelectText}>
-                        {selectedAthleteObject ? `${selectedAthleteObject.name} (${selectedAthleteObject.nickname})` : 'Clique para selecionar um atleta...'} ▼
-                      </Text>
-                    </TouchableOpacity>
-
-                    {isAthleteDropdownOpen && (
-                      <View style={styles.floatingDropdownContainer}>
+                    <Text style={styles.inputLabel}>Pór Atleta Ativo:</Text>
+                    
+                    {/* SELETOR NATIVO DE ATLETAS (IGUAL À JANELA DE REGRAS) */}
+                    <View style={styles.nativeSelectWrapper}>
+                      <select
+                        style={styles.htmlNativeSelect}
+                        value={manualSelectedAthleteId}
+                        onChange={(e) => setManualSelectedAthleteId(e.target.value)}
+                      >
+                        <option value="">Clique para selecionar um atleta...</option>
                         {activeMembersInChallenge.map((m) => (
-                          <TouchableOpacity
-                            key={m.id}
-                            style={styles.dropdownOptionRow}
-                            onPress={() => {
-                              setManualSelectedAthleteId(m.id);
-                              setIsAthleteDropdownOpen(false);
-                            }}
-                          >
-                            <Image source={{ uri: m.avatar }} style={styles.avatarMini} />
-                            <Text style={{ fontSize: 10, fontWeight: 'bold', marginLeft: 6 }}>{m.name} ({m.nickname})</Text>
-                          </TouchableOpacity>
+                          <option key={m.id} value={m.id}>
+                            {m.name} ({m.nickname})
+                          </option>
                         ))}
-                      </View>
-                    )}
+                      </select>
+                    </View>
 
                     <Text style={[styles.inputLabel, { marginTop: 8 }]}>Selecione a Modalidade Realizada:</Text>
                     <View style={styles.modalityGridContainer}>
@@ -3307,9 +3295,6 @@ const styles = StyleSheet.create({
 
   workoutPendingCard: { backgroundColor: '#f8fafc', borderRadius: 6, padding: 8, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 8 },
 
-  dropdownSelectBox: { backgroundColor: '#ffffff', borderWidth: 1.5, borderColor: '#f97316', borderRadius: 6, padding: 10, marginBottom: 4 },
-  dropdownSelectText: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
-
   rulesCardBox: { backgroundColor: '#fff7ed', borderWidth: 1.5, borderColor: '#f97316', borderRadius: 8, padding: 10, marginBottom: 10 },
   rulesCardTitle: { fontSize: 11, fontWeight: '900', color: '#c2410c', marginBottom: 4 },
   rulesCardItem: { fontSize: 9.5, fontWeight: '600', color: '#431407', marginBottom: 2 },
@@ -3329,16 +3314,13 @@ const styles = StyleSheet.create({
   removePhotoBtn: { backgroundColor: '#dc2626', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 4 },
   removePhotoBtnText: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
 
-  nativeSelectWrapper: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, marginBottom: 6, overflow: 'hidden' },
-  htmlNativeSelect: { width: '100%', padding: 8, fontSize: 11, fontWeight: 'bold', color: '#0f172a', backgroundColor: 'transparent', border: 'none', outline: 'none', cursor: 'pointer' },
+  nativeSelectWrapper: { backgroundColor: '#ffffff', borderWidth: 1.5, borderColor: '#000000', borderRadius: 6, marginBottom: 8, overflow: 'hidden' },
+  htmlNativeSelect: { width: '100%', padding: 10, fontSize: 11, fontWeight: 'bold', color: '#0f172a', backgroundColor: 'transparent', border: 'none', outline: 'none', cursor: 'pointer' },
 
   nativeSelectWrapperSmall: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, overflow: 'hidden', width: 60 },
   htmlNativeSelectSmall: { width: '100%', padding: 5, fontSize: 9, fontWeight: 'bold', color: '#0f172a', backgroundColor: 'transparent', border: 'none', outline: 'none', cursor: 'pointer' },
 
   stepMiniInput: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 4, padding: 5, fontSize: 10, width: 55, textAlign: 'center', marginBottom: 0 },
-
-  floatingDropdownContainer: { backgroundColor: '#ffffff', borderWidth: 2, borderColor: '#f97316', borderRadius: 6, marginBottom: 8, elevation: 10 },
-  dropdownOptionRow: { flexDirection: 'row', alignItems: 'center', padding: 10, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', backgroundColor: '#ffffff' },
 
   participantRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#fed7aa', marginTop: 6 },
   participantName: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
