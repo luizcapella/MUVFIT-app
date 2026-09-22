@@ -315,7 +315,7 @@ export default function App() {
           if (parts.length === 3) formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
 
-        const computedAge = formattedDate ? calculateAge(formattedDate) : (data.age || 0);
+        const computedAge = formattedDate ? calculateAge(formattedDate) : 0;
 
         const loadedUser = {
           id: data.id,
@@ -464,7 +464,7 @@ export default function App() {
     try {
       let finalAvatarUrl = editAvatar;
 
-      // 1. Se a imagem estiver em formato Base64 (upload local/camera/galeria), faz upload para o Storage do Supabase
+      // 1. Upload de imagem para o Storage (se for base64 local)
       if (editAvatar && editAvatar.startsWith('data:image')) {
         try {
           const fileExt = editAvatar.substring("data:image/".length, editAvatar.indexOf(";base64")) || 'jpeg';
@@ -493,7 +493,7 @@ export default function App() {
         }
       }
 
-      // 2. Tratamento correto da Data de Nascimento
+      // 2. Tratamento da Data de Nascimento
       let dbBirthDate = null;
       let computedAge = 0;
 
@@ -505,13 +505,12 @@ export default function App() {
         }
       }
 
-      // 3. Monta o objeto seguro para a tabela 'profiles'
+      // 3. Payload para a tabela 'profiles' (SEM a coluna 'age')
       const profilePayload = {
         id: currentUser.id,
         full_name: editFullName.trim(),
         nickname: editNickname.trim(),
         gender: editGender,
-        age: computedAge,
         avatar_url: finalAvatarUrl
       };
 
@@ -527,7 +526,7 @@ export default function App() {
         throw new Error('Erro na tabela profiles: ' + profileError.message);
       }
 
-      // 4. Atualização nas memberships do usuário
+      // 4. Atualização nas memberships
       await supabase
         .from('memberships')
         .update({
@@ -539,7 +538,7 @@ export default function App() {
         })
         .eq('user_id', currentUser.id);
 
-      // 5. Atualiza o estado local e interface
+      // 5. Atualização do estado local
       const updatedUser = {
         ...currentUser,
         name: editFullName.trim(),
@@ -3101,7 +3100,7 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL EDITAR PERFIL AMPLADO COM FOTO, NOME, APELIDO E DATA DE NASCIMENTO */}
+      {/* MODAL EDITAR PERFIL AMPLIADO COM FOTO, NOME, APELIDO E DATA DE NASCIMENTO */}
       <Modal visible={isEditProfileOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={styles.modalContent}>
@@ -3127,7 +3126,7 @@ export default function App() {
             <Text style={styles.inputLabel}>Apelido (exibido na Central, Ranking e Hall da Fama):</Text>
             <TextInput style={styles.input} placeholder="Digite seu apelido público" value={editNickname} onChangeText={setEditNickname} />
 
-            <Text style={styles.inputLabel}>Data de Nascimento (DD/MM/AAAA):</Text>
+            <Text style={styles.inputLabel}>Dados de Nascimento (DD/MM/AAAA):</Text>
             <TextInput style={styles.input} placeholder="Ex: 08/11/1997" keyboardType="numeric" maxLength={10} value={editBirthDate} onChangeText={(text) => setEditBirthDate(formatBirthDateMask(text))} />
 
             <Text style={styles.inputLabel}>Gênero:</Text>
@@ -3136,13 +3135,13 @@ export default function App() {
                 style={[styles.chipBtn, editGender === 'Masculino' && styles.chipBtnActive, { flex: 1, alignItems: 'center' }]}
                 onPress={() => setEditGender('Masculino')}
               >
-                <Text style={[styles.chipText, editGender === 'Masculino' && styles.chipTextActive]}>Masculino</Text>
+                <Text style={[styles.chipText, editGender === 'Masculino' && styles.chipTextActive]}>masculino</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.chipBtn, editGender === 'Feminino' && styles.chipBtnActive, { flex: 1, alignItems: 'center' }]}
                 onPress={() => setEditGender('Feminino')}
               >
-                <Text style={[styles.chipText, editGender === 'Feminino' && styles.chipTextActive]}>Feminino</Text>
+                <Text style={[styles.chipText, editGender === 'Feminino' && styles.chipTextActive]}>feminina</Text>
               </TouchableOpacity>
             </View>
 
