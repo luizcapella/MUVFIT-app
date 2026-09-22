@@ -108,7 +108,7 @@ export default function App() {
   const [genderInput, setGenderInput] = useState('Masculino');
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
-  // EDIÇÃO DE PERFIL AMPLADA
+  // EDIÇÃO DE PERFIL AMPLIADA
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editFullName, setEditFullName] = useState('');
   const [editNickname, setEditNickname] = useState('');
@@ -462,61 +462,104 @@ export default function App() {
     setSavingProfile(true);
 
     try {
-      const computedAge = calculateAge(editBirthDate);
+      let finalAvatarUrl = editAvatar;
 
+      // 1. Se a imagem estiver em formato Base64 (upload local/camera/galeria), faz upload para o Storage do Supabase
+      if (editAvatar && editAvatar.startsWith('data:image')) {
+        try {
+          const fileExt = editAvatar.substring("data:image/".length, editAvatar.indexOf(";base64")) || 'jpeg';
+          const fileName = `${currentUser.id}_${Date.now()}.${fileExt}`;
+          
+          const response = await fetch(editAvatar);
+          const blob = await response.blob();
+
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(fileName, blob, { contentType: `image/${fileExt}`, upsert: true });
+
+          if (uploadError) {
+            console.log('Erro no upload da imagem (usando imagem atual):', uploadError);
+            finalAvatarUrl = currentUser.avatar;
+          } else {
+            const { data: publicUrlData } = supabase.storage
+              .from('avatars')
+              .getPublicUrl(fileName);
+            
+            finalAvatarUrl = publicUrlData.publicUrl;
+          }
+        } catch (imgErr) {
+          console.log('Falha ao processar imagem:', imgErr);
+          finalAvatarUrl = currentUser.avatar;
+        }
+      }
+
+      // 2. Tratamento correto da Data de Nascimento
       let dbBirthDate = null;
+      let computedAge = 0;
+
       if (editBirthDate && editBirthDate.length === 10) {
         const parts = editBirthDate.split('/');
         if (parts.length === 3) {
           dbBirthDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          computedAge = calculateAge(editBirthDate) || 0;
         }
       }
 
-      const { error } = await supabase
-        .from('profiles')
-        .upsert([
-          {
-            id: currentUser.id,
-            full_name: editFullName.trim(),
-            nickname: editNickname.trim(),
-            birth_date: dbBirthDate,
-            age: computedAge || 0,
-            gender: editGender,
-            avatar_url: editAvatar
-          }
-        ], { onConflict: 'id' });
+      // 3. Monta o objeto seguro para a tabela 'profiles'
+      const profilePayload = {
+        id: currentUser.id,
+        full_name: editFullName.trim(),
+        nickname: editNickname.trim(),
+        gender: editGender,
+        age: computedAge,
+        avatar_url: finalAvatarUrl
+      };
 
-      if (error) {
-        Alert.alert('Erro', 'Não foi possível salvar o perfil: ' + error.message);
-      } else {
-        // ATUALIZA OS DADOS DAS MEMBERSHIPS PARA REFLITA NO RANKING/HALL DA FAMA
-        await supabase.from('memberships').update({
-          name: editFullName.trim(),
-          nickname: editNickname.trim(),
-          avatar: editAvatar || currentUser.avatar,
-          age: computedAge || 0,
-          gender: editGender
-        }).eq('user_id', currentUser.id);
-
-        const updatedUser = {
-          ...currentUser,
-          name: editFullName.trim(),
-          nickname: editNickname.trim(),
-          birth_date: editBirthDate,
-          age: computedAge || 0,
-          gender: editGender,
-          avatar: editAvatar || currentUser.avatar
-        };
-
-        setCurrentUser(updatedUser);
-        setViewedUser(updatedUser);
-        setIsEditProfileOpen(false);
-
-        fetchDataFromSupabase();
-        Alert.alert('🎉 Sucesso!', 'Perfil atualizado com sucesso!');
+      if (dbBirthDate) {
+        profilePayload.birth_date = dbBirthDate;
       }
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert([profilePayload], { onConflict: 'id' });
+
+      if (profileError) {
+        throw new Error('Erro na tabela profiles: ' + profileError.message);
+      }
+
+      // 4. Atualização nas memberships do usuário
+      await supabase
+        .from('memberships')
+        .update({
+          name: editFullName.trim(),
+          nickname: editNickname.trim(),
+          avatar: finalAvatarUrl,
+          age: computedAge,
+          gender: editGender
+        })
+        .eq('user_id', currentUser.id);
+
+      // 5. Atualiza o estado local e interface
+      const updatedUser = {
+        ...currentUser,
+        name: editFullName.trim(),
+        nickname: editNickname.trim(),
+        birth_date: editBirthDate,
+        age: computedAge,
+        gender: editGender,
+        avatar: finalAvatarUrl
+      };
+
+      setCurrentUser(updatedUser);
+      setViewedUser(updatedUser);
+      setIsEditProfileOpen(false);
+
+      await fetchDataFromSupabase();
+      Alert.alert('🎉 Sucesso!', 'Perfil atualizado com sucesso!');
+
     } catch (err) {
-      Alert.alert('Erro Inesperado', err.message || 'Ocorreu um erro ao salvar o perfil.');
+      console.error('Erro ao salvar perfil:', err);
+      Alert.alert('Erro ao Salvar', err.message || 'Ocorreu um erro ao atualizar o perfil.');
     } finally {
       setSavingProfile(false);
     }
@@ -2253,7 +2296,7 @@ export default function App() {
 
                 {expandedSec3 && (
                   <View style={styles.accordionBody}>
-                    <Text style={styles.inputLabel}>Pór Atleta Ativo:</Text>
+                    <Text style={styles.inputLabel}>Por Atleta Ativo:</Text>
                     
                     <View style={styles.nativeSelectWrapper}>
                       <select
