@@ -806,6 +806,7 @@ export default function App() {
       activity_type: manualActivity.toUpperCase(),
       caption: `Lançamento manual de pontos pelo Administrador (${manualActivity})`,
       photo_evidence: 'https://picsum.photos/seed/admin/400/300',
+      all_photos: ['https://picsum.photos/seed/admin/400/300'],
       points_to_ranking: rPts + bonusTotal,
       points_to_bank: bPts,
       status: 'approved',
@@ -827,6 +828,7 @@ export default function App() {
     Alert.alert('🎉 Valores Creditados!', `Valores e bônus aplicados com sucesso para ${member.nickname}!`);
   }
 
+  // APROVAÇÃO E PUBLICAÇÃO AUTOMÁTICA COM TODAS AS IMAGENS NO FEED
   async function handleApproveWorkout(workoutId) {
     const workout = pendingWorkouts.find(w => w.id === workoutId);
     if (!workout) return;
@@ -848,6 +850,12 @@ export default function App() {
       }
     }
 
+    // COMPILANDO TODAS AS IMAGENS ENVIADAS
+    const imagesList = [];
+    if (workout.photo_start) imagesList.push(workout.photo_start);
+    if (workout.photo_evidence) imagesList.push(workout.photo_evidence);
+    if (workout.photo_end) imagesList.push(workout.photo_end);
+
     const newPost = {
       id: `p_${Date.now()}`,
       challenge_id: workout.challengeId,
@@ -858,17 +866,18 @@ export default function App() {
       activity_type: workout.activity_type,
       caption: workout.caption,
       photo_evidence: workout.photo_evidence,
+      all_photos: imagesList.length > 0 ? imagesList : [workout.photo_evidence],
       points_to_ranking: workout.points_to_ranking,
       points_to_bank: workout.points_to_bank,
       status: 'approved',
-      created_at: 'Agora',
+      created_at: workout.created_at || 'Agora',
       likes: 0,
       comments: []
     };
 
     await supabase.from('feed_posts').insert([newPost]);
     fetchDataFromSupabase();
-    Alert.alert('Treino Aprovado!', 'O treino foi publicado na nuvem e no Feed.');
+    Alert.alert('Treino Aprovado!', 'O treino com todas as suas imagens foi publicado automaticamente no Feed!');
   }
 
   async function handleRejectWorkout(workoutId) {
@@ -877,12 +886,11 @@ export default function App() {
     Alert.alert('Treino Rejeitado', 'O registro foi removido.');
   }
 
-  // SIMULADORES DE CAPTURA/UPLOAD DE IMAGEM
   const handleTriggerPhoto = (type, setter) => {
     const randomSeed = Math.floor(Math.random() * 1000);
     const mockUrl = `https://picsum.photos/seed/${type}_${randomSeed}/400/300`;
     setter(mockUrl);
-    Alert.alert('📸 Imagem Capturada', `Foto de (${type}) registrada com sucesso!`);
+    Alert.alert('📸 Imagem Selecionada', `Foto (${type}) capturada/anexada com sucesso!`);
   };
 
   async function handleSubmitWorkout() {
@@ -908,7 +916,6 @@ export default function App() {
 
     const cleanActType = selectedActivity.trim().toUpperCase();
     
-    // FORMATAR DATA
     let formattedDateStr = new Date().toLocaleDateString('pt-BR');
     if (workoutDate) {
       const parts = workoutDate.split('-');
@@ -917,7 +924,6 @@ export default function App() {
       }
     }
 
-    // TRAVA DE REPETIÇÃO
     const hasAlreadySubmittedToday = 
       feedPosts.some(p => p.challenge_id === activeChallengeId && p.user_id === currentUser.id && (p.activity_type || '').toUpperCase() === cleanActType && p.created_at.includes(formattedDateStr)) ||
       pendingWorkouts.some(w => w.challenge_id === activeChallengeId && w.user_id === currentUser.id && (w.activity_type || '').toUpperCase() === cleanActType && w.created_at.includes(formattedDateStr));
@@ -930,11 +936,10 @@ export default function App() {
       return;
     }
 
-    // CÁLCULO DE DURAÇÃO PELO HORÁRIO DE INÍCIO E FIM
     const startMins = (parseInt(startHour, 10) * 60) + parseInt(startMinute, 10);
     const endMins = (parseInt(endHour, 10) * 60) + parseInt(endMinute, 10);
     let dur = endMins - startMins;
-    if (dur <= 0) dur += 1440; // Trata virada de noite
+    if (dur <= 0) dur += 1440;
 
     const points = dur >= 60 ? 10000 : 5000;
     let ptsRanking = points;
@@ -956,7 +961,9 @@ export default function App() {
       user_avatar: currentUser.avatar,
       activity_type: cleanActType,
       caption: workoutCaption || `Atividade de ${selectedActivity} (${dur} min)`,
+      photo_start: photoStart,
       photo_evidence: photoEvidence,
+      photo_end: photoEnd,
       points_to_ranking: ptsRanking,
       points_to_bank: ptsBank,
       created_at: `${formattedDateStr} (${timeWindowStr})`
@@ -965,7 +972,6 @@ export default function App() {
     await supabase.from('pending_workouts').insert([newPendingWorkout]);
     fetchDataFromSupabase();
     
-    // RESETAR FORMULÁRIO
     setIsWorkoutModalOpen(false);
     setKmInput('');
     setStepsInput('');
@@ -1001,8 +1007,6 @@ export default function App() {
   });
 
   const currentChallengeMembers = memberships.filter(m => m.challengeId === activeChallengeId);
-  
-  // SEPARAÇÃO ENTRE ATLETAS ATIVOS E TORCEDORES
   const activeMembersInChallenge = currentChallengeMembers.filter(m => m.role === 'active');
   const spectatorMembersInChallenge = currentChallengeMembers.filter(m => m.role === 'spectator');
   const pendingMembersInChallenge = currentChallengeMembers.filter(m => m.role === 'pending');
@@ -1010,7 +1014,6 @@ export default function App() {
   const currentFeedPosts = feedPosts.filter(p => p.challenge_id === activeChallengeId);
   const currentPendingWorkouts = pendingWorkouts.filter(w => w.challenge_id === activeChallengeId);
 
-  // LÓGICA DE ORDENAÇÃO
   const sortedAthletes = [...activeMembersInChallenge].sort((a, b) => {
     if ((b.rankingPoints || 0) !== (a.rankingPoints || 0)) {
       return (b.rankingPoints || 0) - (a.rankingPoints || 0);
@@ -1444,6 +1447,7 @@ export default function App() {
             </ScrollView>
           )}
 
+          {/* FEED DE PUBLICAÇÃO AUTOMÁTICA COM GALERIA DE FOTOS, CURTIR E COMENTAR */}
           {currentScreen === 'feed' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -1460,56 +1464,70 @@ export default function App() {
               {currentFeedPosts.length === 0 ? (
                 <Text style={styles.emptyNoticeText}>Nenhum treino aprovado no feed ainda.</Text>
               ) : (
-                currentFeedPosts.map((post) => (
-                  <View key={post.id} style={styles.postCard}>
-                    <TouchableOpacity style={styles.postHeader} onPress={() => handleOpenUserProfile(post.user_id)}>
-                      <Image source={{ uri: post.user_avatar }} style={styles.avatarMini} />
-                      <View style={{ marginLeft: 8 }}>
-                        <Text style={[styles.postAuthor, { textDecorationLine: 'underline' }]}>{post.user_name} ({post.user_nickname})</Text>
-                        <Text style={styles.postTime}>{post.created_at} • ✅ Aprovado</Text>
-                      </View>
-                    </TouchableOpacity>
-
-                    <Image source={{ uri: post.photo_evidence }} style={styles.postImg} />
-                    
-                    <View style={{ padding: 10 }}>
-                      <Text style={styles.postCaption}>{post.caption}</Text>
-                      <Text style={styles.badgePts}>+{post.points_to_ranking} pts (Ranking)</Text>
-
-                      <View style={styles.socialBar}>
-                        <TouchableOpacity style={styles.socialBtn} onPress={() => handleToggleLike(post.id)}>
-                          <Text style={[styles.socialBtnText, post.isLiked && { color: '#dc2626' }]}>
-                            {post.isLiked ? '❤️' : '🤍'} {post.likes} Curtidas
-                          </Text>
-                        </TouchableOpacity>
-                        <Text style={styles.socialBtnText}>💬 {(post.comments || []).length} Comentários</Text>
-                      </View>
-
-                      {(post.comments || []).length > 0 && (
-                        <View style={styles.commentsListContainer}>
-                          {post.comments.map(cm => (
-                            <Text key={cm.id} style={styles.commentItemText}>
-                              <Text style={{ fontWeight: 'bold', color: '#1e3a8a' }}>{cm.user}: </Text>
-                              {cm.text}
-                            </Text>
-                          ))}
+                currentFeedPosts.map((post) => {
+                  const photos = post.all_photos && post.all_photos.length > 0 ? post.all_photos : [post.photo_evidence];
+                  
+                  return (
+                    <View key={post.id} style={styles.postCard}>
+                      <TouchableOpacity style={styles.postHeader} onPress={() => handleOpenUserProfile(post.user_id)}>
+                        <Image source={{ uri: post.user_avatar }} style={styles.avatarMini} />
+                        <View style={{ marginLeft: 8 }}>
+                          <Text style={[styles.postAuthor, { textDecorationLine: 'underline' }]}>{post.user_name} ({post.user_nickname})</Text>
+                          <Text style={styles.postTime}>{post.created_at} • ✅ Aprovado</Text>
                         </View>
-                      )}
+                      </TouchableOpacity>
 
-                      <View style={styles.addCommentRow}>
-                        <TextInput
-                          style={styles.commentInput}
-                          placeholder="Comentar..."
-                          value={commentInputs[post.id] || ''}
-                          onChangeText={(txt) => setCommentInputs({ ...commentInputs, [post.id]: txt })}
-                        />
-                        <TouchableOpacity style={styles.sendCommentBtn} onPress={() => handleAddComment(post.id)}>
-                          <Text style={styles.sendCommentBtnText}>Enviar</Text>
-                        </TouchableOpacity>
+                      {/* PUBLICAÇÃO DE TODAS AS IMAGENS DO TREINO APROVADO */}
+                      {photos.length > 1 ? (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 200 }}>
+                          {photos.map((imgUri, idx) => (
+                            <Image key={idx} source={{ uri: imgUri }} style={styles.postImgCarousel} />
+                          ))}
+                        </ScrollView>
+                      ) : (
+                        <Image source={{ uri: photos[0] }} style={styles.postImg} />
+                      )}
+                      
+                      <View style={{ padding: 10 }}>
+                        <Text style={styles.postCaption}>{post.caption}</Text>
+                        <Text style={styles.badgePts}>+{post.points_to_ranking} pts (Ranking)</Text>
+
+                        {/* BOTÕES DE CURTIR (CORAÇÃO) E COMENTAR */}
+                        <View style={styles.socialBar}>
+                          <TouchableOpacity style={styles.socialBtn} onPress={() => handleToggleLike(post.id)}>
+                            <Text style={[styles.socialBtnText, post.isLiked && { color: '#dc2626' }]}>
+                              {post.isLiked ? '❤️' : '🤍'} {post.likes} Curtidas
+                            </Text>
+                          </TouchableOpacity>
+                          <Text style={styles.socialBtnText}>💬 {(post.comments || []).length} Comentários</Text>
+                        </View>
+
+                        {(post.comments || []).length > 0 && (
+                          <View style={styles.commentsListContainer}>
+                            {post.comments.map(cm => (
+                              <Text key={cm.id} style={styles.commentItemText}>
+                                <Text style={{ fontWeight: 'bold', color: '#1e3a8a' }}>{cm.user}: </Text>
+                                {cm.text}
+                              </Text>
+                            ))}
+                          </View>
+                        )}
+
+                        <View style={styles.addCommentRow}>
+                          <TextInput
+                            style={styles.commentInput}
+                            placeholder="Comentar..."
+                            value={commentInputs[post.id] || ''}
+                            onChangeText={(txt) => setCommentInputs({ ...commentInputs, [post.id]: txt })}
+                          />
+                          <TouchableOpacity style={styles.sendCommentBtn} onPress={() => handleAddComment(post.id)}>
+                            <Text style={styles.sendCommentBtnText}>Enviar</Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     </View>
-                  </View>
-                ))
+                  );
+                })
               )}
             </ScrollView>
           )}
@@ -2441,212 +2459,214 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL REESTRUTURADO DE REGISTRO DE TREINO */}
+      {/* MODAL DE REGISTRO DE TREINO COM BARRAS DE ROLAGEM VERTICAL E HORIZONTAL */}
       <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
-            <Text style={styles.modalTitle}>📷 Registrar Novo Treino</Text>
+          <View style={styles.modalContent}>
+            <ScrollView horizontal style={{ width: '100%' }} contentContainerStyle={{ flexGrow: 1 }}>
+              <ScrollView style={{ width: 340, maxHeight: 520 }} keyboardShouldPersistTaps="handled">
+                <Text style={styles.modalTitle}>📷 Registrar Novo Treino</Text>
 
-            {/* 1. SELEÇÃO DE TIPO DE ATIVIDADE */}
-            <Text style={styles.inputLabel}>Tipo de Atividade:</Text>
-            <View style={{ position: 'relative', zIndex: 50 }}>
-              <TouchableOpacity 
-                style={styles.dropdownSelectBox} 
-                onPress={() => setWorkoutActivityDropdownOpen(!workoutActivityDropdownOpen)}
-              >
-                <Text style={styles.dropdownSelectText}>{selectedActivity} ▼</Text>
-              </TouchableOpacity>
+                {/* 1. SELEÇÃO DE TIPO DE ATIVIDADE */}
+                <Text style={styles.inputLabel}>Tipo de Atividade:</Text>
+                <View style={{ position: 'relative', zIndex: 50 }}>
+                  <TouchableOpacity 
+                    style={styles.dropdownSelectBox} 
+                    onPress={() => setWorkoutActivityDropdownOpen(!workoutActivityDropdownOpen)}
+                  >
+                    <Text style={styles.dropdownSelectText}>{selectedActivity} ▼</Text>
+                  </TouchableOpacity>
 
-              {workoutActivityDropdownOpen && (
-                <View style={styles.floatingDropdownContainer}>
-                  {modalitiesList.filter(m => m.value !== '🎁 Bônus e Critérios de Desempate').map((item) => (
-                    <TouchableOpacity
-                      key={item.value}
-                      style={styles.dropdownOptionRow}
-                      onPress={() => {
-                        setSelectedActivity(item.label);
-                        setWorkoutActivityDropdownOpen(false);
-                      }}
-                    >
-                      <Text style={{ fontSize: 10, fontWeight: 'bold' }}>{item.label}</Text>
-                    </TouchableOpacity>
-                  ))}
+                  {workoutActivityDropdownOpen && (
+                    <View style={styles.floatingDropdownContainer}>
+                      {modalitiesList.filter(m => m.value !== '🎁 Bônus e Critérios de Desempate').map((item) => (
+                        <TouchableOpacity
+                          key={item.value}
+                          style={styles.dropdownOptionRow}
+                          onPress={() => {
+                            setSelectedActivity(item.label);
+                            setWorkoutActivityDropdownOpen(false);
+                          }}
+                        >
+                          <Text style={{ fontSize: 10, fontWeight: 'bold' }}>{item.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
                 </View>
-              )}
-            </View>
 
-            {/* 2. SELEÇÃO DE DATA COM SÍMBOLO DE CALENDÁRIO */}
-            <Text style={styles.inputLabel}>Data da Atividade:</Text>
-            <View style={styles.datePickerRow}>
-              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0f172a', flex: 1 }}>
-                📅 {workoutDate ? workoutDate.split('-').reverse().join('/') : 'Selecione...'}
-              </Text>
-              {Platform.OS === 'web' ? (
-                <input
-                  type="date"
-                  value={workoutDate}
-                  onChange={(e) => setWorkoutDate(e.target.value)}
-                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '14px' }}
-                />
-              ) : (
+                {/* 2. SELEÇÃO DE DATA COM CALENDÁRIO */}
+                <Text style={styles.inputLabel}>Data da Atividade:</Text>
+                <View style={styles.datePickerRow}>
+                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0f172a', flex: 1 }}>
+                    📅 {workoutDate ? workoutDate.split('-').reverse().join('/') : 'Selecione...'}
+                  </Text>
+                  {Platform.OS === 'web' ? (
+                    <input
+                      type="date"
+                      value={workoutDate}
+                      onChange={(e) => setWorkoutDate(e.target.value)}
+                      style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '14px' }}
+                    />
+                  ) : (
+                    <TextInput
+                      style={styles.inputMini}
+                      value={workoutDate}
+                      onChangeText={setWorkoutDate}
+                      placeholder="AAAA-MM-DD"
+                    />
+                  )}
+                </View>
+
+                {/* 3. HORÁRIOS DE INÍCIO E FIM */}
+                <Text style={styles.inputLabel}>Horário do Treino (Início e Fim):</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8, zIndex: 20 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.inputLabelMini}>⏰ Início:</Text>
+                    <View style={{ flexDirection: 'row', gap: 4 }}>
+                      <select
+                        style={styles.htmlNativeSelectMini}
+                        value={startHour}
+                        onChange={(e) => setStartHour(e.target.value)}
+                      >
+                        {hoursList.map(h => <option key={h} value={h}>{h}h</option>)}
+                      </select>
+                      <select
+                        style={styles.htmlNativeSelectMini}
+                        value={startMinute}
+                        onChange={(e) => setStartMinute(e.target.value)}
+                      >
+                        {minutesList.map(m => <option key={m} value={m}>{m}m</option>)}
+                      </select>
+                    </View>
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.inputLabelMini}>⏰ Fim:</Text>
+                    <View style={{ flexDirection: 'row', gap: 4 }}>
+                      <select
+                        style={styles.htmlNativeSelectMini}
+                        value={endHour}
+                        onChange={(e) => setEndHour(e.target.value)}
+                      >
+                        {hoursList.map(h => <option key={h} value={h}>{h}h</option>)}
+                      </select>
+                      <select
+                        style={styles.htmlNativeSelectMini}
+                        value={endMinute}
+                        onChange={(e) => setEndMinute(e.target.value)}
+                      >
+                        {minutesList.map(m => <option key={m} value={m}>{m}m</option>)}
+                      </select>
+                    </View>
+                  </View>
+                </View>
+
+                {/* CAMPOS ESPECÍFICOS */}
+                {['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedActivity) && (
+                  <>
+                    <Text style={styles.inputLabel}>Distância Percorrida (KM):</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Ex: 5.5"
+                      keyboardType="numeric"
+                      value={kmInput}
+                      onChangeText={setKmInput}
+                    />
+                  </>
+                )}
+
+                {selectedActivity === '🚶‍♂️ Passos Diários' && (
+                  <>
+                    <Text style={styles.inputLabel}>Quantidade de Passos:</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Ex: 10000"
+                      keyboardType="numeric"
+                      value={stepsInput}
+                      onChangeText={setStepsInput}
+                    />
+                  </>
+                )}
+
+                <Text style={styles.inputLabel}>Legenda / Comentário (Opcional):</Text>
                 <TextInput
-                  style={styles.inputMini}
-                  value={workoutDate}
-                  onChangeText={setWorkoutDate}
-                  placeholder="AAAA-MM-DD"
+                  style={[styles.input, { height: 60, textAlignVertical: 'top' }]}
+                  placeholder="Escreva algo sobre o treino..."
+                  multiline
+                  value={workoutCaption}
+                  onChangeText={setWorkoutCaption}
                 />
-              )}
-            </View>
 
-            {/* 3. HORÁRIOS DE INÍCIO E FIM DO TREINO */}
-            <Text style={styles.inputLabel}>Horário do Treino (Início e Fim):</Text>
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8, zIndex: 20 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.inputLabelMini}>⏰ Início:</Text>
-                <View style={{ flexDirection: 'row', gap: 4 }}>
-                  <select
-                    style={styles.htmlNativeSelectMini}
-                    value={startHour}
-                    onChange={(e) => setStartHour(e.target.value)}
-                  >
-                    {hoursList.map(h => <option key={h} value={h}>{h}h</option>)}
-                  </select>
-                  <select
-                    style={styles.htmlNativeSelectMini}
-                    value={startMinute}
-                    onChange={(e) => setStartMinute(e.target.value)}
-                  >
-                    {minutesList.map(m => <option key={m} value={m}>{m}m</option>)}
-                  </select>
-                </View>
-              </View>
+                {/* JANELAS DE FOTOS */}
+                {['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico'].includes(selectedActivity) ? (
+                  <View style={{ gap: 8, marginVertical: 8 }}>
+                    <Text style={styles.inputLabelMini}>1. Foto do Início da Atividade (Obrigatório):</Text>
+                    <View style={styles.photoUploadBox}>
+                      {photoStart && <Image source={{ uri: photoStart }} style={styles.photoPreviewMini} />}
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Inicio', setPhotoStart)}>
+                          <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Inicio_Galeria', setPhotoStart)}>
+                          <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
 
-              <View style={{ flex: 1 }}>
-                <Text style={styles.inputLabelMini}>⏰ Fim:</Text>
-                <View style={{ flexDirection: 'row', gap: 4 }}>
-                  <select
-                    style={styles.htmlNativeSelectMini}
-                    value={endHour}
-                    onChange={(e) => setEndHour(e.target.value)}
-                  >
-                    {hoursList.map(h => <option key={h} value={h}>{h}h</option>)}
-                  </select>
-                  <select
-                    style={styles.htmlNativeSelectMini}
-                    value={endMinute}
-                    onChange={(e) => setEndMinute(e.target.value)}
-                  >
-                    {minutesList.map(m => <option key={m} value={m}>{m}m</option>)}
-                  </select>
-                </View>
-              </View>
-            </View>
+                    <Text style={styles.inputLabelMini}>2. Foto da Evidência de Treino (Obrigatório):</Text>
+                    <View style={styles.photoUploadBox}>
+                      {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Evidencia', setPhotoEvidence)}>
+                          <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Evidencia_Galeria', setPhotoEvidence)}>
+                          <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
 
-            {/* CAMPOS ESPECÍFICOS POR MODALIDADE */}
-            {['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedActivity) && (
-              <>
-                <Text style={styles.inputLabel}>Distância Percorrida (KM):</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Ex: 5.5"
-                  keyboardType="numeric"
-                  value={kmInput}
-                  onChangeText={setKmInput}
-                />
-              </>
-            )}
-
-            {selectedActivity === '🚶‍♂️ Passos Diários' && (
-              <>
-                <Text style={styles.inputLabel}>Quantidade de Passos:</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Ex: 10000"
-                  keyboardType="numeric"
-                  value={stepsInput}
-                  onChangeText={setStepsInput}
-                />
-              </>
-            )}
-
-            {/* 4. QUADRADO PARA LEGENDA/COMENTÁRIO (OPCIONAL) */}
-            <Text style={styles.inputLabel}>Legenda / Comentário (Opcional):</Text>
-            <TextInput
-              style={[styles.input, { height: 60, textAlignVertical: 'top' }]}
-              placeholder="Escreva algo sobre o treino..."
-              multiline
-              value={workoutCaption}
-              onChangeText={setWorkoutCaption}
-            />
-
-            {/* 5. JANELAS DE REGISTRO DE FOTOS COM OPÇÕES DE CÂMERA E GALERIA */}
-            {['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico'].includes(selectedActivity) ? (
-              <View style={{ gap: 8, marginVertical: 8 }}>
-                <Text style={styles.inputLabelMini}>1. Foto do Início da Atividade (Obrigatório):</Text>
-                <View style={styles.photoUploadBox}>
-                  {photoStart && <Image source={{ uri: photoStart }} style={styles.photoPreviewMini} />}
-                  <View style={{ flexDirection: 'row', gap: 6 }}>
-                    <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Inicio', setPhotoStart)}>
-                      <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Inicio_Galeria', setPhotoStart)}>
-                      <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
-                    </TouchableOpacity>
+                    <Text style={styles.inputLabelMini}>3. Foto do Fim da Atividade (Obrigatório):</Text>
+                    <View style={styles.photoUploadBox}>
+                      {photoEnd && <Image source={{ uri: photoEnd }} style={styles.photoPreviewMini} />}
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Fim', setPhotoEnd)}>
+                          <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Fim_Galeria', setPhotoEnd)}>
+                          <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
                   </View>
-                </View>
-
-                <Text style={styles.inputLabelMini}>2. Foto da Evidência de Treino (Obrigatório):</Text>
-                <View style={styles.photoUploadBox}>
-                  {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
-                  <View style={{ flexDirection: 'row', gap: 6 }}>
-                    <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Evidencia', setPhotoEvidence)}>
-                      <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Evidencia_Galeria', setPhotoEvidence)}>
-                      <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
-                    </TouchableOpacity>
+                ) : (
+                  <View style={{ marginVertical: 8 }}>
+                    <Text style={styles.inputLabelMini}>Comprovante de Treino (Foto / Print):</Text>
+                    <View style={styles.photoUploadBox}>
+                      {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Evidencia', setPhotoEvidence)}>
+                          <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Evidencia_Galeria', setPhotoEvidence)}>
+                          <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
                   </View>
-                </View>
+                )}
 
-                <Text style={styles.inputLabelMini}>3. Foto do Fim da Atividade (Obrigatório):</Text>
-                <View style={styles.photoUploadBox}>
-                  {photoEnd && <Image source={{ uri: photoEnd }} style={styles.photoPreviewMini} />}
-                  <View style={{ flexDirection: 'row', gap: 6 }}>
-                    <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Fim', setPhotoEnd)}>
-                      <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Fim_Galeria', setPhotoEnd)}>
-                      <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            ) : (
-              <View style={{ marginVertical: 8 }}>
-                <Text style={styles.inputLabelMini}>Comprovante de Treino (Foto / Print):</Text>
-                <View style={styles.photoUploadBox}>
-                  {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
-                  <View style={{ flexDirection: 'row', gap: 6 }}>
-                    <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('Evidencia', setPhotoEvidence)}>
-                      <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('Evidencia_Galeria', setPhotoEvidence)}>
-                      <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            )}
+                <TouchableOpacity style={styles.primaryBtn} onPress={handleSubmitWorkout}>
+                  <Text style={styles.primaryBtnText}>ENVIAR PARA APROVAÇÃO</Text>
+                </TouchableOpacity>
 
-            {/* BOTÕES DE AÇÃO */}
-            <TouchableOpacity style={styles.primaryBtn} onPress={handleSubmitWorkout}>
-              <Text style={styles.primaryBtnText}>ENVIAR PARA APROVAÇÃO</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsWorkoutModalOpen(false)}>
-              <Text style={styles.cancelBtnText}>CANCELAR</Text>
-            </TouchableOpacity>
-          </ScrollView>
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsWorkoutModalOpen(false)}>
+                  <Text style={styles.cancelBtnText}>CANCELAR</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </ScrollView>
+          </View>
         </View>
       </Modal>
 
@@ -2830,6 +2850,7 @@ const styles = StyleSheet.create({
   postAuthor: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
   postTime: { fontSize: 9, color: '#64748b' },
   postImg: { width: '100%', height: 180 },
+  postImgCarousel: { width: 240, height: 180, marginRight: 6, borderRadius: 4 },
   postCaption: { fontSize: 11, color: '#334155', marginBottom: 4 },
   badgePts: { backgroundColor: '#fff7ed', color: '#c2410c', fontSize: 9, fontWeight: 'bold', padding: 4, borderRadius: 4, alignSelf: 'flex-start' },
 
