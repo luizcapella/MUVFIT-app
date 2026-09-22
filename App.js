@@ -524,11 +524,6 @@ export default function App() {
     }
   }
 
-  // ROLES:
-  // 'pending_community': Solicitou entrada na liga via Busca/Convite
-  // 'spectator': Torcedor oficial aprovado na comunidade
-  // 'pending_athlete': Solicitou participação para ser Atleta Ativo
-  // 'active': Atleta Ativo aprovado
   const userMembershipsAll = memberships.filter(m => m.userId === currentUser.id);
   const adminChallenges = challenges.filter(c => c.creator_id === currentUser.id);
   const participantChallenges = challenges.filter(c => {
@@ -609,53 +604,54 @@ export default function App() {
 
     Alert.alert(
       '📩 Solicitação Enviada!',
-      `Sua solicitação de entrada na comunidade da liga "${challenge.title}" foi enviada para o Administrador. Aguarde a aprovação na janela "4. Gerenciamento de Membros".`
+      `Sua solicitação de entrada na comunidade da liga "${challenge.title}" foi enviada para o Administrador.`
     );
   }
 
-  // ETAPA 1.B: ACEITAR CONVITE DE COMUNIDADE (PAINEL GERAL)
-  async function handleAcceptInviteCommunity(challenge) {
-    const existing = memberships.find(m => m.challengeId === challenge.id && m.userId === currentUser.id);
-    if (existing) return;
-
-    const newMember = {
-      challenge_id: challenge.id,
-      user_id: currentUser.id,
-      name: currentUser.name,
-      nickname: currentUser.nickname,
-      role: 'pending_community',
-      ranking_points: 0,
-      bank_points: 0,
-      total_steps: 0,
-      avatar: currentUser.avatar,
-      age: currentUser.age,
-      gender: currentUser.gender
-    };
-
-    await supabase.from('memberships').insert([newMember]);
-    fetchDataFromSupabase();
-    Alert.alert('🎉 Convite Processado!', `Sua entrada na comunidade "${challenge.title}" foi solicitada. Aguardando validação na janela "4. Gerenciamento de Membros" do Administrador.`);
-  }
-
-  // ETAPA 2: SOLICITAR PARTICIPAÇÃO COMO ATLETA ATIVO (BOTÃO NO RANKING)
+  // CORREÇÃO CRÍTICA DO CLIQUE: SOLICITAR PARTICIPAÇÃO COMO ATLETA ATIVO
   async function handleRequestAthleteActive() {
-    if (!currentUserMembershipInActiveChallenge) {
-      Alert.alert('Acesso Restrito', 'Você precisa ingressar na comunidade da liga antes de solicitar a participação como Atleta Ativo.');
+    if (!activeChallengeId || !selectedChallenge?.id) {
+      Alert.alert('Erro', 'Selecione um desafio válido antes de solicitar.');
       return;
     }
 
-    if (currentUserMembershipInActiveChallenge.role === 'active') {
-      Alert.alert('Atenção', 'Você já é um Atleta Ativo nesta liga!');
-      return;
+    const targetMembership = currentUserMembershipInActiveChallenge;
+
+    try {
+      const payload = {
+        challenge_id: selectedChallenge.id,
+        user_id: currentUser.id,
+        name: currentUser.name,
+        nickname: currentUser.nickname,
+        avatar: currentUser.avatar,
+        role: 'pending_athlete',
+        age: currentUser.age || 0,
+        gender: currentUser.gender || 'Masculino'
+      };
+
+      if (targetMembership?.id) {
+        payload.id = targetMembership.id;
+      }
+
+      const { error } = await supabase.from('memberships').upsert([payload], { onConflict: 'challenge_id,user_id' });
+
+      if (error) {
+        const { error: fallbackErr } = await supabase.from('memberships').upsert([payload]);
+        if (fallbackErr) {
+          Alert.alert('Erro ao solicitar', fallbackErr.message);
+          return;
+        }
+      }
+
+      await fetchDataFromSupabase();
+
+      Alert.alert(
+        '⏳ Aprovação Pendente!',
+        `Sua solicitação para ser Atleta Ativo no "${selectedChallenge.title}" foi enviada. O administrador analisará no menu Controle de Inscrição.`
+      );
+    } catch (err) {
+      Alert.alert('Erro Inesperado', err.message || 'Não foi possível enviar a solicitação.');
     }
-
-    await supabase.from('memberships').update({ role: 'pending_athlete' }).eq('id', currentUserMembershipInActiveChallenge.id);
-    fetchDataFromSupabase();
-
-    Alert.alert(
-      '⚡ Candidatura Enviada!',
-      'Sua solicitação para se tornar Atleta Ativo foi enviada para a janela "2. Controle de Inscrição" do Administrador. Seu status atual é "Atleta Pendente".'
-    );
   }
 
   async function handleToggleLike(postId) {
@@ -822,7 +818,7 @@ export default function App() {
     }
   }
 
-  // AÇÕES DO ADMIN: APROVAÇÃO NA JANELA "4. GERENCIAMENTO DE MEMBROS" (ENTRADA NA COMUNIDADE)
+  // AÇÕES DO ADMIN: APROVAÇÃO NA JANELA "4. GERENCIAMENTO DE MEMBROS"
   async function handleApproveCommunityMember(memberId) {
     await supabase.from('memberships').update({ role: 'spectator' }).eq('id', memberId);
     fetchDataFromSupabase();
@@ -1156,10 +1152,7 @@ export default function App() {
   const activeMembersInChallenge = currentChallengeMembers.filter(m => m.role === 'active');
   const spectatorMembersInChallenge = currentChallengeMembers.filter(m => m.role === 'spectator' || m.role === 'pending_athlete');
   
-  // SOLICITAÇÕES PENDENTES DE ENTRADA NA COMUNIDADE DA LIGA (JANELA 4)
   const pendingCommunityMembers = currentChallengeMembers.filter(m => m.role === 'pending_community');
-  
-  // SOLICITAÇÕES PENDENTES PARA ATLETA ATIVO (JANELA 2)
   const pendingAthleteMembers = currentChallengeMembers.filter(m => m.role === 'pending_athlete');
   
   const currentFeedPosts = feedPosts.filter(p => p.challenge_id === activeChallengeId);
@@ -1341,7 +1334,7 @@ export default function App() {
           </View>
         )}
 
-        {/* PESQUISA DE LIGAS E BOTÃO DE SOLICITAR ENTRADA NA COMUNIDADE */}
+        {/* PESQUISA DE LIGAS */}
         <View style={{ width: '100%' }}>
           <TextInput
             style={styles.searchInput}
@@ -1578,7 +1571,7 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* TELA DE FEED (COM PERMISSÃO DE AENAS VER/CURTIR/COMENTAR PARA PENDENTES OU TORCEDORES) */}
+          {/* FEED */}
           {currentScreen === 'feed' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -1588,7 +1581,6 @@ export default function App() {
                 </TouchableOpacity>
               </View>
 
-              {/* HABILITA BOTÃO DE REGISTRAR TREINO APENAS PARA ATLETA ATIVO APROVADO */}
               {currentUserMembershipInActiveChallenge?.role === 'active' || selectedChallenge.creator_id === currentUser.id ? (
                 <TouchableOpacity style={styles.actionBtn} onPress={() => setIsWorkoutModalOpen(true)}>
                   <Text style={styles.actionBtnText}>+ REGISTRAR NOVO TREINO / PASSOS</Text>
@@ -1670,27 +1662,31 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* TELA DE RANKING COM O BOTÃO DE SOLICITAR PARTICIPAÇÃO NO TOPO/DIREITA */}
+          {/* TELA DE RANKING COM OS 3 ESTADOS DO BOTÃO NO TOPO/DIREITA */}
           {currentScreen === 'ranking' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
                 <Text style={styles.pageTitle}>🏆 Ranking — {selectedChallenge.title}</Text>
 
-                {/* BOTÃO DE SOLICITAÇÃO DE PARTICIPAÇÃO COMO ATLETA ATIVO */}
-                {currentUserMembershipInActiveChallenge?.role === 'active' ? (
+                {/* 1. ATLETA ATIVO (VERDE #16a34a) */}
+                {currentUserMembershipInActiveChallenge?.role === 'active' || selectedChallenge.creator_id === currentUser.id ? (
                   <View style={styles.activeAthleteBadge}>
-                    <Text style={styles.btnMiniText}>⚡ Atleta Ativo</Text>
+                    <Text style={styles.btnMiniText}>Atleta Ativo</Text>
                   </View>
+
+                /* 2. APROVAÇÃO PENDENTE (LARANJA #f97316) */
                 ) : currentUserMembershipInActiveChallenge?.role === 'pending_athlete' ? (
                   <View style={styles.pendingAthleteBadge}>
-                    <Text style={styles.btnMiniText}>⏳ Pendente de Aprovação</Text>
+                    <Text style={styles.btnMiniText}>Aprovação Pendente</Text>
                   </View>
+
+                /* 3. SOLICITAR PARTICIPAÇÃO (AZUL #1e3a8a) - CLIQUE CORRIGIDO */
                 ) : (
                   <TouchableOpacity 
-                    style={styles.requestAthleteBtn} 
+                    style={styles.blueRequestAthleteBtn} 
                     onPress={handleRequestAthleteActive}
                   >
-                    <Text style={styles.btnMiniText}>Solicitar Participação - {selectedChallenge.title}</Text>
+                    <Text style={styles.btnMiniText}>Solicitação de Participação - {selectedChallenge.title}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -1800,7 +1796,7 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* PAINEL DO ADMINISTRADOR COM APROVAÇÕES EM 2 ETAPAS SEPARADAS */}
+          {/* PAINEL ADMINISTRADOR */}
           {currentScreen === 'admin' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.adminControlCard}>
@@ -1852,7 +1848,7 @@ export default function App() {
                 )}
               </View>
 
-              {/* 2. CONTROLE DE INSCRIÇÕES (SOLICITAÇÕES PARA ATLETA ATIVO) */}
+              {/* 2. CONTROLE DE INSCRIÇÃO (JANELA PARA APROVAR SOLICITAÇÕES DE ATLETA ATIVO) */}
               <View style={styles.accordionCard}>
                 <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec2(!expandedSec2)}>
                   <Text style={styles.accordionTitle}>2. CONTROLE DE INSCRIÇÃO ({pendingAthleteMembers.length})</Text>
@@ -2016,7 +2012,7 @@ export default function App() {
                 )}
               </View>
 
-              {/* 4. GERENCIAMENTO DE MEMBROS E ENTRADA NA COMUNIDADE DA LIGA */}
+              {/* 4. GERENCIAMENTO DE MEMBROS */}
               <View style={styles.accordionCard}>
                 <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec4(!expandedSec4)}>
                   <Text style={styles.accordionTitle}>4. GERENCIAMENTO DE MEMBROS DA COMUNIDADE ({currentChallengeMembers.length})</Text>
@@ -2094,7 +2090,7 @@ export default function App() {
         </View>
       </View>
 
-      {/* MODAL DE CONFIGURAÇÃO AVANÇADA DE PONTOS */}
+      {/* MODAL CONFIGURAÇÃO AVANÇADA */}
       <Modal visible={isAdvancedRulesModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
@@ -2217,7 +2213,7 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* OUTROS MODAIS DA APLICAÇÃO */}
+      {/* MODAL PERFIL */}
       <Modal visible={isEditProfileOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={styles.modalContent}>
@@ -2240,6 +2236,7 @@ export default function App() {
         </View>
       </Modal>
 
+      {/* MODAL SELEÇÃO LIGA */}
       <Modal visible={isHeaderSelectOpen} transparent animationType="fade">
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsHeaderSelectOpen(false)}>
           <View style={styles.modalContent}>
@@ -2264,6 +2261,7 @@ export default function App() {
         </TouchableOpacity>
       </Modal>
 
+      {/* MODAL CRIAR DESAFIO */}
       <Modal visible={isCreateChallengeOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={styles.modalContent}>
@@ -2298,6 +2296,7 @@ export default function App() {
         </View>
       </Modal>
 
+      {/* MODAL REGISTRO TREINO */}
       <Modal visible={isWorkoutModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -2401,9 +2400,10 @@ const styles = StyleSheet.create({
   requestCommunityBtn: { backgroundColor: '#16a34a', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4 },
   alreadyMemberBtn: { backgroundColor: '#1e3a8a', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4 },
 
-  requestAthleteBtn: { backgroundColor: '#f97316', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6 },
-  activeAthleteBadge: { backgroundColor: '#16a34a', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6 },
-  pendingAthleteBadge: { backgroundColor: '#d97706', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6 },
+  // ESTILOS EXATOS DOS 3 ESTADOS DO BOTÃO DO RANKING
+  blueRequestAthleteBtn: { backgroundColor: '#1e3a8a', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }, // 1. AZUL
+  pendingAthleteBadge: { backgroundColor: '#f97316', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }, // 2. LARANJA
+  activeAthleteBadge: { backgroundColor: '#16a34a', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }, // 3. VERDE
 
   topWinnersBannerBox: { backgroundColor: '#fef3c7', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: '#d97706', marginBottom: 10 },
   topWinnersBannerTitle: { fontSize: 10, fontWeight: '900', color: '#b45309', marginBottom: 2 },
