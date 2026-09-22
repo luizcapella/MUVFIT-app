@@ -517,7 +517,6 @@ export default function App() {
     setCurrentScreen('athlete_center');
   }
 
-  // ETAPA 1: SOLICITAR ENTRADA NA COMUNIDADE DA LIGA
   async function handleRequestCommunityEntry(challenge) {
     const existing = memberships.find(m => m.challengeId === challenge.id && m.userId === currentUser.id);
     if (existing) {
@@ -550,7 +549,6 @@ export default function App() {
     );
   }
 
-  // SOLICITAR PARTICIPAÇÃO COMO ATLETA ATIVO
   async function handleRequestAthleteActive() {
     if (!activeChallengeId || !selectedChallenge?.id) {
       Alert.alert('Erro', 'Selecione um desafio válido antes de solicitar.');
@@ -1240,7 +1238,7 @@ export default function App() {
           </View>
         )}
 
-        {/* PESQUISA DE LIGAS */}
+        {/* PESQUISA DE LIGAS E ATLETAS */}
         <View style={{ width: '100%' }}>
           <TextInput
             style={styles.searchInput}
@@ -1347,7 +1345,7 @@ export default function App() {
                     )}
                   </View>
                 )}
-              ScrollView>
+              </ScrollView>
             </View>
           )}
         </View>
@@ -1568,7 +1566,7 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* TELA DE RANKING (CORRIGIDO O SINTAXE DE COMENTÁRIOS NO JSX) */}
+          {/* TELA DE RANKING */}
           {currentScreen === 'ranking' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
@@ -1801,7 +1799,7 @@ export default function App() {
                       ⚡ Atletas Ativos na Liga ({activeMembersInChallenge.length}):
                     </Text>
                     {activeMembersInChallenge.length === 0 ? (
-                      <Text style={styles.emptyNoticeText}>Nenum atleta ativo cadastrado nesta liga.</Text>
+                      <Text style={styles.emptyNoticeText}>Nenhum atleta ativo cadastrado nesta liga.</Text>
                     ) : (
                       activeMembersInChallenge.map((m) => (
                         <View key={m.id} style={styles.participantRow}>
