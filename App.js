@@ -149,9 +149,6 @@ export default function App() {
   const [isAdvancedRulesModalOpen, setIsAdvancedRulesModalOpen] = useState(false);
   const [selectedConfigChallengeId, setSelectedConfigChallengeId] = useState(null);
   const [selectedConfigActivity, setSelectedConfigActivity] = useState('🏛️ Base da Liga');
-  
-  const [modalitiesConfig, setModalitiesConfig] = useState({});
-  const [scoringRules, setScoringRules] = useState({});
 
   const modalitiesList = [
     { label: '🏛️ Base da Liga', value: '🏛️ Base da Liga' },
@@ -553,41 +550,72 @@ export default function App() {
     );
   }
 
-  // SOLICITAR PARTICIPAÇÃO COMO ATLETA ATIVO (INCLUINDO ADMINISTRADOR)
+  // PARTE 2 EXECUTADA: SOLICITAR PARTICIPAÇÃO COMO ATLETA ATIVO (VERIFICAÇÃO PRÉVIA NO SUPABASE)
   async function handleRequestAthleteActive() {
     if (!activeChallengeId || !selectedChallenge?.id) {
       Alert.alert('Erro', 'Selecione um desafio válido antes de solicitar.');
       return;
     }
 
-    const targetMembership = currentUserMembershipInActiveChallenge;
-
     try {
-      const payload = {
-        challenge_id: selectedChallenge.id,
-        user_id: currentUser.id,
-        name: currentUser.name,
-        nickname: currentUser.nickname,
-        avatar: currentUser.avatar,
-        role: 'pending_athlete',
-        age: currentUser.age || 0,
-        gender: currentUser.gender || 'Masculino'
-      };
+      // 1. Consulta se o registro já existe no banco de dados para evitar conflito de chave única
+      const { data: existingMember, error: fetchErr } = await supabase
+        .from('memberships')
+        .select('id, role')
+        .eq('challenge_id', selectedChallenge.id)
+        .eq('user_id', currentUser.id)
+        .maybeSingle();
 
-      if (targetMembership?.id) {
-        payload.id = targetMembership.id;
+      if (fetchErr) {
+        console.log('Erro ao consultar membership:', fetchErr);
       }
 
-      const { error } = await supabase.from('memberships').upsert([payload], { onConflict: 'challenge_id,user_id' });
+      let error = null;
+
+      if (existingMember && existingMember.id) {
+        // Se já existe (ex: entrado como spectator ou criador), faz UPDATE do status para pending_athlete
+        const res = await supabase
+          .from('memberships')
+          .update({
+            role: 'pending_athlete',
+            name: currentUser.name,
+            nickname: currentUser.nickname,
+            avatar: currentUser.avatar,
+            age: currentUser.age || 0,
+            gender: currentUser.gender || 'Masculino'
+          })
+          .eq('id', existingMember.id);
+        
+        error = res.error;
+      } else {
+        // Se não existe registro algum, insere um novo
+        const res = await supabase
+          .from('memberships')
+          .insert([
+            {
+              challenge_id: selectedChallenge.id,
+              user_id: currentUser.id,
+              name: currentUser.name,
+              nickname: currentUser.nickname,
+              avatar: currentUser.avatar,
+              role: 'pending_athlete',
+              ranking_points: 0,
+              bank_points: 0,
+              total_steps: 0,
+              age: currentUser.age || 0,
+              gender: currentUser.gender || 'Masculino'
+            }
+          ]);
+
+        error = res.error;
+      }
 
       if (error) {
-        const { error: fallbackErr } = await supabase.from('memberships').upsert([payload]);
-        if (fallbackErr) {
-          Alert.alert('Erro ao solicitar', fallbackErr.message);
-          return;
-        }
+        Alert.alert('Erro ao solicitar', error.message || 'Não foi possível atualizar o status no Supabase.');
+        return;
       }
 
+      // Atualiza o estado da aplicação imediatamente
       await fetchDataFromSupabase();
 
       Alert.alert(
@@ -628,7 +656,6 @@ export default function App() {
     await supabase.from('feed_posts').update({ comments: newComments }).eq('id', postId);
   }
 
-  // CRIAR DESAFIO: CRIADOR ENTRA APENAS COMO TORCEDOR/MEMBRO (spectator) PARA OBLIGAR SOLICITAÇÃO
   async function handleCreateChallenge() {
     if (!newChallengeTitle.trim() || !newChallengeCode.trim()) {
       Alert.alert('Erro', 'Preencha o Nome e o Código do Desafio.');
@@ -657,7 +684,7 @@ export default function App() {
       user_id: currentUser.id,
       name: currentUser.name,
       nickname: currentUser.nickname,
-      role: 'spectator', // AJUSTE CRÍTICO: Criador não entra como Atleta Ativo automático
+      role: 'spectator',
       ranking_points: 0,
       bank_points: 0,
       total_steps: 0,
@@ -750,7 +777,6 @@ export default function App() {
     Alert.alert('Status Atualizado', newStatus ? 'Inscrições/Candidaturas ENCERRADAS!' : 'Inscrições/Candidaturas ABERTAS!');
   }
 
-  // AÇÕES DO ADMIN: APROVAÇÃO E ALTERAÇÃO DE STATUS
   async function handleUpdateAthleteStatus(memberId, newRole) {
     await supabase.from('memberships').update({ role: newRole }).eq('id', memberId);
     fetchDataFromSupabase();
@@ -1547,25 +1573,25 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* TELA DE RANKING (CORRIGIDA A VERIFICAÇÃO PARA O BOTÃO EXIBIR AZUL/LARANJA/VERDE CORRETAMENTE) */}
+          {/* TELA DE RANKING */}
           {currentScreen === 'ranking' && selectedChallenge && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
                 <Text style={styles.pageTitle}>🏆 Ranking — {selectedChallenge.title}</Text>
 
-                {/* 1. ATLETA ATIVO (VERDE #16a34a) - Somente se o role for EXPLICITAMENTE active */}
+                {/* 1. ATLETA ATIVO (VERDE #16a34a) */}
                 {currentUserMembershipInActiveChallenge?.role === 'active' ? (
                   <View style={styles.activeAthleteBadge}>
                     <Text style={styles.btnMiniText}>Atleta Ativo</Text>
                   </View>
 
-                /* 2. APROVAÇÃO PENDENTE (LARANJA #f97316) - Se o role for pending_athlete */
+                /* 2. APROVAÇÃO PENDENTE (LARANJA #f97316) */}
                 ) : currentUserMembershipInActiveChallenge?.role === 'pending_athlete' ? (
                   <View style={styles.pendingAthleteBadge}>
                     <Text style={styles.btnMiniText}>Aprovação Pendente</Text>
                   </View>
 
-                /* 3. SOLICITAR PARTICIPAÇÃO (AZUL #1e3a8a) - Disponível para Torcedores e Administradores não inscritos */
+                /* 3. SOLICITAR PARTICIPAÇÃO (AZUL #1e3a8a) */}
                 ) : (
                   <TouchableOpacity 
                     style={styles.blueRequestAthleteBtn} 
