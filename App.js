@@ -152,6 +152,15 @@ export default function App() {
 
   // CONFIGURAÇÕES AVANÇADAS LOCAIS
   const [leaguePeriod, setLeaguePeriod] = useState('Monthly'); // 'Weekly', 'Monthly', 'Yearly'
+  
+  // CONFIGURAÇÕES DE PASSOS DIÁRIOS
+  const [dailyStepsConfig, setDailyStepsConfig] = useState({
+    enabled: true,
+    enableRankingScore: true,
+    manualStepsInput: '10000',
+    multiplier: '0.5'
+  });
+
   const [modalitySettings, setModalitySettings] = useState({
     '💪 Musculação': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '60', simplePts: '5000', simplePerMin: '30', timeSteps: [{ minTime: '0', maxTime: '30', pts: '5000' }, { minTime: '31', maxTime: '60', pts: '10000' }] },
     '🏋️ Crossfit / Treino Funcional': { enabled: true, scoringMode: 'checkin', checkinPts: '10000', checkinMinTime: '60', simplePts: '5000', simplePerMin: '30', timeSteps: [{ minTime: '0', maxTime: '30', pts: '5000' }, { minTime: '31', maxTime: '60', pts: '10000' }] },
@@ -172,6 +181,7 @@ export default function App() {
 
   const modalitiesList = [
     { label: '🏛️ Base da Liga', value: '🏛️ Base da Liga' },
+    { label: '🚶‍♂️ Passos Diários', value: '🚶‍♂️ Passos Diários' },
     { label: '💪 Musculação', value: '💪 Musculação' },
     { label: '🏋️ Crossfit / Treino Funcional', value: '🏋️ Crossfit / Treino Funcional' },
     { label: '🫀 Treino Aeróbico', value: '🫀 Treino Aeróbico' },
@@ -1207,6 +1217,11 @@ export default function App() {
 
   const selectedAthleteObject = activeMembersInChallenge.find(m => m.id === manualSelectedAthleteId);
 
+  // CÁLCULO DINÂMICO DE PONTOS DOS PASSOS DIÁRIOS
+  const calculatedStepsPoints = Math.round(
+    (parseFloat(dailyStepsConfig.manualStepsInput) || 0) * (parseFloat(dailyStepsConfig.multiplier) || 0)
+  );
+
   if (loadingAuth) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1e3a8a' }}>
@@ -2213,8 +2228,77 @@ export default function App() {
                 </View>
               )}
 
+              {/* PASSOS DIÁRIOS */}
+              {selectedConfigActivity === '🚶‍♂️ Passos Diários' && (
+                <View style={styles.scoringModeBoxContainer}>
+                  <Text style={styles.sectionHeaderTitle}>🚶‍♂️ Configuração de Passos Diários</Text>
+
+                  {/* CHECKBOX 1: HABILITAR MODALIDADE */}
+                  <TouchableOpacity 
+                    style={styles.checkboxRow} 
+                    onPress={() => setDailyStepsConfig({ ...dailyStepsConfig, enabled: !dailyStepsConfig.enabled })}
+                  >
+                    <View style={[styles.checkboxBox, dailyStepsConfig.enabled && styles.checkboxBoxActive]}>
+                      {dailyStepsConfig.enabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                    </View>
+                    <Text style={[styles.checkboxLabel, { color: dailyStepsConfig.enabled ? '#16a34a' : '#dc2626' }]}>
+                      {dailyStepsConfig.enabled ? 'Modalidade Válida no Desafio' : 'Modalidade Desabilitada'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {dailyStepsConfig.enabled && (
+                    <>
+                      {/* CHECKBOX 2: USAR NO PLACAR GERAL (RANKING) */}
+                      <TouchableOpacity 
+                        style={[styles.checkboxRow, { marginTop: 10 }]} 
+                        onPress={() => setDailyStepsConfig({ ...dailyStepsConfig, enableRankingScore: !dailyStepsConfig.enableRankingScore })}
+                      >
+                        <View style={[styles.checkboxBox, dailyStepsConfig.enableRankingScore && styles.checkboxBoxActive]}>
+                          {dailyStepsConfig.enableRankingScore && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                        </View>
+                        <Text style={styles.checkboxLabel}>Usar pontos da modalidade no Placar Geral (Ranking)</Text>
+                      </TouchableOpacity>
+
+                      {/* CAMPOS SE HABILITADO PARA O PLACAR GERAL */}
+                      {dailyStepsConfig.enableRankingScore && (
+                        <View style={{ backgroundColor: '#ffffff', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#cbd5e1', marginTop: 10 }}>
+                          <Text style={[styles.inputLabel, { color: '#1e3a8a', fontWeight: 'bold' }]}>Inserção Manual de Passos Diários:</Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="Ex: 10000"
+                            keyboardType="numeric"
+                            value={dailyStepsConfig.manualStepsInput}
+                            onChangeText={(txt) => setDailyStepsConfig({ ...dailyStepsConfig, manualStepsInput: txt })}
+                          />
+
+                          <Text style={[styles.inputLabel, { color: '#1e3a8a', fontWeight: 'bold', marginTop: 6 }]}>
+                            Multiplicador de Passos (de 0,1 à 1,0):
+                          </Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="Ex: 0.5"
+                            keyboardType="decimal-pad"
+                            value={dailyStepsConfig.multiplier}
+                            onChangeText={(txt) => setDailyStepsConfig({ ...dailyStepsConfig, multiplier: txt })}
+                          />
+
+                          <View style={{ backgroundColor: '#fff7ed', borderRadius: 6, padding: 8, borderWidth: 1, borderColor: '#f97316', marginTop: 8 }}>
+                            <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#c2410c' }}>
+                              🧮 Cálculo Resultante para o Ranking:
+                            </Text>
+                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a', marginTop: 2 }}>
+                              {dailyStepsConfig.manualStepsInput || '0'} passos × {dailyStepsConfig.multiplier || '0'} = {calculatedStepsPoints.toLocaleString()} Pontos no Placar Geral
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+                    </>
+                  )}
+                </View>
+              )}
+
               {/* 2 & 3. MODALIDADES DE TREINO */}
-              {selectedConfigActivity !== '🏛️ Base da Liga' && selectedConfigActivity !== '🎁 Bônus e Critérios de Desempate' && (() => {
+              {selectedConfigActivity !== '🏛️ Base da Liga' && selectedConfigActivity !== '🚶‍♂️ Passos Diários' && selectedConfigActivity !== '🎁 Bônus e Critérios de Desempate' && (() => {
                 const isKmGroup = ['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedConfigActivity);
                 const currentMod = modalitySettings[selectedConfigActivity] || {};
                 const isEnabled = currentMod.enabled !== false;
