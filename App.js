@@ -116,13 +116,15 @@ export default function App() {
   const [athleteStories, setAthleteStories] = useState([]);
   const [activeStoryView, setActiveStoryView] = useState(null);
 
-  // Histórico de peso iniciado vazio conforme solicitado pelo utilizador
   const [weightHistoryList, setWeightHistoryList] = useState([]);
   const [isWeightChartModalOpen, setIsWeightChartModalOpen] = useState(false);
   const [newWeightValueInput, setNewWeightValueInput] = useState('');
   const [newWeightDateInput, setNewWeightDateInput] = useState('Set/2023');
 
+  // Estados para o Modal de Resumo de Exercícios (Modalidades Mais Praticadas)
   const [isModalityRadarModalOpen, setIsModalityRadarModalOpen] = useState(false);
+  const [selectedModalityPeriod, setSelectedModalityPeriod] = useState('Todos');
+
   const [isKmChartModalOpen, setIsKmChartModalOpen] = useState(false);
   const [isTimeChartModalOpen, setIsTimeChartModalOpen] = useState(false);
 
@@ -1605,6 +1607,67 @@ export default function App() {
     (parseFloat(dailyStepsConfig.manualStepsInput) || 0) * (parseFloat(dailyStepsConfig.multiplier) || 0)
   );
 
+  // Lógica dinâmica real para o Gráfico de Pizza de Modalidades Mais Praticadas baseada nas postagens/treinos do atleta
+  const allAvailableModalities = [
+    { label: 'Musculação', color: '#3b82f6' },
+    { label: 'Crossfit / Treino Funcional', color: '#22c55e' },
+    { label: 'Aeróbico', color: '#eab308' },
+    { label: 'Corrida', color: '#ef4444' },
+    { label: 'Caminhada', color: '#f97316' },
+    { label: 'Bike', color: '#a855f7' },
+    { label: 'Lutas / Esportes Individuais', color: '#14b8a6' },
+    { label: 'Esportes Coletivos', color: '#92400e' }
+  ];
+
+  // Filtrar posts do atleta conforme o período selecionado no modal de resumo de exercícios
+  const filteredPostsByModalityPeriod = athleteFilteredPosts.filter(p => {
+    if (selectedModalityPeriod === 'Todos') return true;
+    // p.created_at ou w.workout_date contém a data. Ex: "23/09/2026" ou formato "Set/2023"
+    const postDateStr = p.created_at || '';
+    return postDateStr.includes(selectedModalityPeriod);
+  });
+
+  // Contar a frequência de cada modalidade com base nos treinos reais (inicia tudo em 0 se não houver treinos)
+  const modalityCountsMap = {};
+  allAvailableModalities.forEach(m => { modalityCountsMap[m.label] = 0; });
+
+  filteredPostsByModalityPeriod.forEach(p => {
+    const actTypeUpper = (p.activity_type || '').toUpperCase();
+    allAvailableModalities.forEach(m => {
+      if (actTypeUpper.includes(m.label.toUpperCase())) {
+        modalityCountsMap[m.label] = (modalityCountsMap[m.label] || 0) + 1;
+      }
+    });
+  });
+
+  const totalModalityExecutions = Object.values(modalityCountsMap).reduce((acc, curr) => acc + curr, 0);
+
+  const modalityPercentagesList = allAvailableModalities.map(m => {
+    const count = modalityCountsMap[m.label] || 0;
+    const percentage = totalModalityExecutions > 0 ? Math.round((count / totalModalityExecutions) * 100) : 0;
+    return {
+      ...m,
+      count,
+      percentage
+    };
+  });
+
+  // Extrair períodos únicos disponíveis nos posts para preencher a caixa seletora de datas dinamicamente
+  const availablePeriodsSet = new Set(['Todos']);
+  athleteFilteredPosts.forEach(p => {
+    const dateText = p.created_at || '';
+    // Exemplo extrair mês/ano se vier no formato brasileiro DD/MM/AAAA
+    const parts = dateText.split('/');
+    if (parts.length >= 3) {
+      const monthsMap = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      const mIdx = parseInt(parts[1], 10) - 1;
+      if (monthsMap[mIdx]) {
+        availablePeriodsSet.add(`${monthsMap[mIdx]}/${parts[2]}`);
+      }
+    }
+  });
+  const availablePeriodsList = Array.from(availablePeriodsSet);
+
   const isThreePhotosGroupActive = ['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico'].includes(selectedActivity);
   const isKmGroupActive = ['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedActivity);
   const isStepsActive = selectedActivity === '🚶‍♂️ Passos Diários';
@@ -2067,13 +2130,13 @@ export default function App() {
                 <Text style={styles.pageTitle}>🏆 Ranking — {selectedChallenge.title}</Text>
 
                 {currentUserMembershipInActiveChallenge?.role === 'active' ? (
-                  <View style={styles.activeAthleteBadge}>
+                  <div style={{ backgroundColor: '#16a34a', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}>
                     <Text style={styles.btnMiniText}>Atleta Ativo</Text>
-                  </View>
+                  </div>
                 ) : currentUserMembershipInActiveChallenge?.role === 'pending_athlete' ? (
-                  <View style={styles.pendingAthleteBadge}>
+                  <div style={{ backgroundColor: '#f97316', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}>
                     <Text style={styles.btnMiniText}>Aprovação Pendente</Text>
-                  </View>
+                  </div>
                 ) : (
                   <TouchableOpacity 
                     style={styles.blueRequestAthleteBtn} 
@@ -2264,11 +2327,11 @@ export default function App() {
                 </View>
               </View>
 
-              {/* Seção de Evolução & Estatísticas com dados dinâmicos baseados no input real */}
+              {/* Seção de Evolução & Estatísticas com dados dinâmicos */}
               <View style={styles.sectionContainerBox}>
                 <Text style={styles.sectionHeaderTitle}>Evolução & Estatísticas do Atleta</Text>
 
-                {/* 1. Evolução de Peso (Card com estado vazio ou último registro) */}
+                {/* 1. Evolução de Peso (kg) */}
                 <TouchableOpacity 
                   style={styles.statsCardItemButton}
                   onPress={() => setIsWeightChartModalOpen(true)}
@@ -2281,13 +2344,21 @@ export default function App() {
                   </Text>
                 </TouchableOpacity>
 
-                {/* 2. Atividades Mais Praticadas */}
+                {/* 2. Modalidades Mais Praticadas[span_1](start_span)[span_1](end_span) */}
                 <TouchableOpacity 
                   style={styles.statsCardItemButton}
                   onPress={() => setIsModalityRadarModalOpen(true)}
                 >
-                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>📊 Modalidades Mais Praticadas</Text>
-                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>1º Musculação (50%) | 2º Corrida (30%) | 3º Bicicleta (20%)</Text>
+                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>📊 Modalidades Mais Praticadas[span_2](start_span)[span_2](end_span)</Text>
+                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>
+                    {totalModalityExecutions === 0 
+                      ? 'Nenhuma atividade registrada ainda (0%)'
+                      : modalityPercentagesList
+                          .filter(m => m.percentage > 0)
+                          .sort((a, b) => b.percentage - a.percentage)
+                          .map((m, idx) => `${idx + 1}º ${m.label} (${m.percentage}%)`)
+                          .join(' | ')}
+                  </Text>
                 </TouchableOpacity>
 
                 {/* 3. KM Percorrido Acumulado */}
@@ -2355,9 +2426,9 @@ export default function App() {
                           }
                         }}
                       >
-                        <View style={[styles.goalCheckboxSquare, goal.completed && styles.goalCheckboxSquareActive]}>
+                        <div style={{ width: '16px', height: '16px', border: '1.5px solid #1e3a8a', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: goal.completed ? '#16a34a' : '#ffffff' }}>
                           {goal.completed && <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold' }}>✓</Text>}
-                        </View>
+                        </div>
                         <Text style={[styles.goalTextLabel, goal.completed && { textDecorationLine: 'line-through', color: '#94a3b8' }]}>
                           {goal.text}
                         </Text>
@@ -2612,9 +2683,9 @@ export default function App() {
                       style={styles.checkboxRow} 
                       onPress={() => setCheckBonusInquebravel(!checkBonusInquebravel)}
                     >
-                      <View style={[styles.checkboxBoxCircle, checkBonusInquebravel && styles.checkboxBoxCircleActive]}>
+                      <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: checkBonusInquebravel ? '#f97316' : '#ffffff' }}>
                         {checkBonusInquebravel && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                      </View>
+                      </div>
                       <Text style={styles.checkboxLabel}>Bônus "🪨 O Inquebrável" ( +{bonusConfig.inquebravelPts} pts )</Text>
                     </TouchableOpacity>
 
@@ -2622,9 +2693,9 @@ export default function App() {
                       style={styles.checkboxRow} 
                       onPress={() => setCheckBonusDesperta(!checkBonusDesperta)}
                     >
-                      <View style={[styles.checkboxBoxCircle, checkBonusDesperta && styles.checkboxBoxCircleActive]}>
+                      <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: checkBonusDesperta ? '#f97316' : '#ffffff' }}>
                         {checkBonusDesperta && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                      </View>
+                      </div>
                       <Text style={styles.checkboxLabel}>Bônus "⏰ O Desperta" ( +{bonusConfig.despertaPts} pts )</Text>
                     </TouchableOpacity>
 
@@ -2711,7 +2782,7 @@ export default function App() {
         </View>
       </View>
 
-      {/* Modal: Janela Detalhada de Evolução de Peso (Inspirada fielmente na referência com Gráfico de Linha e Seletor de Data) */}
+      {/* Modal: Janela Detalhada de Evolução de Peso */}
       <Modal visible={isWeightChartModalOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
@@ -2722,7 +2793,6 @@ export default function App() {
               </TouchableOpacity>
             </View>
 
-            {/* Campos de Destaque no Topo (Peso Atual e Data) inspirados na referência */}
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
               <View style={{ flex: 1, borderWidth: 1.5, borderColor: '#f97316', borderRadius: 8, padding: 8, backgroundColor: '#fff7ed' }}>
                 <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#c2410c', marginBottom: 2, textAlign: 'center' }}>Peso Atual (kg)</Text>
@@ -2761,7 +2831,6 @@ export default function App() {
               </View>
             </View>
 
-            {/* Bloco do Gráfico de Linha Visual */}
             <View style={{ backgroundColor: '#ffffff', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 10 }}>
               <View style={{ height: 160, justifyContent: 'center', alignItems: 'center', position: 'relative', borderBottomWidth: 1, borderBottomColor: '#cbd5e1', borderLeftWidth: 1, borderLeftColor: '#cbd5e1', marginLeft: 20, marginBottom: 15 }}>
                 {weightHistoryList.length === 0 ? (
@@ -2770,7 +2839,7 @@ export default function App() {
                   </Text>
                 ) : (
                   <div style={{ width: '100%', height: '100%', position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', paddingBottom: '10px' }}>
-                    {weightHistoryList.map((item, idx) => (
+                    {weightHistoryList.map((item) => (
                       <div key={item.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', flex: 1 }}>
                         <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#f97316', marginBottom: '4px' }}>{item.weight}</span>
                         <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f97316', border: '2px solid #ffffff', boxShadow: '0 0 0 1px #f97316' }}></div>
@@ -2783,7 +2852,6 @@ export default function App() {
               <Text style={{ fontSize: 9, color: '#64748b', textAlign: 'center', marginTop: 12, fontWeight: 'bold' }}>Mês / Ano</Text>
             </View>
 
-            {/* Informações de Meta e Progresso */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-around', backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, marginBottom: 10, borderWidth: 1, borderColor: '#e2e8f0' }}>
               <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>Meta: 75.0 kg</Text>
               <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#16a34a' }}>
@@ -2814,17 +2882,68 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* Modal: Gráfico Radar / Distribuição de Atividades */}
+      {/* Modal: Resumo de Exercícios / Modalidades Mais Praticadas (Inspirado na terceira imagem com Gráfico de Pizza e Seletor de Período) */}
       <Modal visible={isModalityRadarModalOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
-            <Text style={styles.modalTitle}>📊 Gráfico Radar: Atividades Mais Praticadas</Text>
-            <View style={{ padding: 12, backgroundColor: '#f8fafc', borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginVertical: 8 }}>
-              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 6 }}>Top 3 Modalidades & Distribuição Percentual:</Text>
-              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>🥇 1º Musculação - 50% das atividades</Text>
-              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>🥈 2º Corrida - 30% das atividades</Text>
-              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>🥉 3º Bicicleta - 20% das atividades</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, borderBottomWidth: 1, borderBottomColor: '#e2e8f0', paddingBottom: 6 }}>
+              <Text style={{ fontSize: 16, fontWeight: '900', color: '#c2410c' }}>Resumo de Exercícios</Text>
+              <TouchableOpacity onPress={() => setIsModalityRadarModalOpen(false)}>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1e3a8a' }}>✕</Text>
+              </TouchableOpacity>
             </View>
+
+            {/* Caixa seletora de Período com ícone de calendário */}
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#c2410c', marginBottom: 4 }}>Selecione o Período</Text>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1.5px solid #f97316', borderRadius: '8px', padding: '10px 12px', backgroundColor: '#fff7ed', cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '16px' }}>📅</span>
+                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e3a8a' }}>Período: {selectedModalityPeriod}</span>
+                </div>
+                <select
+                  style={{ position: 'absolute', opacity: 0, width: '90%', cursor: 'pointer', height: '35px' }}
+                  value={selectedModalityPeriod}
+                  onChange={(e) => setSelectedModalityPeriod(e.target.value)}
+                >
+                  {availablePeriodsList.map(periodOpt => (
+                    <option key={periodOpt} value={periodOpt}>
+                      {periodOpt === 'Todos' ? '🌐 Todos (Somatório Geral)' : periodOpt}
+                    </option>
+                  ))}
+                </select>
+                <span style={{ fontSize: '12px', color: '#f97316', fontWeight: 'bold' }}>▼</span>
+              </div>
+            </View>
+
+            <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center', marginBottom: 8 }}>Distribuição de Práticas</Text>
+
+            {/* Gráfico de Pizza Visual & Legendas */}
+            <View style={{ backgroundColor: '#ffffff', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#cbd5e1', alignItems: 'center', marginBottom: 10 }}>
+              <div style={{ width: '150px', height: '150px', borderRadius: '50%', background: totalModalityExecutions === 0 ? '#e2e8f0' : `conic-gradient(${modalityPercentagesList.reduce((acc, curr, idx, arr) => {
+                const prevSum = arr.slice(0, idx).reduce((s, prev) => s + prev.percentage, 0);
+                const startAngle = prevSum;
+                const endAngle = prevSum + curr.percentage;
+                return `${acc} ${curr.color} ${startAngle}% ${endAngle}%,`;
+              }, '').slice(0, -1)})`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', position: 'relative', marginBottom: '12px' }}>
+                {totalModalityExecutions === 0 && (
+                  <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 'bold', textAlign: 'center', padding: '10px' }}>0% (Sem treinos)</span>
+                )}
+              </div>
+
+              {/* Legendas de Cores com os Nomes das Atividades */}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 4 }}>
+                {modalityPercentagesList.map((modItem) => (
+                  <View key={modItem.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, width: '46%' }}>
+                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: modItem.color }}></div>
+                    <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#334155' }} numberOfLines={1}>
+                      {modItem.label} ({modItem.percentage}%)
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
             <TouchableOpacity style={styles.primaryBtn} onPress={() => setIsModalityRadarModalOpen(false)}>
               <Text style={styles.primaryBtnText}>FECHAR</Text>
             </TouchableOpacity>
@@ -3003,9 +3122,9 @@ export default function App() {
                         style={styles.checkboxRow} 
                         onPress={() => setLeaguePeriod('Weekly')}
                       >
-                        <View style={[styles.checkboxBoxCircle, leaguePeriod === 'Weekly' && styles.checkboxBoxCircleActive]}>
+                        <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: leaguePeriod === 'Weekly' ? '#f97316' : '#ffffff' }}>
                           {leaguePeriod === 'Weekly' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                        </View>
+                        </div>
                         <Text style={styles.checkboxLabel}>Semanal (semana vigente)</Text>
                       </TouchableOpacity>
 
@@ -3013,9 +3132,9 @@ export default function App() {
                         style={styles.checkboxRow} 
                         onPress={() => setLeaguePeriod('Monthly')}
                       >
-                        <View style={[styles.checkboxBoxCircle, leaguePeriod === 'Monthly' && styles.checkboxBoxCircleActive]}>
+                        <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: leaguePeriod === 'Monthly' ? '#f97316' : '#ffffff' }}>
                           {leaguePeriod === 'Monthly' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                        </View>
+                        </div>
                         <Text style={styles.checkboxLabel}>Mensal (mês vigente)</Text>
                       </TouchableOpacity>
 
@@ -3023,9 +3142,9 @@ export default function App() {
                         style={styles.checkboxRow} 
                         onPress={() => setLeaguePeriod('Yearly')}
                       >
-                        <View style={[styles.checkboxBoxCircle, leaguePeriod === 'Yearly' && styles.checkboxBoxCircleActive]}>
+                        <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: leaguePeriod === 'Yearly' ? '#f97316' : '#ffffff' }}>
                           {leaguePeriod === 'Yearly' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                        </View>
+                        </div>
                         <Text style={styles.checkboxLabel}>Anual</Text>
                       </TouchableOpacity>
                     </View>
@@ -3038,9 +3157,9 @@ export default function App() {
                       setChallenges(challenges.map(c => c.id === selectedConfigChallengeId ? { ...c, has_daily_cap: !currentVal } : c));
                     }}
                   >
-                    <View style={[styles.checkboxBoxCircle, selectedChallenge.has_daily_cap && styles.checkboxBoxCircleActive]}>
+                    <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: selectedChallenge.has_daily_cap ? '#f97316' : '#ffffff' }}>
                       {selectedChallenge.has_daily_cap && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                    </View>
+                    </div>
                     <Text style={styles.checkboxLabel}>Ativar Limite de Teto Diário de Pontos?</Text>
                   </TouchableOpacity>
 
@@ -3069,9 +3188,9 @@ export default function App() {
                     style={styles.checkboxRow} 
                     onPress={() => setDailyStepsConfig({ ...dailyStepsConfig, enabled: !dailyStepsConfig.enabled })}
                   >
-                    <View style={[styles.checkboxBoxCircle, dailyStepsConfig.enabled && styles.checkboxBoxCircleActive]}>
+                    <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: dailyStepsConfig.enabled ? '#f97316' : '#ffffff' }}>
                       {dailyStepsConfig.enabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                    </View>
+                    </div>
                     <Text style={[styles.checkboxLabel, { color: dailyStepsConfig.enabled ? '#16a34a' : '#dc2626' }]}>
                       {dailyStepsConfig.enabled ? 'Modalidade Válida no Desafio' : 'Modalidade Desabilitada'}
                     </Text>
@@ -3083,9 +3202,9 @@ export default function App() {
                         style={[styles.checkboxRow, { marginTop: 10 }]} 
                         onPress={() => setDailyStepsConfig({ ...dailyStepsConfig, enableRankingScore: !dailyStepsConfig.enableRankingScore })}
                       >
-                        <View style={[styles.checkboxBoxCircle, dailyStepsConfig.enableRankingScore && styles.checkboxBoxCircleActive]}>
+                        <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: dailyStepsConfig.enableRankingScore ? '#f97316' : '#ffffff' }}>
                           {dailyStepsConfig.enableRankingScore && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                        </View>
+                        </div>
                         <Text style={styles.checkboxLabel}>Usar pontos da modalidade no Placar Geral (Ranking)</Text>
                       </TouchableOpacity>
 
@@ -3139,9 +3258,9 @@ export default function App() {
                         style={styles.checkboxRow} 
                         onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'enabled', !isEnabled)}
                       >
-                        <View style={[styles.checkboxBoxCircle, isEnabled && styles.checkboxBoxCircleActive]}>
+                        <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: isEnabled ? '#f97316' : '#ffffff' }}>
                           {isEnabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                        </View>
+                        </div>
                         <Text style={[styles.checkboxLabel, { color: isEnabled ? '#16a34a' : '#dc2626' }]}>
                           {isEnabled ? 'Habilitada' : 'Desabilitada'}
                         </Text>
@@ -3154,9 +3273,9 @@ export default function App() {
                           style={styles.checkboxRow} 
                           onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'simple')}
                         >
-                          <View style={[styles.checkboxBoxCircle, scoringMode === 'simple' && styles.checkboxBoxCircleActive]}>
+                          <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: scoringMode === 'simple' ? '#f97316' : '#ffffff' }}>
                             {scoringMode === 'simple' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                          </View>
+                          </div>
                           <Text style={styles.checkboxLabel}>Opção 1: Por Taxa Simples (Tempo Mínimo em minutos)</Text>
                         </TouchableOpacity>
 
@@ -3183,9 +3302,9 @@ export default function App() {
                           style={styles.checkboxRow} 
                           onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'timeSteps')}
                         >
-                          <View style={[styles.checkboxBoxCircle, scoringMode === 'timeSteps' && styles.checkboxBoxCircleActive]}>
+                          <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: scoringMode === 'timeSteps' ? '#f97316' : '#ffffff' }}>
                             {scoringMode === 'timeSteps' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                          </View>
+                          </div>
                           <Text style={styles.checkboxLabel}>Opção 2: Por Step de tempo (em minutos)</Text>
                         </TouchableOpacity>
 
@@ -3287,9 +3406,9 @@ export default function App() {
                         style={styles.checkboxRow} 
                         onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'enabled', !isEnabled)}
                       >
-                        <View style={[styles.checkboxBoxCircle, isEnabled && styles.checkboxBoxCircleActive]}>
+                        <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: isEnabled ? '#f97316' : '#ffffff' }}>
                           {isEnabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                        </View>
+                        </div>
                         <Text style={[styles.checkboxLabel, { color: isEnabled ? '#16a34a' : '#dc2626' }]}>
                           {isEnabled ? 'Habilitada' : 'Desabilitada'}
                         </Text>
@@ -3302,9 +3421,9 @@ export default function App() {
                           style={styles.checkboxRow} 
                           onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'kmSimple')}
                         >
-                          <View style={[styles.checkboxBoxCircle, scoringMode === 'kmSimple' && styles.checkboxBoxCircleActive]}>
+                          <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: scoringMode === 'kmSimple' ? '#f97316' : '#ffffff' }}>
                             {scoringMode === 'kmSimple' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                          </View>
+                          </div>
                           <Text style={styles.checkboxLabel}>Opção 1: Por Distância mínima percorrida (em Km)</Text>
                         </TouchableOpacity>
 
@@ -3331,9 +3450,9 @@ export default function App() {
                           style={styles.checkboxRow} 
                           onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'simple')}
                         >
-                          <View style={[styles.checkboxBoxCircle, scoringMode === 'simple' && styles.checkboxBoxCircleActive]}>
+                          <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: scoringMode === 'simple' ? '#f97316' : '#ffffff' }}>
                             {scoringMode === 'simple' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                          </View>
+                          </div>
                           <Text style={styles.checkboxLabel}>Opção 2: Por Taxa Simples (Tempo Mínimo em minutos)</Text>
                         </TouchableOpacity>
 
@@ -3360,9 +3479,9 @@ export default function App() {
                           style={styles.checkboxRow} 
                           onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'kmSteps')}
                         >
-                          <View style={[styles.checkboxBoxCircle, scoringMode === 'kmSteps' && styles.checkboxBoxCircleActive]}>
+                          <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: scoringMode === 'kmSteps' ? '#f97316' : '#ffffff' }}>
                             {scoringMode === 'kmSteps' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                          </View>
+                          </div>
                           <Text style={styles.checkboxLabel}>Opção 3: Por Step de Distância Percorrida (em KM)</Text>
                         </TouchableOpacity>
 
@@ -3459,9 +3578,9 @@ export default function App() {
                     style={styles.checkboxRow} 
                     onPress={() => setBonusConfig({ ...bonusConfig, inquebravelEnabled: !bonusConfig.inquebravelEnabled })}
                   >
-                    <View style={[styles.checkboxBoxCircle, bonusConfig.inquebravelEnabled && styles.checkboxBoxCircleActive]}>
+                    <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: bonusConfig.inquebravelEnabled ? '#f97316' : '#ffffff' }}>
                       {bonusConfig.inquebravelEnabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                    </View>
+                    </div>
                     <Text style={styles.checkboxLabel}>Bônus "🪨 O Inquebrável"</Text>
                   </TouchableOpacity>
 
@@ -3488,9 +3607,9 @@ export default function App() {
                     style={styles.checkboxRow} 
                     onPress={() => setBonusConfig({ ...bonusConfig, despertaEnabled: !bonusConfig.despertaEnabled })}
                   >
-                    <View style={[styles.checkboxBoxCircle, bonusConfig.despertaEnabled && styles.checkboxBoxCircleActive]}>
+                    <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: bonusConfig.despertaEnabled ? '#f97316' : '#ffffff' }}>
                       {bonusConfig.despertaEnabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                    </View>
+                    </div>
                     <Text style={styles.checkboxLabel}>Bônus "⏰ O Desperta"</Text>
                   </TouchableOpacity>
 
@@ -3526,9 +3645,9 @@ export default function App() {
                           setTiebreakers(updated);
                         }}
                       >
-                        <View style={[styles.checkboxBoxCircle, tb.enabled && styles.checkboxBoxCircleActive]}>
+                        <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: tb.enabled ? '#f97316' : '#ffffff' }}>
                           {tb.enabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                        </View>
+                        </div>
                         <Text style={styles.checkboxLabel}>{tb.label}</Text>
                       </TouchableOpacity>
 
@@ -3648,7 +3767,9 @@ export default function App() {
             </div>
 
             <TouchableOpacity style={styles.checkboxRow} onPress={() => setHasCapToggle(!hasCapToggle)}>
-              <View style={[styles.checkboxBoxCircle, hasCapToggle && styles.checkboxBoxCircleActive]}>{hasCapToggle && <Text style={styles.checkboxCheckmark}>✓</Text>}</View>
+              <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: hasCapToggle ? '#f97316' : '#ffffff' }}>
+                {hasCapToggle && <Text style={styles.checkboxCheckmark}>✓</Text>}
+              </div>
               <Text style={styles.checkboxLabel}>Ativar Teto Diário de Pontos?</Text>
             </TouchableOpacity>
 
@@ -3934,8 +4055,6 @@ const styles = StyleSheet.create({
   alreadyMemberBtn: { backgroundColor: '#1e3a8a', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4 },
 
   blueRequestAthleteBtn: { backgroundColor: '#1e3a8a', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
-  pendingAthleteBadge: { backgroundColor: '#f97316', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
-  activeAthleteBadge: { backgroundColor: '#16a34a', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
 
   topWinnersBannerBox: { backgroundColor: '#fef3c7', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: '#d97706', marginBottom: 10 },
   topWinnersBannerTitle: { fontSize: 10, fontWeight: '900', color: '#b45309', marginBottom: 2 },
@@ -4091,8 +4210,6 @@ const styles = StyleSheet.create({
 
   goalAddHeaderBtn: { backgroundColor: '#f97316', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 },
   goalCheckboxRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 4, gap: 8 },
-  goalCheckboxSquare: { width: 16, height: 16, borderWidth: 1.5, borderColor: '#1e3a8a', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' },
-  goalCheckboxSquareActive: { backgroundColor: '#16a34a', borderColor: '#16a34a' },
   goalTextLabel: { fontSize: 10, fontWeight: 'bold', color: '#0f172a' },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 14 },
@@ -4111,8 +4228,6 @@ const styles = StyleSheet.create({
   chipTextActive: { color: '#ffffff' },
 
   checkboxRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 6, gap: 8 },
-  checkboxBoxCircle: { width: 18, height: 18, borderWidth: 2, borderColor: '#1e3a8a', borderRadius: 9, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' },
-  checkboxBoxCircleActive: { backgroundColor: '#f97316', borderColor: '#f97316' },
   checkboxCheckmark: { color: '#ffffff', fontSize: 10, fontWeight: 'bold' },
   checkboxLabel: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
 
