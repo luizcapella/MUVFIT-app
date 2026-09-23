@@ -119,15 +119,12 @@ export default function App() {
   // Histórico de peso iniciado vazio conforme solicitado pelo utilizador
   const [weightHistoryList, setWeightHistoryList] = useState([]);
   const [isWeightChartModalOpen, setIsWeightChartModalOpen] = useState(false);
-  const [newWeightPeriodInput, setNewWeightPeriodInput] = useState('');
   const [newWeightValueInput, setNewWeightValueInput] = useState('');
+  const [newWeightDateInput, setNewWeightDateInput] = useState('Set/2023');
 
   const [isModalityRadarModalOpen, setIsModalityRadarModalOpen] = useState(false);
   const [isKmChartModalOpen, setIsKmChartModalOpen] = useState(false);
   const [isTimeChartModalOpen, setIsTimeChartModalOpen] = useState(false);
-
-  const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
-  const [newWeightInput, setNewWeightInput] = useState('');
 
   const [personalGoals, setPersonalGoals] = useState([]);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
@@ -186,7 +183,6 @@ export default function App() {
   const [endMinute, setEndMinute] = useState('00');
 
   const [kmInput, setKmInput] = useState('');
-  const [stepsInput, setStepsInput] = useState('');
   const [workoutCaption, setWorkoutCaption] = useState('');
 
   const [photoStart, setPhotoStart] = useState(null);
@@ -1375,7 +1371,6 @@ export default function App() {
     
     setIsWorkoutModalOpen(false);
     setKmInput('');
-    setStepsInput('');
     setWorkoutCaption('');
     setPhotoStart(null);
     setPhotoEvidence(null);
@@ -2716,66 +2711,103 @@ export default function App() {
         </View>
       </View>
 
-      {/* Modal: Janela Detalhada de Evolução de Peso (Inspirada na Referência) */}
+      {/* Modal: Janela Detalhada de Evolução de Peso (Inspirada fielmente na referência com Gráfico de Linha e Seletor de Data) */}
       <Modal visible={isWeightChartModalOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <Text style={styles.modalTitle}>Gráfico de Peso</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, borderBottomWidth: 1, borderBottomColor: '#e2e8f0', paddingBottom: 6 }}>
+              <Text style={{ fontSize: 16, fontWeight: '900', color: '#c2410c' }}>Gráfico de Peso</Text>
               <TouchableOpacity onPress={() => setIsWeightChartModalOpen(false)}>
                 <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1e3a8a' }}>✕</Text>
               </TouchableOpacity>
             </View>
-            
-            <View style={{ marginVertical: 8, backgroundColor: '#f8fafc', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1' }}>
-              <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 6 }}>Histórico Registrado:</Text>
-              {weightHistoryList.length === 0 ? (
-                <Text style={{ fontSize: 10, color: '#94a3b8', fontStyle: 'italic', padding: 6, textAlign: 'center' }}>
-                  Nenhum registro de peso efetuado.
-                </Text>
-              ) : (
-                weightHistoryList.map(item => (
-                  <View key={item.id} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: '#e2e8f0' }}>
-                    <Text style={{ fontSize: 10, color: '#334155', fontWeight: 'bold' }}>{item.period}</Text>
-                    <Text style={{ fontSize: 10, color: '#f97316', fontWeight: 'bold' }}>{item.weight} kg</Text>
-                  </View>
-                ))
-              )}
+
+            {/* Campos de Destaque no Topo (Peso Atual e Data) inspirados na referência */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+              <View style={{ flex: 1, borderWidth: 1.5, borderColor: '#f97316', borderRadius: 8, padding: 8, backgroundColor: '#fff7ed' }}>
+                <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#c2410c', marginBottom: 2, textAlign: 'center' }}>Peso Atual (kg)</Text>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '16px' }}>⚖️</span>
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="78.2"
+                    value={newWeightValueInput}
+                    onChange={(e) => setNewWeightValueInput(e.target.value)}
+                    style={{ width: '80px', border: 'none', background: 'transparent', fontSize: '14px', fontWeight: 'bold', color: '#1e3a8a', outline: 'none' }}
+                  />
+                </div>
+              </View>
+
+              <View style={{ flex: 1, borderWidth: 1.5, borderColor: '#f97316', borderRadius: 8, padding: 8, backgroundColor: '#fff7ed' }}>
+                <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#c2410c', marginBottom: 2, textAlign: 'center' }}>Data (Mês/Ano)</Text>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '16px' }}>📅</span>
+                  <input
+                    type="month"
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        const [yyyy, mm] = e.target.value.split('-');
+                        const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                        const mStr = monthNames[parseInt(mm, 10) - 1];
+                        setNewWeightDateInput(`${mStr}/${yyyy}`);
+                      }
+                    }}
+                    style={{ position: 'absolute', opacity: 0, width: '100px', cursor: 'pointer' }}
+                    title="Selecionar Mês/Ano"
+                  />
+                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e3a8a' }}>{newWeightDateInput}</span>
+                </div>
+              </View>
             </View>
 
-            <Text style={styles.inputLabel}>Peso Atual (kg) / Data (Mês/Ano):</Text>
-            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8 }}>
-              <TextInput 
-                style={[styles.input, { flex: 1, marginBottom: 0 }]} 
-                placeholder="Ex: 78.2" 
-                keyboardType="numeric"
-                value={newWeightValueInput} 
-                onChangeText={setNewWeightValueInput} 
-              />
-              <TextInput 
-                style={[styles.input, { flex: 1, marginBottom: 0 }]} 
-                placeholder="Ex: Set/2023" 
-                value={newWeightPeriodInput} 
-                onChangeText={newWeightPeriodInput => setNewWeightPeriodInput(newWeightPeriodInput)} 
-              />
+            {/* Bloco do Gráfico de Linha Visual */}
+            <View style={{ backgroundColor: '#ffffff', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 10 }}>
+              <View style={{ height: 160, justifyContent: 'center', alignItems: 'center', position: 'relative', borderBottomWidth: 1, borderBottomColor: '#cbd5e1', borderLeftWidth: 1, borderLeftColor: '#cbd5e1', marginLeft: 20, marginBottom: 15 }}>
+                {weightHistoryList.length === 0 ? (
+                  <Text style={{ fontSize: 10, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center' }}>
+                    Nenhum dado de peso inserido. Adicione o seu primeiro registo abaixo para visualizar o gráfico de linha.
+                  </Text>
+                ) : (
+                  <div style={{ width: '100%', height: '100%', position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', paddingBottom: '10px' }}>
+                    {weightHistoryList.map((item, idx) => (
+                      <div key={item.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', flex: 1 }}>
+                        <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#f97316', marginBottom: '4px' }}>{item.weight}</span>
+                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f97316', border: '2px solid #ffffff', boxShadow: '0 0 0 1px #f97316' }}></div>
+                        <span style={{ fontSize: '8px', color: '#64748b', position: 'absolute', bottom: '-16px' }}>{item.period}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </View>
+              <Text style={{ fontSize: 9, color: '#64748b', textAlign: 'center', marginTop: 12, fontWeight: 'bold' }}>Mês / Ano</Text>
+            </View>
+
+            {/* Informações de Meta e Progresso */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-around', backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, marginBottom: 10, borderWidth: 1, borderColor: '#e2e8f0' }}>
+              <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>Meta: 75.0 kg</Text>
+              <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#16a34a' }}>
+                Progresso: {weightHistoryList.length > 0 ? `${(weightHistoryList[weightHistoryList.length - 1].weight - 75).toFixed(1)} kg` : '0.0 kg'}
+              </Text>
             </View>
 
             <TouchableOpacity 
               style={styles.primaryBtn} 
               onPress={() => {
-                if (newWeightPeriodInput.trim() && newWeightValueInput.trim()) {
+                if (newWeightValueInput.trim()) {
                   const wNum = parseFloat(newWeightValueInput) || 0;
-                  setWeightHistoryList([...weightHistoryList, { id: `w_${Date.now()}`, period: newWeightPeriodInput.trim(), weight: wNum }]);
-                  setNewWeightPeriodInput('');
+                  setWeightHistoryList([...weightHistoryList, { id: `w_${Date.now()}`, period: newWeightDateInput, weight: wNum }]);
                   setNewWeightValueInput('');
-                  Alert.alert('Sucesso', 'Registro de peso adicionado!');
+                  Alert.alert('Sucesso', 'Registo de peso adicionado ao gráfico!');
+                } else {
+                  Alert.alert('Atenção', 'Insira o valor do peso.');
                 }
               }}
             >
-              <Text style={styles.primaryBtnText}>ADICIONAR REGISTRO</Text>
+              <Text style={styles.primaryBtnText}>ADICIONAR REGISTRO AO GRÁFICO</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.cancelBtn, { marginTop: 10 }]} onPress={() => setIsWeightChartModalOpen(false)}>
+            <TouchableOpacity style={[styles.cancelBtn, { marginTop: 6 }]} onPress={() => setIsWeightChartModalOpen(false)}>
               <Text style={styles.cancelBtnText}>FECHAR</Text>
             </TouchableOpacity>
           </View>
@@ -2869,7 +2901,7 @@ export default function App() {
               style={styles.input} 
               placeholder="Ex: Fazer 100 flexões seguidas" 
               value={newGoalText} 
-              onChangeText={setNewGoalText} 
+              onChangeText={newGoalText => setNewGoalText(newGoalText)} 
             />
             <TouchableOpacity style={styles.primaryBtn} onPress={() => {
               if (newGoalText.trim()) {
