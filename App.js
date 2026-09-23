@@ -1537,7 +1537,7 @@ export default function App() {
 
   let selectedMembershipForAthlete = null;
   if (athletePerfScope !== 'global') {
-    selectedMembershipForAthlete = athleteMembershipsAll.find(m => m.challengeId === athletePerfScope);
+    selectedMembershipForAthlete = athleteMembershipsAll.find(m => String(m.challengeId) === String(athletePerfScope));
   }
 
   let displayedPerf = {
@@ -1581,7 +1581,7 @@ export default function App() {
   const athleteFeedPostsAll = feedPosts.filter(p => p.user_id === viewedUser.id);
   const athleteFilteredPosts = athletePerfScope === 'global' 
     ? athleteFeedPostsAll 
-    : athleteFeedPostsAll.filter(p => p.challenge_id === athletePerfScope);
+    : athleteFeedPostsAll.filter(p => String(p.challenge_id) === String(athletePerfScope));
 
   const calculatedStepsPoints = Math.round(
     (parseFloat(dailyStepsConfig.manualStepsInput) || 0) * (parseFloat(dailyStepsConfig.multiplier) || 0)
@@ -2116,7 +2116,7 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* CENTRAL DO ATLETA APRIMORADA COM EXIBIÇÃO CORRETA DO ITEM SELECIONADO NA ABA */}
+          {/* CENTRAL DO ATLETA APRIMORADA COM EXIBIÇÃO EXATA DA LIGA SELECIONADA */}
           {currentScreen === 'athlete_center' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.profileHeaderCard}>
@@ -2147,7 +2147,7 @@ export default function App() {
                     onPress={() => setIsScopeModalOpen(true)}
                   >
                     <Text style={styles.scopeSelectorButtonText}>
-                      {athletePerfScope === 'global' ? '🌐 Somatório Geral (Todos os Desafios)' : `🏆 ${athleteChallengesList.find(c => String(c.id) === String(athletePerfScope))?.title || 'Liga Selecionada'}`} ▼
+                      {athletePerfScope === 'global' ? '🌐 Somatório Geral (Suas Ligas)' : `🏆 ${athleteChallengesList.find(c => String(c.id) === String(athletePerfScope))?.title || 'Liga Selecionada'}`} ▼
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -2622,7 +2622,7 @@ export default function App() {
         </View>
       </View>
 
-      {/* MODAL DE ESCOPO DA CENTRAL DO ATLETA */}
+      {/* MODAL DE ESCOPO DA CENTRAL DO ATLETA (RESTRITO APENAS ÀS LIGAS DO ATLETA) */}
       <Modal visible={isScopeModalOpen} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -2632,7 +2632,7 @@ export default function App() {
                 style={styles.selectOptionRow}
                 onPress={() => { setAthletePerfScope('global'); setIsScopeModalOpen(false); }}
               >
-                <Text style={styles.selectOptionText}>🌐 Somatório Geral (Todos os Desafios)</Text>
+                <Text style={styles.selectOptionText}>🌐 Somatório Geral (Suas Ligas)</Text>
               </TouchableOpacity>
               {athleteChallengesList.map(ch => (
                 <TouchableOpacity 
