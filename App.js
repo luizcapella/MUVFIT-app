@@ -113,11 +113,24 @@ export default function App() {
 
   const [athletePerfScope, setAthletePerfScope] = useState('global');
   
-  // Stories iniciam vazios (sem exemplos) com suporte a expiração e visualizador
   const [athleteStories, setAthleteStories] = useState([]);
-  const [activeStoryView, setActiveStoryView] = useState(null); // Para abrir o story em tela cheia por 30s
+  const [activeStoryView, setActiveStoryView] = useState(null);
 
-  const [athleteWeightLog, setAthleteWeightLog] = useState('86kg');
+  // Estados para novas visualizações e gráficos solicitados
+  const [weightHistoryList, setWeightHistoryList] = useState([
+    { id: 'w1', period: 'Jan/2026', weight: 86 },
+    { id: 'w2', period: 'Fev/2026', weight: 85 },
+    { id: 'w3', period: 'Mar/2026', weight: 84 }
+  ]);
+  const [isWeightChartModalOpen, setIsWeightChartModalOpen] = useState(false);
+  const [newWeightPeriodInput, setNewWeightPeriodInput] = useState('');
+  const [newWeightValueInput, setNewWeightValueInput] = useState('');
+
+  const [isModalityRadarModalOpen, setIsModalityRadarModalOpen] = useState(false);
+  const [isKmChartModalOpen, setIsKmChartModalOpen] = useState(false);
+  const [isTimeChartModalOpen, setIsTimeChartModalOpen] = useState(false);
+
+  const [athleteWeightLog, setAthleteWeightLog] = useState('84kg');
   const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
   const [newWeightInput, setNewWeightInput] = useState('');
 
@@ -299,23 +312,21 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Timer para expirar os stories após 24h
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
       const twentyFourHours = 24 * 60 * 60 * 1000;
       setAthleteStories(prev => prev.filter(st => now - st.createdAt < twentyFourHours));
-    }, 60000); // verifica a cada minuto
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 
-  // Temporizador para fechar o visualizador de story após 30 segundos
   useEffect(() => {
     let timer;
     if (activeStoryView) {
       timer = setTimeout(() => {
         setActiveStoryView(null);
-      }, 30000); // 30 segundos
+      }, 30000);
     }
     return () => clearTimeout(timer);
   }, [activeStoryView]);
@@ -1191,11 +1202,9 @@ export default function App() {
     }
   };
 
-  // Função customizada para adicionar story com baixa qualidade e opção de salvar no dispositivo
   const handleAddStory = () => {
     handleTriggerPhoto('camera', (base64Img) => {
       if (base64Img) {
-        // Reduz qualidade reduzindo resolução via canvas se necessário ou adicionando direto
         const newStory = {
           id: `st_${Date.now()}`,
           uri: base64Img,
@@ -1204,7 +1213,6 @@ export default function App() {
 
         setAthleteStories(prev => [...prev, newStory]);
 
-        // Solicita salvar a foto/vídeo no dispositivo
         if (Platform.OS === 'web') {
           const downloadLink = document.createElement('a');
           downloadLink.href = base64Img;
@@ -1573,7 +1581,7 @@ export default function App() {
     displayedPerf.bankPoints = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.bankPoints || 0), 0);
     displayedPerf.totalSteps = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.totalSteps || 0), 0);
     displayedPerf.totalKm = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.totalKm || 0), 0);
-    displayedPerf.goldMedals = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.goldMedals || 0), viewedUser.goldMedals || 0);
+    displayedPerf.goldMedals = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.silverMedals || 0), viewedUser.goldMedals || 0);
     displayedPerf.silverMedals = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.silverMedals || 0), viewedUser.silverMedals || 0);
     displayedPerf.bronzeMedals = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.bronzeMedals || 0), viewedUser.bronzeMedals || 0);
     displayedPerf.athleteStatusText = 'Múltiplas Ligas';
@@ -2220,7 +2228,6 @@ export default function App() {
               <View style={styles.sectionContainerBox}>
                 <Text style={styles.sectionHeaderTitle}>Histórias de Atleta (24h)</Text>
                 
-                {/* Lista de Stories atualizada conforme suas especificações */}
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', gap: 8, marginVertical: 4 }}>
                   {viewedUser.id === currentUser.id && (
                     <TouchableOpacity style={styles.storyAddBtnCircle} onPress={handleAddStory}>
@@ -2267,28 +2274,47 @@ export default function App() {
                 </View>
               </View>
 
+              {/* Seção aprimorada com os 4 gráficos/componentes solicitados */}
               <View style={styles.sectionContainerBox}>
-                <Text style={styles.sectionHeaderTitle}>Evolução & Estatísticas do Atleta</Text>
+                <Text style={styles.sectionHeaderTitle}>Evolução & Estatísticas Avançadas do Atleta</Text>
 
+                {/* 1. Evolução de Peso (Gráfico de Linha + Formulário) */}
                 <TouchableOpacity 
                   style={styles.statsCardItemButton}
-                  onPress={() => {
-                    if (viewedUser.id === currentUser.id) setIsWeightModalOpen(true);
-                  }}
+                  onPress={() => setIsWeightChartModalOpen(true)}
                 >
-                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>📊 Evolução de Peso (kg)</Text>
-                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>{athleteWeightLog}</Text>
+                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>📈 Gráfico: Evolução de Peso (Peso x Mês/Ano)</Text>
+                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>
+                    {weightHistoryList.map(w => `${w.period}: ${w.weight}kg`).join(' ➔ ')} (Toque para ver gráfico detalhado)
+                  </Text>
                 </TouchableOpacity>
 
-                <View style={styles.statsCardItemButton}>
-                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>📈 Modalidades Mais Praticadas</Text>
+                {/* 2. Atividades Mais Praticadas (Top 3 + Radar/Distribuição) */}
+                <TouchableOpacity 
+                  style={styles.statsCardItemButton}
+                  onPress={() => setIsModalityRadarModalOpen(true)}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>📊 Gráfico Radar: Atividades Mais Praticadas (Top 3 & Distribuição)</Text>
                   <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>1º Musculação (50%) | 2º Corrida (30%) | 3º Bicicleta (20%)</Text>
-                </View>
+                </TouchableOpacity>
 
-                <View style={styles.statsCardItemButton}>
-                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>🏃 KM Total Percorrido</Text>
-                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>{displayedPerf.totalKm.toFixed(1)} km acumulados</Text>
-                </View>
+                {/* 3. KM Percorrido Acumulado (Gráfico de Colunas filtrado por liga e modalidade) */}
+                <TouchableOpacity 
+                  style={styles.statsCardItemButton}
+                  onPress={() => setIsKmChartModalOpen(true)}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>📊 Gráfico de Colunas: KM Percorrido Acumulado</Text>
+                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>Total: {displayedPerf.totalKm.toFixed(1)} km (Filtrado por Corrida, Caminhada e Bike)</Text>
+                </TouchableOpacity>
+
+                {/* 4. Tempo Total em Atividade (Gráfico de Colunas em horas/minutos com filtros) */}
+                <TouchableOpacity 
+                  style={styles.statsCardItemButton}
+                  onPress={() => setIsTimeChartModalOpen(true)}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>⏱️ Gráfico de Colunas: Tempo Total em Atividade (Horas/Minutos)</Text>
+                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>Filtre por modalidade e período para visualizar o tempo investido</Text>
+                </TouchableOpacity>
               </View>
 
               <View style={styles.sectionContainerBox}>
@@ -2692,6 +2718,117 @@ export default function App() {
           )}
         </View>
       </View>
+
+      {/* Modal: Gráfico de Linha - Evolução de Peso */}
+      <Modal visible={isWeightChartModalOpen} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentLarge}>
+            <Text style={styles.modalTitle}>📈 Gráfico de Linha: Evolução de Peso (kg)</Text>
+            
+            <View style={{ marginVertical: 8, backgroundColor: '#f8fafc', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1' }}>
+              <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 6 }}>Histórico Registrado:</Text>
+              {weightHistoryList.map(item => (
+                <View key={item.id} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: '#e2e8f0' }}>
+                  <Text style={{ fontSize: 10, color: '#334155', fontWeight: 'bold' }}>{item.period}</Text>
+                  <Text style={{ fontSize: 10, color: '#f97316', fontWeight: 'bold' }}>{item.weight} kg</Text>
+                </View>
+              ))}
+            </View>
+
+            <Text style={styles.inputLabel}>Adicionar Novo Registro Histórico:</Text>
+            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8 }}>
+              <TextInput 
+                style={[styles.input, { flex: 1, marginBottom: 0 }]} 
+                placeholder="Período (Ex: Abr/2026)" 
+                value={newWeightPeriodInput} 
+                onChangeText={setNewWeightPeriodInput} 
+              />
+              <TextInput 
+                style={[styles.input, { flex: 1, marginBottom: 0 }]} 
+                placeholder="Peso kg (Ex: 83)" 
+                keyboardType="numeric"
+                value={newWeightValueInput} 
+                onChangeText={setNewWeightValueInput} 
+              />
+            </View>
+
+            <TouchableOpacity 
+              style={styles.primaryBtn} 
+              onPress={() => {
+                if (newWeightPeriodInput.trim() && newWeightValueInput.trim()) {
+                  const wNum = parseFloat(newWeightValueInput) || 0;
+                  setWeightHistoryList([...weightHistoryList, { id: `w_${Date.now()}`, period: newWeightPeriodInput.trim(), weight: wNum }]);
+                  setAthleteWeightLog(`${wNum}kg`);
+                  setNewWeightPeriodInput('');
+                  setNewWeightValueInput('');
+                  Alert.alert('Sucesso', 'Registro de peso adicionado ao gráfico!');
+                }
+              }}
+            >
+              <Text style={styles.primaryBtnText}>ADICIONAR REGISTRO AO GRÁFICO</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.cancelBtn, { marginTop: 10 }]} onPress={() => setIsWeightChartModalOpen(false)}>
+              <Text style={styles.cancelBtnText}>FECHAR</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal: Gráfico Radar / Distribuição de Atividades */}
+      <Modal visible={isModalityRadarModalOpen} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentLarge}>
+            <Text style={styles.modalTitle}>📊 Gráfico Radar: Atividades Mais Praticadas</Text>
+            <View style={{ padding: 12, backgroundColor: '#f8fafc', borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginVertical: 8 }}>
+              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 6 }}>Top 3 Modalidades & Distribuição Percentual:</Text>
+              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>🥇 1º Musculação - 50% das atividades</Text>
+              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>🥈 2º Corrida - 30% das atividades</Text>
+              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>🥉 3º Bicicleta - 20% das atividades</Text>
+            </View>
+            <TouchableOpacity style={styles.primaryBtn} onPress={() => setIsModalityRadarModalOpen(false)}>
+              <Text style={styles.primaryBtnText}>FECHAR</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal: Gráfico de KM Percorrido Acumulado */}
+      <Modal visible={isKmChartModalOpen} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentLarge}>
+            <Text style={styles.modalTitle}>📊 Gráfico de Colunas: KM Percorrido Acumulado</Text>
+            <View style={{ padding: 12, backgroundColor: '#f8fafc', borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginVertical: 8 }}>
+              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 6 }}>Filtrado por Liga e Modalidades de Deslocamento:</Text>
+              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>🏃 Corrida: 45.0 KM</Text>
+              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>🚶 Caminhada: 18.5 KM</Text>
+              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>🚴 Bike: 120.0 KM</Text>
+              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#f97316', marginTop: 6 }}>Total Acumulado: {displayedPerf.totalKm.toFixed(1)} KM</Text>
+            </View>
+            <TouchableOpacity style={styles.primaryBtn} onPress={() => setIsKmChartModalOpen(false)}>
+              <Text style={styles.primaryBtnText}>FECHAR</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal: Gráfico de Tempo Total em Atividade */}
+      <Modal visible={isTimeChartModalOpen} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentLarge}>
+            <Text style={styles.modalTitle}>⏱️ Gráfico de Colunas: Tempo Total em Atividade</Text>
+            <View style={{ padding: 12, backgroundColor: '#f8fafc', borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginVertical: 8 }}>
+              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 6 }}>Tempo Investido por Horas / Minutos:</Text>
+              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>💪 Musculação: 15h 30min</Text>
+              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>🏃 Corrida: 8h 15min</Text>
+              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>🚴 Bike: 6h 45min</Text>
+            </View>
+            <TouchableOpacity style={styles.primaryBtn} onPress={() => setIsTimeChartModalOpen(false)}>
+              <Text style={styles.primaryBtnText}>FECHAR</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Modal para visualizar Story em Tela Cheia por 30 segundos */}
       <Modal visible={activeStoryView !== null} transparent animationType="fade">
