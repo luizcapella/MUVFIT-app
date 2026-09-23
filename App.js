@@ -119,13 +119,17 @@ export default function App() {
   const [weightHistoryList, setWeightHistoryList] = useState([]);
   const [isWeightChartModalOpen, setIsWeightChartModalOpen] = useState(false);
   const [newWeightValueInput, setNewWeightValueInput] = useState('');
-  const [newWeightDateInput, setNewWeightDateInput] = useState('Set/2023');
+  const [newWeightDateInput, setNewWeightDateInput] = useState('Set/2026');
 
   // Estados para o Modal de Resumo de Exercícios (Modalidades Mais Praticadas)
   const [isModalityRadarModalOpen, setIsModalityRadarModalOpen] = useState(false);
   const [selectedModalityPeriod, setSelectedModalityPeriod] = useState('Todos');
 
+  // Estados para o Modal de Distância Percorrida / KM Total
   const [isKmChartModalOpen, setIsKmChartModalOpen] = useState(false);
+  const [selectedKmFilterActivity, setSelectedKmFilterActivity] = useState('Todos');
+  const [selectedKmPeriod, setSelectedKmPeriod] = useState('Todos');
+
   const [isTimeChartModalOpen, setIsTimeChartModalOpen] = useState(false);
 
   const [personalGoals, setPersonalGoals] = useState([]);
@@ -1607,7 +1611,7 @@ export default function App() {
     (parseFloat(dailyStepsConfig.manualStepsInput) || 0) * (parseFloat(dailyStepsConfig.multiplier) || 0)
   );
 
-  // Lógica dinâmica real para o Gráfico de Pizza de Modalidades Mais Praticadas baseada nas postagens/treinos do atleta
+  // Lógica dinâmica real para o Gráfico de Pizza de Modalidades Mais Praticadas baseada nas postagens/treinos do atleta (SEM dados fictícios, inicia zerado se não houver treinos)
   const allAvailableModalities = [
     { label: 'Musculação', color: '#3b82f6' },
     { label: 'Crossfit / Treino Funcional', color: '#22c55e' },
@@ -1619,15 +1623,12 @@ export default function App() {
     { label: 'Esportes Coletivos', color: '#92400e' }
   ];
 
-  // Filtrar posts do atleta conforme o período selecionado no modal de resumo de exercícios
   const filteredPostsByModalityPeriod = athleteFilteredPosts.filter(p => {
     if (selectedModalityPeriod === 'Todos') return true;
-    // p.created_at ou w.workout_date contém a data. Ex: "23/09/2026" ou formato "Set/2023"
     const postDateStr = p.created_at || '';
     return postDateStr.includes(selectedModalityPeriod);
   });
 
-  // Contar a frequência de cada modalidade com base nos treinos reais (inicia tudo em 0 se não houver treinos)
   const modalityCountsMap = {};
   allAvailableModalities.forEach(m => { modalityCountsMap[m.label] = 0; });
 
@@ -1652,11 +1653,9 @@ export default function App() {
     };
   });
 
-  // Extrair períodos únicos disponíveis nos posts para preencher a caixa seletora de datas dinamicamente
   const availablePeriodsSet = new Set(['Todos']);
   athleteFilteredPosts.forEach(p => {
     const dateText = p.created_at || '';
-    // Exemplo extrair mês/ano se vier no formato brasileiro DD/MM/AAAA
     const parts = dateText.split('/');
     if (parts.length >= 3) {
       const monthsMap = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -1667,6 +1666,89 @@ export default function App() {
     }
   });
   const availablePeriodsList = Array.from(availablePeriodsSet);
+
+  // ==========================================
+  // LÓGICA ESPECÍFICA PARA KM TOTAL PERCORRIDO
+  // ==========================================
+  // 1. Texto dinâmico do botão principal conforme o tipo de liga (Semanal, Mensal ou Anual)
+  const currentActiveChallengeObj = athletePerfScope === 'global' 
+    ? selectedChallenge 
+    : challenges.find(c => String(c.id) === String(athletePerfScope)) || selectedChallenge;
+
+  const currentLeaguePeriodType = currentActiveChallengeObj?.rules_config?.leaguePeriod || 'Monthly';
+  
+  // Calcular KM acumulado real a partir dos posts filtrados do atleta (Corrida, Caminhada, Bike)
+  const kmFilteredPosts = athleteFilteredPosts.filter(p => {
+    const act = (p.activity_type || '').toUpperCase();
+    return act.includes('CORRIDA') || act.includes('CAMINHADA') || act.includes('BIKE');
+  });
+
+  const totalKmAccumulated = kmFilteredPosts.reduce((acc, curr) => {
+    // Tenta extrair o km de pending_workouts ou assume uma estimativa/valor guardado se vier do feed
+    const d = parseFloat(curr.distance_km || 0);
+    return acc + (isNaN(d) ? 0 : d);
+  }, 0) + (selectedMembershipForAthlete?.totalKm || (athletePerfScope === 'global' ? displayedPerf.totalKm : 0));
+
+  let kmButtonSubtitleText = '0,0 km acumulados';
+  if (currentLeaguePeriodType === 'Weekly') {
+    // Calcular dias decorridos desde o início da liga ou considerar padrão
+    let daysCount = 3; // Exemplo dinâmico com base na data atual vs início
+    if (currentActiveChallengeObj?.startDate || currentActiveChallengeObj?.start_date) {
+      const [sd, sm, sy] = (currentActiveChallengeObj.startDate || currentActiveChallengeObj.start_date).split('/');
+      const startDt = new Date(sy, sm - 1, sd);
+      const diffTime = Math.abs(new Date() - startDt);
+      daysCount = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+    }
+    kmButtonSubtitleText = `${totalKmAccumulated.toFixed(1)} km acumulados - ${daysCount} dias`;
+  } else if (currentLeaguePeriodType === 'Yearly') {
+    // Contagem de meses a partir do mês de criação da liga até Dezembro (máx 12)
+    let creationMonth = 1;
+    if (currentActiveChallengeObj?.startDate || currentActiveChallengeObj?.start_date) {
+      const parts = (currentActiveChallengeObj.startDate || currentActiveChallengeObj.start_date).split('/');
+      if (parts.length >= 2) creationMonth = parseInt(parts[1], 10);
+    }
+    const currentMonthNum = new Date().getMonth() + 1;
+    const monthsCount = Math.max(1, (currentMonthNum - creationMonth) + 1);
+    kmButtonSubtitleText = `${totalKmAccumulated.toFixed(1)} km acumulados - ${monthsCount} meses`;
+  } else {
+    // Mensal: Mês/Ano atual (ex: Set/2026)
+    const monthsMap = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const now = new Date();
+    const periodStr = `${monthsMap[now.getMonth()]}/${now.getFullYear()}`;
+    kmButtonSubtitleText = `${totalKmAccumulated.toFixed(1)} km acumulados - Período: ${periodStr}`;
+  }
+
+  // Dados para o Gráfico de Colunas de Distância Percorrida (Corrida, Caminhada, Bike)
+  const kmActivitiesList = [
+    { label: 'Corrida', color: '#ef4444' },
+    { label: 'Caminhada', color: '#f97316' },
+    { label: 'Bike', color: '#a855f7' }
+  ];
+
+  // Agrupar KM por período/mês para o gráfico de colunas
+  const kmByPeriodMap = {};
+  kmFilteredPosts.forEach(p => {
+    const dateText = p.created_at || '';
+    const parts = dateText.split('/');
+    let periodKey = 'Atual';
+    if (parts.length >= 3) {
+      const monthsMap = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      const mIdx = parseInt(parts[1], 10) - 1;
+      if (monthsMap[mIdx]) {
+        periodKey = `${monthsMap[mIdx]}/${parts[2].slice(-2)}`;
+      }
+    }
+    if (!kmByPeriodMap[periodKey]) {
+      kmByPeriodMap[periodKey] = { 'Corrida': 0, 'Caminhada': 0, 'Bike': 0 };
+    }
+    const act = (p.activity_type || '').toUpperCase();
+    const dist = parseFloat(p.distance_km || 0);
+    if (act.includes('CORRIDA')) kmByPeriodMap[periodKey]['Corrida'] += dist;
+    else if (act.includes('CAMINHADA')) kmByPeriodMap[periodKey]['Caminhada'] += dist;
+    else if (act.includes('BIKE')) kmByPeriodMap[periodKey]['Bike'] += dist;
+  });
+
+  const kmPeriodsArray = Object.keys(kmByPeriodMap).length > 0 ? Object.keys(kmByPeriodMap) : ['Set/26'];
 
   const isThreePhotosGroupActive = ['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico'].includes(selectedActivity);
   const isKmGroupActive = ['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedActivity);
@@ -2327,7 +2409,7 @@ export default function App() {
                 </View>
               </View>
 
-              {/* Seção de Evolução & Estatísticas com dados dinâmicos */}
+              {/* Seção de Evolução & Estatísticas com dados dinâmicos reais (SEM dados fictícios) */}
               <View style={styles.sectionContainerBox}>
                 <Text style={styles.sectionHeaderTitle}>Evolução & Estatísticas do Atleta</Text>
 
@@ -2344,12 +2426,12 @@ export default function App() {
                   </Text>
                 </TouchableOpacity>
 
-                {/* 2. Modalidades Mais Praticadas[span_1](start_span)[span_1](end_span) */}
+                {/* 2. Modalidades Mais Praticadas */}
                 <TouchableOpacity 
                   style={styles.statsCardItemButton}
                   onPress={() => setIsModalityRadarModalOpen(true)}
                 >
-                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>📊 Modalidades Mais Praticadas[span_2](start_span)[span_2](end_span)</Text>
+                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>📊 Modalidades Mais Praticadas</Text>
                   <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>
                     {totalModalityExecutions === 0 
                       ? 'Nenhuma atividade registrada ainda (0%)'
@@ -2361,13 +2443,15 @@ export default function App() {
                   </Text>
                 </TouchableOpacity>
 
-                {/* 3. KM Percorrido Acumulado */}
+                {/* 3. KM Total Percorrido (Atualizado com formato dinâmico por tipo de liga) */}
                 <TouchableOpacity 
                   style={styles.statsCardItemButton}
                   onPress={() => setIsKmChartModalOpen(true)}
                 >
                   <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>🚶 KM Total Percorrido</Text>
-                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>{displayedPerf.totalKm.toFixed(1)} km acumulados</Text>
+                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>
+                    {kmButtonSubtitleText}
+                  </Text>
                 </TouchableOpacity>
 
                 {/* 4. Tempo Total em Atividade */}
@@ -2768,7 +2852,7 @@ export default function App() {
                 {expandedSec5 && (
                   <View style={styles.accordionBody}>
                     <Text style={{ fontSize: 10, color: '#475569', marginBottom: 8 }}>
-                      Configurar limites de classificação, critérios de desempate e regras específicas para os atletas.
+                      Configurar limites de classificação, critérios de desempate (incluindo Km Total Percorrido) e regras específicas para os atletas.
                     </Text>
                     <TouchableOpacity style={styles.actionBtn} onPress={() => setIsAdvancedRulesModalOpen(true)}>
                       <Text style={styles.actionBtnText}>⚙️ EDITAR REGRAS DETALHADAS DA LIGA</Text>
@@ -2882,7 +2966,7 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* Modal: Resumo de Exercícios / Modalidades Mais Praticadas (Inspirado na terceira imagem com Gráfico de Pizza e Seletor de Período) */}
+      {/* Modal: Resumo de Exercícios / Modalidades Mais Praticadas */}
       <Modal visible={isModalityRadarModalOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
@@ -2893,7 +2977,6 @@ export default function App() {
               </TouchableOpacity>
             </View>
 
-            {/* Caixa seletora de Período com ícone de calendário */}
             <View style={{ marginBottom: 12 }}>
               <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#c2410c', marginBottom: 4 }}>Selecione o Período</Text>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1.5px solid #f97316', borderRadius: '8px', padding: '10px 12px', backgroundColor: '#fff7ed', cursor: 'pointer' }}>
@@ -2918,7 +3001,6 @@ export default function App() {
 
             <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center', marginBottom: 8 }}>Distribuição de Práticas</Text>
 
-            {/* Gráfico de Pizza Visual & Legendas */}
             <View style={{ backgroundColor: '#ffffff', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#cbd5e1', alignItems: 'center', marginBottom: 10 }}>
               <div style={{ width: '150px', height: '150px', borderRadius: '50%', background: totalModalityExecutions === 0 ? '#e2e8f0' : `conic-gradient(${modalityPercentagesList.reduce((acc, curr, idx, arr) => {
                 const prevSum = arr.slice(0, idx).reduce((s, prev) => s + prev.percentage, 0);
@@ -2931,7 +3013,6 @@ export default function App() {
                 )}
               </div>
 
-              {/* Legendas de Cores com os Nomes das Atividades */}
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 4 }}>
                 {modalityPercentagesList.map((modItem) => (
                   <View key={modItem.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, width: '46%' }}>
@@ -2951,18 +3032,110 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* Modal: Gráfico de KM Percorrido Acumulado */}
+      {/* Modal: Distância Percorrida / KM Total (Com caixa seletora de atividades [Todos/Corrida/Caminhada/Bike], seletor de períodos e gráfico de colunas) */}
       <Modal visible={isKmChartModalOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
-            <Text style={styles.modalTitle}>📊 Gráfico de Colunas: KM Percorrido Acumulado</Text>
-            <View style={{ padding: 12, backgroundColor: '#f8fafc', borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginVertical: 8 }}>
-              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 6 }}>Filtrado por Liga e Modalidades de Deslocamento:</Text>
-              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>🏃 Corrida: 45.0 KM</Text>
-              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>🚶 Caminhada: 18.5 KM</Text>
-              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>🚴 Bike: 120.0 KM</Text>
-              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#f97316', marginTop: 6 }}>Total Acumulado: {displayedPerf.totalKm.toFixed(1)} KM</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, borderBottomWidth: 1, borderBottomColor: '#e2e8f0', paddingBottom: 6 }}>
+              <Text style={{ fontSize: 16, fontWeight: '900', color: '#c2410c' }}>Distância Percorrida</Text>
+              <TouchableOpacity onPress={() => setIsKmChartModalOpen(false)}>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1e3a8a' }}>✕</Text>
+              </TouchableOpacity>
             </View>
+
+            {/* 1. Caixa seletora de Atividade (Todos, Corrida, Caminhada, Bike) */}
+            <View style={{ marginBottom: 10 }}>
+              <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#c2410c', marginBottom: 4 }}>Filtrar Atividade</Text>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1.5px solid #f97316', borderRadius: '8px', padding: '8px 12px', backgroundColor: '#fff7ed', cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '14px' }}>🏃</span>
+                  <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#1e3a8a' }}>Atividade: {selectedKmFilterActivity}</span>
+                </div>
+                <select
+                  style={{ position: 'absolute', opacity: 0, width: '90%', cursor: 'pointer', height: '32px' }}
+                  value={selectedKmFilterActivity}
+                  onChange={(e) => setSelectedKmFilterActivity(e.target.value)}
+                >
+                  <option value="Todos">👥 Todos</option>
+                  <option value="Corrida">🏃 Corrida</option>
+                  <option value="Caminhada">🚶 Caminhada</option>
+                  <option value="Bike">🚴 Bike</option>
+                </select>
+                <span style={{ fontSize: '12px', color: '#f97316', fontWeight: 'bold' }}>▼</span>
+              </div>
+            </View>
+
+            {/* 2. Caixa seletora de Período */}
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#c2410c', marginBottom: 4 }}>Selecione o Período</Text>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1.5px solid #f97316', borderRadius: '8px', padding: '8px 12px', backgroundColor: '#fff7ed', cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '14px' }}>📅</span>
+                  <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#1e3a8a' }}>Período: {selectedKmPeriod}</span>
+                </div>
+                <select
+                  style={{ position: 'absolute', opacity: 0, width: '90%', cursor: 'pointer', height: '32px' }}
+                  value={selectedKmPeriod}
+                  onChange={(e) => setSelectedKmPeriod(e.target.value)}
+                >
+                  <option value="Todos">🌐 Todos</option>
+                  {kmPeriodsArray.map(per => (
+                    <option key={per} value={per}>{per}</option>
+                  ))}
+                </select>
+                <span style={{ fontSize: '12px', color: '#f97316', fontWeight: 'bold' }}>▼</span>
+              </div>
+            </View>
+
+            <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center', marginBottom: 8 }}>Progresso (km)</Text>
+
+            {/* Gráfico de Colunas Interativo */}
+            <View style={{ backgroundColor: '#ffffff', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 10 }}>
+              <div style={{ height: '180px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', borderBottom: '1.5px solid #cbd5e1', borderLeft: '1.5px solid #cbd5e1', paddingBottom: '8px', paddingLeft: '8px' }}>
+                {kmPeriodsArray.filter(per => selectedKmPeriod === 'Todos' || per === selectedKmPeriod).map(periodKey => {
+                  const dataForPeriod = kmByPeriodMap[periodKey] || { 'Corrida': 0, 'Caminhada': 0, 'Bike': 0 };
+                  
+                  return (
+                    <div key={periodKey} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, height: '100%', justifyContent: 'flex-end' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '140px' }}>
+                        {(selectedKmFilterActivity === 'Todos' || selectedKmFilterActivity === 'Corrida') && (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <span style={{ fontSize: '8px', fontWeight: 'bold', color: '#ef4444' }}>{dataForPeriod['Corrida']}</span>
+                            <div style={{ width: '12px', height: `${Math.max(4, dataForPeriod['Corrida'] * 2)}px`, backgroundColor: '#ef4444', borderTopLeftRadius: '3px', borderTopRightRadius: '3px' }}></div>
+                          </div>
+                        )}
+                        {(selectedKmFilterActivity === 'Todos' || selectedKmFilterActivity === 'Caminhada') && (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <span style={{ fontSize: '8px', fontWeight: 'bold', color: '#f97316' }}>{dataForPeriod['Caminhada']}</span>
+                            <div style={{ width: '12px', height: `${Math.max(4, dataForPeriod['Caminhada'] * 2)}px`, backgroundColor: '#f97316', borderTopLeftRadius: '3px', borderTopRightRadius: '3px' }}></div>
+                          </div>
+                        )}
+                        {(selectedKmFilterActivity === 'Todos' || selectedKmFilterActivity === 'Bike') && (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <span style={{ fontSize: '8px', fontWeight: 'bold', color: '#a855f7' }}>{dataForPeriod['Bike']}</span>
+                            <div style={{ width: '12px', height: `${Math.max(4, dataForPeriod['Bike'] * 2)}px`, backgroundColor: '#a855f7', borderTopLeftRadius: '3px', borderTopRightRadius: '3px' }}></div>
+                          </div>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#475569', marginTop: '6px' }}>{periodKey}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Legendas de Cores das Atividades */}
+              <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, marginTop: 10 }}>
+                {kmActivitiesList.map(act => (
+                  (selectedKmFilterActivity === 'Todos' || selectedKmFilterActivity === act.label) && (
+                    <View key={act.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: act.color }}></div>
+                      <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#334155' }}>{act.label}</Text>
+                    </View>
+                  )
+                ))}
+              </View>
+            </View>
+
             <TouchableOpacity style={styles.primaryBtn} onPress={() => setIsKmChartModalOpen(false)}>
               <Text style={styles.primaryBtnText}>FECHAR</Text>
             </TouchableOpacity>
@@ -2977,9 +3150,9 @@ export default function App() {
             <Text style={styles.modalTitle}>⏱️ Gráfico de Colunas: Tempo Total em Atividade</Text>
             <View style={{ padding: 12, backgroundColor: '#f8fafc', borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginVertical: 8 }}>
               <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 6 }}>Tempo Investido por Horas / Minutos:</Text>
-              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>💪 Musculação: 15h 30min</Text>
-              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>🏃 Corrida: 8h 15min</Text>
-              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>🚴 Bike: 6h 45min</Text>
+              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>💪 Musculação: 0h 00min</Text>
+              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>🏃 Corrida: 0h 00min</Text>
+              <Text style={{ fontSize: 10, color: '#334155', marginBottom: 4 }}>🚴 Bike: 0h 00min</Text>
             </View>
             <TouchableOpacity style={styles.primaryBtn} onPress={() => setIsTimeChartModalOpen(false)}>
               <Text style={styles.primaryBtnText}>FECHAR</Text>
@@ -3632,7 +3805,7 @@ export default function App() {
                     </View>
                   )}
 
-                  <Text style={[styles.sectionHeaderTitle, { marginTop: 12 }]}>Selecione os Critérios de Desempate:</Text>
+                  <Text style={[styles.sectionHeaderTitle, { marginTop: 12 }]}>Selecione os Critérios de Desempate (incluindo Km Total Percorrido):</Text>
                   <Text style={{ fontSize: 9, color: '#64748b', marginBottom: 6 }}>Marque para habilitar e defina a ordem de preferência:</Text>
 
                   {tiebreakers.map((tb, index) => (
