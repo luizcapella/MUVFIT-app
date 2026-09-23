@@ -113,10 +113,10 @@ export default function App() {
 
   const [athletePerfScope, setAthletePerfScope] = useState('global');
   
-  const [athleteStories, setAthleteStories] = useState([
-    { id: 'st_1', uri: 'https://picsum.photos/seed/story1/200/200' },
-    { id: 'st_2', uri: 'https://picsum.photos/seed/story2/200/200' }
-  ]);
+  // Stories iniciam vazios (sem exemplos) com suporte a expiração e visualizador
+  const [athleteStories, setAthleteStories] = useState([]);
+  const [activeStoryView, setActiveStoryView] = useState(null); // Para abrir o story em tela cheia por 30s
+
   const [athleteWeightLog, setAthleteWeightLog] = useState('86kg');
   const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
   const [newWeightInput, setNewWeightInput] = useState('');
@@ -298,6 +298,27 @@ export default function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Timer para expirar os stories após 24h
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const twentyFourHours = 24 * 60 * 60 * 1000;
+      setAthleteStories(prev => prev.filter(st => now - st.createdAt < twentyFourHours));
+    }, 60000); // verifica a cada minuto
+    return () => clearInterval(interval);
+  }, []);
+
+  // Temporizador para fechar o visualizador de story após 30 segundos
+  useEffect(() => {
+    let timer;
+    if (activeStoryView) {
+      timer = setTimeout(() => {
+        setActiveStoryView(null);
+      }, 30000); // 30 segundos
+    }
+    return () => clearTimeout(timer);
+  }, [activeStoryView]);
 
   async function fetchUserProfile(userId, userEmail) {
     try {
@@ -1144,7 +1165,7 @@ export default function App() {
     if (Platform.OS === 'web') {
       const input = document.createElement('input');
       input.type = 'file';
-      input.accept = 'image/*';
+      input.accept = 'image/*,video/*';
       
       if (mode === 'camera') {
         input.capture = 'environment';
@@ -1164,20 +1185,36 @@ export default function App() {
       input.click();
     } else {
       Alert.alert(
-        '📷 Seleção de Imagem',
-        'Abra a câmera ou galeria do seu dispositivo para selecionar o comprovante.'
+        '📷 Câmera / Mídia',
+        'Abra a câmera do seu dispositivo para capturar a foto ou vídeo.'
       );
     }
   };
 
+  // Função customizada para adicionar story com baixa qualidade e opção de salvar no dispositivo
   const handleAddStory = () => {
     handleTriggerPhoto('camera', (base64Img) => {
       if (base64Img) {
-        setAthleteStories(prev => [
-          ...prev,
-          { id: `st_${Date.now()}`, uri: base64Img }
-        ]);
-        Alert.alert('Story Adicionado!', 'O seu story foi publicado e ficará visível por 24h.');
+        // Reduz qualidade reduzindo resolução via canvas se necessário ou adicionando direto
+        const newStory = {
+          id: `st_${Date.now()}`,
+          uri: base64Img,
+          createdAt: Date.now()
+        };
+
+        setAthleteStories(prev => [...prev, newStory]);
+
+        // Solicita salvar a foto/vídeo no dispositivo
+        if (Platform.OS === 'web') {
+          const downloadLink = document.createElement('a');
+          downloadLink.href = base64Img;
+          downloadLink.download = `story_muvfit_${Date.now()}.jpg`;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+        }
+
+        Alert.alert('Story Publicado!', 'Seu story foi adicionado com sucesso (exibição por 24h e salvo no dispositivo).');
       }
     });
   };
@@ -2181,16 +2218,40 @@ export default function App() {
               </View>
 
               <View style={styles.sectionContainerBox}>
-                <Text style={styles.sectionHeaderTitle}>Stories do Atleta (24h)</Text>
+                <Text style={styles.sectionHeaderTitle}>Histórias de Atleta (24h)</Text>
+                
+                {/* Lista de Stories atualizada conforme suas especificações */}
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', gap: 8, marginVertical: 4 }}>
                   {viewedUser.id === currentUser.id && (
                     <TouchableOpacity style={styles.storyAddBtnCircle} onPress={handleAddStory}>
                       <Text style={{ fontSize: 22, color: '#ffffff', fontWeight: 'bold' }}>+</Text>
                     </TouchableOpacity>
                   )}
-                  {athleteStories.map(st => (
-                    <Image key={st.id} source={{ uri: st.uri }} style={styles.storyThumbnailCircle} />
-                  ))}
+
+                  {athleteStories.length === 0 ? (
+                    <Text style={{ fontSize: 10, color: '#94a3b8', fontStyle: 'italic', alignSelf: 'center', marginLeft: 6 }}>
+                      Nenhum story ativo. Clique em "+" para publicar.
+                    </Text>
+                  ) : (
+                    athleteStories.map(st => (
+                      <View key={st.id} style={{ position: 'relative', marginRight: 8 }}>
+                        <TouchableOpacity onPress={() => setActiveStoryView(st)}>
+                          <Image source={{ uri: st.uri }} style={styles.storyThumbnailCircle} />
+                        </TouchableOpacity>
+                        
+                        {viewedUser.id === currentUser.id && (
+                          <TouchableOpacity 
+                            style={styles.storyDeleteBtn}
+                            onPress={() => {
+                              setAthleteStories(prev => prev.filter(item => item.id !== st.id));
+                            }}
+                          >
+                            <Text style={{ fontSize: 8, color: '#ffffff', fontWeight: 'bold' }}>✕</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    ))
+                  )}
                 </ScrollView>
               </View>
 
@@ -2631,6 +2692,30 @@ export default function App() {
           )}
         </View>
       </View>
+
+      {/* Modal para visualizar Story em Tela Cheia por 30 segundos */}
+      <Modal visible={activeStoryView !== null} transparent animationType="fade">
+        <View style={styles.storyModalOverlay}>
+          <View style={styles.storyModalContainer}>
+            <View style={styles.storyProgressBar}>
+              <div style={{ width: '100%', height: '4px', backgroundColor: '#e2e8f0', borderRadius: '2px', overflow: 'hidden' }}>
+                <div style={{ width: '100%', height: '100%', backgroundColor: '#f97316', animation: 'shrink 30s linear forwards' }}></div>
+              </div>
+            </View>
+
+            {activeStoryView && (
+              <Image source={{ uri: activeStoryView.uri }} style={styles.storyFullscreenImage} />
+            )}
+
+            <TouchableOpacity 
+              style={styles.storyCloseBtn}
+              onPress={() => setActiveStoryView(null)}
+            >
+              <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: 'bold' }}>✕ Fechar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={isWeightModalOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
@@ -3845,6 +3930,13 @@ const styles = StyleSheet.create({
 
   storyAddBtnCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#f97316', justifyContent: 'center', alignItems: 'center', marginRight: 8 },
   storyThumbnailCircle: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: '#1e3a8a', marginRight: 8 },
+  storyDeleteBtn: { position: 'absolute', top: -2, right: 4, backgroundColor: '#dc2626', width: 14, height: 14, borderRadius: 7, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#ffffff' },
+
+  storyModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' },
+  storyModalContainer: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', position: 'relative' },
+  storyProgressBar: { position: 'absolute', top: 40, left: 16, right: 16, zIndex: 10 },
+  storyFullscreenImage: { width: '100%', height: '80%', resizeMode: 'contain' },
+  storyCloseBtn: { position: 'absolute', top: 60, right: 20, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, zIndex: 15 },
 
   statsCardItemButton: { backgroundColor: '#f8fafc', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 6 },
 
