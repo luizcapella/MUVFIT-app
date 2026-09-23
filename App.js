@@ -2116,7 +2116,7 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* CENTRAL DO ATLETA APRIMORADA COM AS MELHORIAS SOLICITADAS */}
+          {/* CENTRAL DO ATLETA APRIMORADA COM CORREÇÃO DE EXIBIÇÃO DA LIGA SELECIONADA */}
           {currentScreen === 'athlete_center' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.profileHeaderCard}>
@@ -2147,7 +2147,7 @@ export default function App() {
                     onPress={() => setIsScopeModalOpen(true)}
                   >
                     <Text style={styles.scopeSelectorButtonText}>
-                      {athletePerfScope === 'global' ? '🌐 Somatório Geral (Todos os Desafios)' : (athleteChallengesList.find(c => c.id === athletePerfScope)?.title || 'Liga Selecionada')} ▼
+                      {athletePerfScope === 'global' ? '🌐 Somatório Geral (Todos os Desafios)' : `🏆 ${challenges.find(c => String(c.id) === String(athletePerfScope))?.title || 'Liga Selecionada'}`} ▼
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -2622,7 +2622,7 @@ export default function App() {
         </View>
       </View>
 
-      {/* MODAL DE ESCOPO DA CENTRAL DO ATLETA (CORRIGIDO PARA CLIQUE WEB) */}
+      {/* MODAL DE ESCOPO DA CENTRAL DO ATLETA */}
       <Modal visible={isScopeModalOpen} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
