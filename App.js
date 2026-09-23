@@ -38,7 +38,6 @@ function calculateAge(birthDateString) {
   return isNaN(age) ? null : age;
 }
 
-// FORMATADOR DE DATA BRASILEIRA (DD/MM/AAAA)
 function formatDateBR(dateObj) {
   const d = String(dateObj.getDate()).padStart(2, '0');
   const m = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -46,7 +45,6 @@ function formatDateBR(dateObj) {
   return `${d}/${m}/${y}`;
 }
 
-// CÁLCULO DE DATAS DA TEMPORADA/ÉPOCA
 function calculateSeasonDates(periodType, isRenewal = false, referenceDate = new Date()) {
   const year = referenceDate.getFullYear();
   const month = referenceDate.getMonth();
@@ -57,23 +55,22 @@ function calculateSeasonDates(periodType, isRenewal = false, referenceDate = new
   if (periodType === 'Weekly') {
     if (isRenewal) {
       const dayOfWeek = referenceDate.getDay();
-      startDateObj.setDate(referenceDate.getDate() - dayOfWeek); // Domingo
+      startDateObj.setDate(referenceDate.getDate() - dayOfWeek);
     }
     const dayOfWeek = startDateObj.getDay();
     const distanceToSaturday = 6 - dayOfWeek;
     endDateObj = new Date(startDateObj);
-    endDateObj.setDate(startDateObj.getDate() + distanceToSaturday); // Sábado
+    endDateObj.setDate(startDateObj.getDate() + distanceToSaturday);
   } else if (periodType === 'Yearly') {
     if (isRenewal) {
-      startDateObj = new Date(year, 0, 1); // 01/01
+      startDateObj = new Date(year, 0, 1);
     }
-    endDateObj = new Date(year, 11, 31); // 31/12
+    endDateObj = new Date(year, 11, 31);
   } else {
-    // Monthly (Padrão)
     if (isRenewal) {
-      startDateObj = new Date(year, month, 1); // 01 do mês
+      startDateObj = new Date(year, month, 1);
     }
-    endDateObj = new Date(year, month + 1, 0); // Último dia do mês
+    endDateObj = new Date(year, month + 1, 0);
   }
 
   return {
@@ -84,7 +81,6 @@ function calculateSeasonDates(periodType, isRenewal = false, referenceDate = new
   };
 }
 
-// FORMATADOR DE TÍTULOS DO HALL DA FAMA
 function getChampionTitle(goldCount) {
   if (goldCount <= 0) return '';
   if (goldCount === 1) return 'Campeão';
@@ -100,7 +96,6 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
-  // FORMULÁRIO DE AUTENTICAÇÃO
   const [isSignUp, setIsSignUp] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
@@ -108,7 +103,6 @@ export default function App() {
   const [genderInput, setGenderInput] = useState('Masculino');
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
-  // EDIÇÃO DE PERFIL AMPLIADA
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editFullName, setEditFullName] = useState('');
   const [editNickname, setEditNickname] = useState('');
@@ -117,11 +111,8 @@ export default function App() {
   const [editAvatar, setEditAvatar] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
 
-  // ESTADOS ESPECÍFICOS DA CENTRAL DO ATLETA APRIMORADA
-  const [athletePerfScope, setAthletePerfScope] = useState('global'); // 'global' ou ID do desafio
-  const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
+  const [athletePerfScope, setAthletePerfScope] = useState('global');
   
-  // Stories, Peso e Objetivos
   const [athleteStories, setAthleteStories] = useState([
     { id: 'st_1', uri: 'https://picsum.photos/seed/story1/200/200' },
     { id: 'st_2', uri: 'https://picsum.photos/seed/story2/200/200' }
@@ -139,7 +130,6 @@ export default function App() {
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [newGoalText, setNewGoalText] = useState('');
 
-  // ESTADOS DE VISUALIZAÇÃO DE TODAS AS FOTOS (EVIDÊNCIAS)
   const [isAllEvidencesModalOpen, setIsAllEvidencesModalOpen] = useState(false);
 
   const [currentUser, setCurrentUser] = useState({
@@ -168,8 +158,6 @@ export default function App() {
   const [searchFilter, setSearchFilter] = useState('all');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  const [isHeaderSelectOpen, setIsHeaderSelectOpen] = useState(false);
-
   const [activeChallengeId, setActiveChallengeId] = useState(null);
   const [isAdminContext, setIsAdminContext] = useState(true);
 
@@ -177,7 +165,6 @@ export default function App() {
 
   const [commentInputs, setCommentInputs] = useState({});
 
-  // ESTADOS DO FORMULÁRIO DE NOVO TREINO
   const [isWorkoutModalOpen, setIsWorkoutModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState('💪 Musculação');
   
@@ -199,12 +186,10 @@ export default function App() {
   const [stepsInput, setStepsInput] = useState('');
   const [workoutCaption, setWorkoutCaption] = useState('');
 
-  // FOTOS DE COMPROVAÇÃO DE TREINO
   const [photoStart, setPhotoStart] = useState(null);
   const [photoEvidence, setPhotoEvidence] = useState(null);
   const [photoEnd, setPhotoEnd] = useState(null);
 
-  // CRIAR DESAFIO
   const [isCreateChallengeOpen, setIsCreateChallengeOpen] = useState(false);
   const [newChallengeTitle, setNewChallengeTitle] = useState('');
   const [newChallengeCode, setNewChallengeCode] = useState('');
@@ -212,14 +197,12 @@ export default function App() {
   const [newChallengeCap, setNewChallengeCap] = useState('22000');
   const [newChallengePeriod, setNewChallengePeriod] = useState('Monthly');
 
-  // ESTADOS DO PAINEL DO ADMINISTRADOR
   const [expandedSec1, setExpandedSec1] = useState(true);
   const [expandedSec2, setExpandedSec2] = useState(false);
   const [expandedSec3, setExpandedSec3] = useState(false);
   const [expandedSec4, setExpandedSec4] = useState(false);
   const [expandedSec5, setExpandedSec5] = useState(false);
 
-  // FORMULÁRIO DE LANÇAMENTO MANUAL DO ADMIN
   const [manualSelectedAthleteId, setManualSelectedAthleteId] = useState('');
   const [manualActivity, setManualActivity] = useState('💪 Musculação');
   const [manualRankingPts, setManualRankingPts] = useState('');
@@ -228,15 +211,12 @@ export default function App() {
   const [checkBonusInquebravel, setCheckBonusInquebravel] = useState(false);
   const [checkBonusDesperta, setCheckBonusDesperta] = useState(false);
 
-  // ESTADOS DO MODAL DE CONFIGURAÇÃO AVANÇADA DE PONTOS
   const [isAdvancedRulesModalOpen, setIsAdvancedRulesModalOpen] = useState(false);
   const [selectedConfigChallengeId, setSelectedConfigChallengeId] = useState(null);
   const [selectedConfigActivity, setSelectedConfigActivity] = useState('🏛️ Base da Liga');
 
-  // CONFIGURAÇÕES AVANÇADAS LOCAIS
   const [leaguePeriod, setLeaguePeriod] = useState('Monthly');
   
-  // CONFIGURAÇÕES DE PASSOS DIÁRIOS
   const [dailyStepsConfig, setDailyStepsConfig] = useState({
     enabled: true,
     enableRankingScore: true,
@@ -244,7 +224,6 @@ export default function App() {
     multiplier: '0.5'
   });
 
-  // CONFIGURAÇÕES DE BÔNUS
   const [bonusConfig, setBonusConfig] = useState({
     inquebravelEnabled: true,
     inquebravelDays: '3',
@@ -497,12 +476,12 @@ export default function App() {
           const response = await fetch(editAvatar);
           const blob = await response.blob();
 
-          const { data: uploadData, error: uploadError } = await supabase.storage
+          const { error: uploadError } = await supabase.storage
             .from('avatars')
             .upload(fileName, blob, { contentType: `image/${fileExt}`, upsert: true });
 
           if (uploadError) {
-            console.log('Erro no upload da imagem (usando imagem atual):', uploadError);
+            console.log('Erro no upload da imagem:', uploadError);
             finalAvatarUrl = currentUser.avatar;
           } else {
             const { data: publicUrlData } = supabase.storage
@@ -1529,7 +1508,6 @@ export default function App() {
     .slice(0, 3)
     .map((m) => `${m.nickname || m.name} - ${getChampionTitle(m.goldMedals)} (${m.goldMedals}x)`);
 
-  // VARIÁVEIS APRIMORADAS DA CENTRAL DO ATLETA
   const athleteMembershipsAll = memberships.filter(m => m.userId === viewedUser.id);
   const athleteChallengesList = challenges.filter(c => 
     athleteMembershipsAll.some(m => m.challengeId === c.id)
@@ -1586,6 +1564,10 @@ export default function App() {
   const calculatedStepsPoints = Math.round(
     (parseFloat(dailyStepsConfig.manualStepsInput) || 0) * (parseFloat(dailyStepsConfig.multiplier) || 0)
   );
+
+  const isThreePhotosGroupActive = ['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico'].includes(selectedActivity);
+  const isKmGroupActive = ['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedActivity);
+  const isStepsActive = selectedActivity === '🚶‍♂️ Passos Diários';
 
   if (loadingAuth) {
     return (
@@ -1671,10 +1653,6 @@ export default function App() {
     );
   }
 
-  const isThreePhotosGroupActive = ['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico'].includes(selectedActivity);
-  const isKmGroupActive = ['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedActivity);
-  const isStepsActive = selectedActivity === '🚶‍♂️ Passos Diários';
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.topHeader}>
@@ -1695,14 +1673,24 @@ export default function App() {
         {hasUserAnyCommunity && (
           <View style={styles.activeChallengeSelectorBar}>
             <Text style={styles.activeChallengeSelectorLabel}>🎯 Desafio Selecionado:</Text>
-            <TouchableOpacity 
-              style={styles.nativeSelectButton} 
-              onPress={() => setIsHeaderSelectOpen(true)}
-            >
-              <Text style={styles.nativeSelectButtonText}>
-                {selectedChallenge.title || 'Selecione um Desafio'} ({selectedChallenge.creator_id === currentUser.id ? '🔑 Administrador' : currentUserMembershipInActiveChallenge?.role === 'active' ? '⚡ Atleta Ativo' : '👀 Torcedor / Pendente'}) ▼
-              </Text>
-            </TouchableOpacity>
+            <div style={{ marginBottom: 2 }}>
+              <select
+                style={styles.htmlHeaderSelect}
+                value={activeChallengeId || ''}
+                onChange={(e) => {
+                  const foundCh = challenges.find(c => c.id === e.target.value);
+                  if (foundCh) {
+                    selectChallengeContext(foundCh, foundCh.creator_id === currentUser.id);
+                  }
+                }}
+              >
+                {challenges.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title} ({c.creator_id === currentUser.id ? '🔑 Administrador' : memberships.find(m => m.challengeId === c.id && m.userId === currentUser.id)?.role === 'active' ? '⚡ Atleta Ativo' : '👀 Torcedor / Pendente'})
+                  </option>
+                ))}
+              </select>
+            </div>
           </View>
         )}
 
@@ -1762,7 +1750,7 @@ export default function App() {
                           <Image source={{ uri: athlete.avatar }} style={styles.avatarMini} />
                           <View style={{ marginLeft: 8, flex: 1 }}>
                             <Text style={styles.searchResultTitle}>{athlete.nickname || athlete.name}</Text>
-                            <Text style={styles.searchResultSub}>Nome: {athlete.name} | Acessar Perfil ➔</Text>
+                            <Text style={styles.searchResultSub}>Acessar Perfil ➔</Text>
                           </View>
                         </TouchableOpacity>
                       ))
@@ -2116,14 +2104,13 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* CENTRAL DO ATLETA APRIMORADA COM EXIBIÇÃO EXATA DA LIGA SELECIONADA */}
           {currentScreen === 'athlete_center' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.profileHeaderCard}>
                 <Image source={{ uri: viewedUser.avatar }} style={styles.avatarLarge} />
                 
+                {/* Nome completo omitido conforme solicitado, exibindo apenas o apelido/nome principal */}
                 <Text style={styles.profileNicknameDisplay}>{viewedUser.nickname || viewedUser.name}</Text>
-                <Text style={styles.profileNameSub}>{viewedUser.name}</Text>
                 <Text style={styles.profileMeta}>
                   {viewedUser.age ? `${viewedUser.age} anos` : 'Idade não informada'} | {viewedUser.gender || 'Masculino'}
                 </Text>
@@ -2142,14 +2129,18 @@ export default function App() {
 
                 <View style={{ width: '100%', marginTop: 10 }}>
                   <Text style={styles.inputLabelMini}>Visualizar Desempenho Por:</Text>
-                  <TouchableOpacity 
-                    style={styles.scopeSelectorButton}
-                    onPress={() => setIsScopeModalOpen(true)}
-                  >
-                    <Text style={styles.scopeSelectorButtonText}>
-                      {athletePerfScope === 'global' ? '🌐 Somatório Geral (Suas Ligas)' : `🏆 ${athleteChallengesList.find(c => String(c.id) === String(athletePerfScope))?.title || 'Liga Selecionada'}`} ▼
-                    </Text>
-                  </TouchableOpacity>
+                  <div style={{ marginBottom: 2 }}>
+                    <select
+                      style={styles.htmlNativeSelect}
+                      value={athletePerfScope}
+                      onChange={(e) => setAthletePerfScope(e.target.value)}
+                    >
+                      <option value="global">🌐 Somatório Geral (Suas Ligas)</option>
+                      {athleteChallengesList.map(ch => (
+                        <option key={ch.id} value={ch.id}>🏆 {ch.title}</option>
+                      ))}
+                    </select>
+                  </div>
                 </View>
 
                 <View style={styles.medalsRowContainer}>
@@ -2185,7 +2176,6 @@ export default function App() {
                 </View>
               </View>
 
-              {/* STORIES DO ATLETA */}
               <View style={styles.sectionContainerBox}>
                 <Text style={styles.sectionHeaderTitle}>Stories do Atleta (24h)</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', gap: 8, marginVertical: 4 }}>
@@ -2200,7 +2190,6 @@ export default function App() {
                 </ScrollView>
               </View>
 
-              {/* INSÍGNIAS DE BÔNUS */}
               <View style={styles.sectionContainerBox}>
                 <Text style={styles.sectionHeaderTitle}>Insígnias de Bônus & Conquistas</Text>
                 <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
@@ -2209,7 +2198,6 @@ export default function App() {
                 </View>
               </View>
 
-              {/* EVOLUÇÃO E ESTATÍSTICAS */}
               <View style={styles.sectionContainerBox}>
                 <Text style={styles.sectionHeaderTitle}>Evolução & Estatísticas do Atleta</Text>
 
@@ -2234,7 +2222,6 @@ export default function App() {
                 </View>
               </View>
 
-              {/* ÚLTIMAS EVIDÊNCIAS */}
               <View style={styles.sectionContainerBox}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <Text style={styles.sectionHeaderTitle}>Últimas Evidências de Atividades</Text>
@@ -2258,7 +2245,6 @@ export default function App() {
                 </ScrollView>
               </View>
 
-              {/* CHECKLIST DE OBJETIVOS PESSOAIS */}
               <View style={styles.sectionContainerBox}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <Text style={styles.sectionHeaderTitle}>Checklist de Objetivos Pessoais</Text>
@@ -2462,7 +2448,7 @@ export default function App() {
                         <option value="">Clique para selecionar um atleta...</option>
                         {activeMembersInChallenge.map((m) => (
                           <option key={m.id} value={m.id}>
-                            {m.nickname || m.name} ({m.name})
+                            {m.nickname || m.name}
                           </option>
                         ))}
                       </select>
@@ -2622,36 +2608,6 @@ export default function App() {
         </View>
       </View>
 
-      {/* MODAL DE ESCOPO DA CENTRAL DO ATLETA (RESTRITO APENAS ÀS LIGAS DO ATLETA) */}
-      <Modal visible={isScopeModalOpen} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Visualizar Desempenho Por:</Text>
-            <ScrollView style={{ maxHeight: 300 }}>
-              <TouchableOpacity 
-                style={styles.selectOptionRow}
-                onPress={() => { setAthletePerfScope('global'); setIsScopeModalOpen(false); }}
-              >
-                <Text style={styles.selectOptionText}>🌐 Somatório Geral (Suas Ligas)</Text>
-              </TouchableOpacity>
-              {athleteChallengesList.map(ch => (
-                <TouchableOpacity 
-                  key={ch.id} 
-                  style={styles.selectOptionRow}
-                  onPress={() => { setAthletePerfScope(ch.id); setIsScopeModalOpen(false); }}
-                >
-                  <Text style={styles.selectOptionText}>🏆 {ch.title}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <TouchableOpacity style={[styles.cancelBtn, { marginTop: 10 }]} onPress={() => setIsScopeModalOpen(false)}>
-              <Text style={styles.cancelBtnText}>FECHAR</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* MODAL EDITAR PESO */}
       <Modal visible={isWeightModalOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -2679,7 +2635,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL NOVO OBJETIVO */}
       <Modal visible={isGoalModalOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -2707,7 +2662,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL TODAS AS EVIDÊNCIAS */}
       <Modal visible={isAllEvidencesModalOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
@@ -2733,7 +2687,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL CONFIGURAÇÃO AVANÇADA DE PONTOS */}
       <Modal visible={isAdvancedRulesModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
@@ -3412,30 +3365,6 @@ export default function App() {
         </View>
       </Modal>
 
-      <Modal visible={isHeaderSelectOpen} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsHeaderSelectOpen(false)}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Selecione o Desafio Ativo</Text>
-            <ScrollView>
-              {challenges.map(c => (
-                <TouchableOpacity 
-                  key={c.id} 
-                  style={styles.selectOptionRow}
-                  onPress={() => {
-                    selectChallengeContext(c, c.creator_id === currentUser.id);
-                    setIsHeaderSelectOpen(false);
-                  }}
-                >
-                  <Text style={styles.selectOptionText}>
-                    {c.title} ({c.creator_id === currentUser.id ? '🔑 Admin' : '⚡ Atleta'})
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
       <Modal visible={isCreateChallengeOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={styles.modalContent}>
@@ -3720,10 +3649,7 @@ const styles = StyleSheet.create({
   activeChallengeSelectorBar: { backgroundColor: '#172554', padding: 6, borderRadius: 6, marginBottom: 6 },
   activeChallengeSelectorLabel: { fontSize: 9, color: '#f97316', fontWeight: 'bold', marginBottom: 2 },
 
-  nativeSelectButton: { backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 6 },
-  nativeSelectButtonText: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
-  selectOptionRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  selectOptionText: { fontSize: 12, fontWeight: 'bold', color: '#0f172a' },
+  htmlHeaderSelect: { width: '100%', padding: 8, fontSize: 10, fontWeight: 'bold', color: '#1e3a8a', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer' },
 
   timeSelectNative: { backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '6px', fontSize: '11px', fontWeight: 'bold', color: '#0f172a', width: '100%' },
 
@@ -3874,7 +3800,6 @@ const styles = StyleSheet.create({
   profileHeaderCard: { backgroundColor: '#f8fafc', borderRadius: 10, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: '#cbd5e1', position: 'relative', marginBottom: 10 },
   avatarLarge: { width: 70, height: 70, borderRadius: 35, marginBottom: 6, borderWidth: 2, borderColor: '#f97316' },
   profileNicknameDisplay: { fontSize: 16, fontWeight: '900', color: '#1e3a8a', marginBottom: 2 },
-  profileNameSub: { fontSize: 12, fontWeight: 'bold', color: '#475569', marginBottom: 4 },
   profileMeta: { fontSize: 10, color: '#64748b', marginBottom: 4 },
 
   editProfileBtn: { backgroundColor: '#1e3a8a', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, marginVertical: 6 },
@@ -3882,9 +3807,6 @@ const styles = StyleSheet.create({
 
   athleteStatusBadgeContainer: { backgroundColor: '#dcfce7', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 6, marginVertical: 4, borderWidth: 1, borderColor: '#16a34a' },
   athleteStatusBadgeText: { fontSize: 10, fontWeight: 'bold', color: '#16a34a' },
-
-  scopeSelectorButton: { backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1' },
-  scopeSelectorButtonText: { fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' },
 
   medalsRowContainer: { flexDirection: 'row', gap: 12, marginVertical: 8, backgroundColor: '#ffffff', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1' },
   medalBadgeItem: { alignItems: 'center' },
