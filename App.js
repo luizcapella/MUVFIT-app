@@ -117,16 +117,11 @@ export default function App() {
     { id: 'st_1', uri: 'https://picsum.photos/seed/story1/200/200' },
     { id: 'st_2', uri: 'https://picsum.photos/seed/story2/200/200' }
   ]);
-  const [athleteWeightLog, setAthleteWeightLog] = useState('82kg ➔ 79kg (Setembro)');
+  const [athleteWeightLog, setAthleteWeightLog] = useState('86kg');
   const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
   const [newWeightInput, setNewWeightInput] = useState('');
 
-  const [personalGoals, setPersonalGoals] = useState([
-    { id: 'g_1', text: 'Perder Peso', completed: true },
-    { id: 'g_2', text: 'Ganhar Massa Magra', completed: false },
-    { id: 'g_3', text: 'Correr 10 km', completed: true },
-    { id: 'g_4', text: 'Participar de Maratona', completed: false }
-  ]);
+  const [personalGoals, setPersonalGoals] = useState([]);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [newGoalText, setNewGoalText] = useState('');
 
@@ -1568,7 +1563,6 @@ export default function App() {
     ? athleteFeedPostsAll 
     : athleteFeedPostsAll.filter(p => String(p.challenge_id) === String(athletePerfScope));
 
-  // Contagem dinâmica dos bônus com base no filtro atual (Visualizar Desempenho Por)
   const countInquebravel = athleteFilteredPosts.filter(p => (p.caption || '').toLowerCase().includes('inquebrável')).length;
   const countDesperta = athleteFilteredPosts.filter(p => (p.caption || '').toLowerCase().includes('desperta')).length;
 
@@ -2227,7 +2221,7 @@ export default function App() {
 
                 <View style={styles.statsCardItemButton}>
                   <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>📈 Modalidades Mais Praticadas</Text>
-                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>1º Musculação (50%) | 2º Corrida (30%) | 3º Bike (20%)</Text>
+                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>1º Musculação (50%) | 2º Corrida (30%) | 3º Bicicleta (20%)</Text>
                 </View>
 
                 <View style={styles.statsCardItemButton}>
@@ -2269,24 +2263,40 @@ export default function App() {
                   )}
                 </View>
 
-                {personalGoals.map(goal => (
-                  <TouchableOpacity 
-                    key={goal.id} 
-                    style={styles.goalCheckboxRow}
-                    onPress={() => {
-                      if (viewedUser.id === currentUser.id) {
-                        setPersonalGoals(personalGoals.map(g => g.id === goal.id ? { ...g, completed: !g.completed } : g));
-                      }
-                    }}
-                  >
-                    <View style={[styles.goalCheckboxSquare, goal.completed && styles.goalCheckboxSquareActive]}>
-                      {goal.completed && <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold' }}>✓</Text>}
+                {personalGoals.length === 0 ? (
+                  <Text style={styles.emptyNoticeText}>Nenhum objetivo cadastrado. Clique em "+ OBJETIVO" para adicionar.</Text>
+                ) : (
+                  personalGoals.map(goal => (
+                    <View key={goal.id} style={styles.goalCheckboxRow}>
+                      <TouchableOpacity 
+                        style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 8 }}
+                        onPress={() => {
+                          if (viewedUser.id === currentUser.id) {
+                            setPersonalGoals(personalGoals.map(g => g.id === goal.id ? { ...g, completed: !g.completed } : g));
+                          }
+                        }}
+                      >
+                        <View style={[styles.goalCheckboxSquare, goal.completed && styles.goalCheckboxSquareActive]}>
+                          {goal.completed && <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold' }}>✓</Text>}
+                        </View>
+                        <Text style={[styles.goalTextLabel, goal.completed && { textDecorationLine: 'line-through', color: '#94a3b8' }]}>
+                          {goal.text}
+                        </Text>
+                      </TouchableOpacity>
+
+                      {viewedUser.id === currentUser.id && (
+                        <TouchableOpacity 
+                          style={{ padding: 4 }}
+                          onPress={() => {
+                            setPersonalGoals(personalGoals.filter(g => g.id !== goal.id));
+                          }}
+                        >
+                          <Text style={{ fontSize: 12, color: '#dc2626', fontWeight: 'bold' }}>🗑️</Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
-                    <Text style={[styles.goalTextLabel, goal.completed && { textDecorationLine: 'line-through', color: '#94a3b8' }]}>
-                      {goal.text}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                  ))
+                )}
               </View>
 
             </ScrollView>
