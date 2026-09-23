@@ -38,6 +38,7 @@ function calculateAge(birthDateString) {
   return isNaN(age) ? null : age;
 }
 
+// FORMATADOR DE DATA BRASILEIRA (DD/MM/AAAA)
 function formatDateBR(dateObj) {
   const d = String(dateObj.getDate()).padStart(2, '0');
   const m = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -45,6 +46,7 @@ function formatDateBR(dateObj) {
   return `${d}/${m}/${y}`;
 }
 
+// CÁLCULO DE DATAS DA TEMPORADA/ÉPOCA
 function calculateSeasonDates(periodType, isRenewal = false, referenceDate = new Date()) {
   const year = referenceDate.getFullYear();
   const month = referenceDate.getMonth();
@@ -55,22 +57,23 @@ function calculateSeasonDates(periodType, isRenewal = false, referenceDate = new
   if (periodType === 'Weekly') {
     if (isRenewal) {
       const dayOfWeek = referenceDate.getDay();
-      startDateObj.setDate(referenceDate.getDate() - dayOfWeek);
+      startDateObj.setDate(referenceDate.getDate() - dayOfWeek); // Domingo
     }
     const dayOfWeek = startDateObj.getDay();
     const distanceToSaturday = 6 - dayOfWeek;
     endDateObj = new Date(startDateObj);
-    endDateObj.setDate(startDateObj.getDate() + distanceToSaturday);
+    endDateObj.setDate(startDateObj.getDate() + distanceToSaturday); // Sábado
   } else if (periodType === 'Yearly') {
     if (isRenewal) {
-      startDateObj = new Date(year, 0, 1);
+      startDateObj = new Date(year, 0, 1); // 01/01
     }
-    endDateObj = new Date(year, 11, 31);
+    endDateObj = new Date(year, 11, 31); // 31/12
   } else {
+    // Monthly (Padrão)
     if (isRenewal) {
-      startDateObj = new Date(year, month, 1);
+      startDateObj = new Date(year, month, 1); // 01 do mês
     }
-    endDateObj = new Date(year, month + 1, 0);
+    endDateObj = new Date(year, month + 1, 0); // Último dia do mês
   }
 
   return {
@@ -81,6 +84,7 @@ function calculateSeasonDates(periodType, isRenewal = false, referenceDate = new
   };
 }
 
+// FORMATADOR DE TÍTULOS DO HALL DA FAMA
 function getChampionTitle(goldCount) {
   if (goldCount <= 0) return '';
   if (goldCount === 1) return 'Campeão';
@@ -96,6 +100,7 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
+  // FORMULÁRIO DE AUTENTICAÇÃO
   const [isSignUp, setIsSignUp] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
@@ -103,6 +108,7 @@ export default function App() {
   const [genderInput, setGenderInput] = useState('Masculino');
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
+  // EDIÇÃO DE PERFIL AMPLIADA
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editFullName, setEditFullName] = useState('');
   const [editNickname, setEditNickname] = useState('');
@@ -111,9 +117,11 @@ export default function App() {
   const [editAvatar, setEditAvatar] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
 
-  const [athletePerfScope, setAthletePerfScope] = useState('global');
+  // ESTADOS ESPECÍFICOS DA CENTRAL DO ATLETA APRIMORADA
+  const [athletePerfScope, setAthletePerfScope] = useState('global'); // 'global' ou ID do desafio
   const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
   
+  // Stories, Peso e Objetivos
   const [athleteStories, setAthleteStories] = useState([
     { id: 'st_1', uri: 'https://picsum.photos/seed/story1/200/200' },
     { id: 'st_2', uri: 'https://picsum.photos/seed/story2/200/200' }
@@ -131,6 +139,7 @@ export default function App() {
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [newGoalText, setNewGoalText] = useState('');
 
+  // ESTADOS DE VISUALIZAÇÃO DE TODAS AS FOTOS (EVIDÊNCIAS)
   const [isAllEvidencesModalOpen, setIsAllEvidencesModalOpen] = useState(false);
 
   const [currentUser, setCurrentUser] = useState({
@@ -168,6 +177,7 @@ export default function App() {
 
   const [commentInputs, setCommentInputs] = useState({});
 
+  // ESTADOS DO FORMULÁRIO DE NOVO TREINO
   const [isWorkoutModalOpen, setIsWorkoutModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState('💪 Musculação');
   
@@ -189,10 +199,12 @@ export default function App() {
   const [stepsInput, setStepsInput] = useState('');
   const [workoutCaption, setWorkoutCaption] = useState('');
 
+  // FOTOS DE COMPROVAÇÃO DE TREINO
   const [photoStart, setPhotoStart] = useState(null);
   const [photoEvidence, setPhotoEvidence] = useState(null);
   const [photoEnd, setPhotoEnd] = useState(null);
 
+  // CRIAR DESAFIO
   const [isCreateChallengeOpen, setIsCreateChallengeOpen] = useState(false);
   const [newChallengeTitle, setNewChallengeTitle] = useState('');
   const [newChallengeCode, setNewChallengeCode] = useState('');
@@ -200,12 +212,14 @@ export default function App() {
   const [newChallengeCap, setNewChallengeCap] = useState('22000');
   const [newChallengePeriod, setNewChallengePeriod] = useState('Monthly');
 
+  // ESTADOS DO PAINEL DO ADMINISTRADOR
   const [expandedSec1, setExpandedSec1] = useState(true);
   const [expandedSec2, setExpandedSec2] = useState(false);
   const [expandedSec3, setExpandedSec3] = useState(false);
   const [expandedSec4, setExpandedSec4] = useState(false);
   const [expandedSec5, setExpandedSec5] = useState(false);
 
+  // FORMULÁRIO DE LANÇAMENTO MANUAL DO ADMIN
   const [manualSelectedAthleteId, setManualSelectedAthleteId] = useState('');
   const [manualActivity, setManualActivity] = useState('💪 Musculação');
   const [manualRankingPts, setManualRankingPts] = useState('');
@@ -214,12 +228,15 @@ export default function App() {
   const [checkBonusInquebravel, setCheckBonusInquebravel] = useState(false);
   const [checkBonusDesperta, setCheckBonusDesperta] = useState(false);
 
+  // ESTADOS DO MODAL DE CONFIGURAÇÃO AVANÇADA DE PONTOS
   const [isAdvancedRulesModalOpen, setIsAdvancedRulesModalOpen] = useState(false);
   const [selectedConfigChallengeId, setSelectedConfigChallengeId] = useState(null);
   const [selectedConfigActivity, setSelectedConfigActivity] = useState('🏛️ Base da Liga');
 
+  // CONFIGURAÇÕES AVANÇADAS LOCAIS
   const [leaguePeriod, setLeaguePeriod] = useState('Monthly');
   
+  // CONFIGURAÇÕES DE PASSOS DIÁRIOS
   const [dailyStepsConfig, setDailyStepsConfig] = useState({
     enabled: true,
     enableRankingScore: true,
@@ -227,6 +244,7 @@ export default function App() {
     multiplier: '0.5'
   });
 
+  // CONFIGURAÇÕES DE BÔNUS
   const [bonusConfig, setBonusConfig] = useState({
     inquebravelEnabled: true,
     inquebravelDays: '3',
@@ -479,12 +497,12 @@ export default function App() {
           const response = await fetch(editAvatar);
           const blob = await response.blob();
 
-          const { error: uploadError } = await supabase.storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
             .from('avatars')
             .upload(fileName, blob, { contentType: `image/${fileExt}`, upsert: true });
 
           if (uploadError) {
-            console.log('Erro no upload da imagem:', uploadError);
+            console.log('Erro no upload da imagem (usando imagem atual):', uploadError);
             finalAvatarUrl = currentUser.avatar;
           } else {
             const { data: publicUrlData } = supabase.storage
@@ -1511,6 +1529,7 @@ export default function App() {
     .slice(0, 3)
     .map((m) => `${m.nickname || m.name} - ${getChampionTitle(m.goldMedals)} (${m.goldMedals}x)`);
 
+  // VARIÁVEIS APRIMORADAS DA CENTRAL DO ATLETA
   const athleteMembershipsAll = memberships.filter(m => m.userId === viewedUser.id);
   const athleteChallengesList = challenges.filter(c => 
     athleteMembershipsAll.some(m => m.challengeId === c.id)
@@ -1651,6 +1670,10 @@ export default function App() {
       </SafeAreaView>
     );
   }
+
+  const isThreePhotosGroupActive = ['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico'].includes(selectedActivity);
+  const isKmGroupActive = ['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedActivity);
+  const isStepsActive = selectedActivity === '🚶‍♂️ Passos Diários';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -2093,7 +2116,7 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* CENTRAL DO ATLETA COM JANELA FLUTUANTE CUSTOMIZADA PARA SELEÇÃO DE ESCOPO */}
+          {/* CENTRAL DO ATLETA APRIMORADA COM EXIBIÇÃO EXATA DA LIGA SELECIONADA */}
           {currentScreen === 'athlete_center' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.profileHeaderCard}>
@@ -2162,6 +2185,7 @@ export default function App() {
                 </View>
               </View>
 
+              {/* STORIES DO ATLETA */}
               <View style={styles.sectionContainerBox}>
                 <Text style={styles.sectionHeaderTitle}>Stories do Atleta (24h)</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', gap: 8, marginVertical: 4 }}>
@@ -2176,6 +2200,7 @@ export default function App() {
                 </ScrollView>
               </View>
 
+              {/* INSÍGNIAS DE BÔNUS */}
               <View style={styles.sectionContainerBox}>
                 <Text style={styles.sectionHeaderTitle}>Insígnias de Bônus & Conquistas</Text>
                 <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
@@ -2184,6 +2209,7 @@ export default function App() {
                 </View>
               </View>
 
+              {/* EVOLUÇÃO E ESTATÍSTICAS */}
               <View style={styles.sectionContainerBox}>
                 <Text style={styles.sectionHeaderTitle}>Evolução & Estatísticas do Atleta</Text>
 
@@ -2208,6 +2234,7 @@ export default function App() {
                 </View>
               </View>
 
+              {/* ÚLTIMAS EVIDÊNCIAS */}
               <View style={styles.sectionContainerBox}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <Text style={styles.sectionHeaderTitle}>Últimas Evidências de Atividades</Text>
@@ -2231,6 +2258,7 @@ export default function App() {
                 </ScrollView>
               </View>
 
+              {/* CHECKLIST DE OBJETIVOS PESSOAIS */}
               <View style={styles.sectionContainerBox}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <Text style={styles.sectionHeaderTitle}>Checklist de Objetivos Pessoais</Text>
@@ -2594,12 +2622,12 @@ export default function App() {
         </View>
       </View>
 
-      {/* JANELA FLUTUANTE CUSTOMIZADA PARA SELEÇÃO DE ESCOPO DO ATLETA */}
+      {/* MODAL DE ESCOPO DA CENTRAL DO ATLETA (RESTRITO APENAS ÀS LIGAS DO ATLETA) */}
       <Modal visible={isScopeModalOpen} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>🏆 Visualizar Desempenho Por:</Text>
-            <ScrollView style={{ maxHeight: 280 }}>
+            <Text style={styles.modalTitle}>Visualizar Desempenho Por:</Text>
+            <ScrollView style={{ maxHeight: 300 }}>
               <TouchableOpacity 
                 style={styles.selectOptionRow}
                 onPress={() => { setAthletePerfScope('global'); setIsScopeModalOpen(false); }}
@@ -2616,13 +2644,14 @@ export default function App() {
                 </TouchableOpacity>
               ))}
             </ScrollView>
-            <TouchableOpacity style={[styles.cancelBtn, { marginTop: 12 }]} onPress={() => setIsScopeModalOpen(false)}>
+            <TouchableOpacity style={[styles.cancelBtn, { marginTop: 10 }]} onPress={() => setIsScopeModalOpen(false)}>
               <Text style={styles.cancelBtnText}>FECHAR</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
+      {/* MODAL EDITAR PESO */}
       <Modal visible={isWeightModalOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -2650,6 +2679,7 @@ export default function App() {
         </View>
       </Modal>
 
+      {/* MODAL NOVO OBJETIVO */}
       <Modal visible={isGoalModalOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -2677,6 +2707,7 @@ export default function App() {
         </View>
       </Modal>
 
+      {/* MODAL TODAS AS EVIDÊNCIAS */}
       <Modal visible={isAllEvidencesModalOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
@@ -2702,6 +2733,7 @@ export default function App() {
         </View>
       </Modal>
 
+      {/* MODAL CONFIGURAÇÃO AVANÇADA DE PONTOS */}
       <Modal visible={isAdvancedRulesModalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
