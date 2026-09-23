@@ -113,26 +113,13 @@ export default function App() {
 
   const [athletePerfScope, setAthletePerfScope] = useState('global');
   
+  // Stories iniciam vazios (sem exemplos) com suporte a expiração e visualizador
   const [athleteStories, setAthleteStories] = useState([]);
-  const [activeStoryView, setActiveStoryView] = useState(null);
+  const [activeStoryView, setActiveStoryView] = useState(null); // Para abrir o story em tela cheia por 30s
 
-  // Estados para gráficos e estatísticas detalhadas do atleta
   const [athleteWeightLog, setAthleteWeightLog] = useState('86kg');
-  const [weightHistoryList, setWeightHistoryList] = useState([
-    { id: 'w1', period: 'Jan/2026', weight: 88 },
-    { id: 'w2', period: 'Fev/2026', weight: 87 },
-    { id: 'w3', period: 'Mar/2026', weight: 86 }
-  ]);
-  const [isWeightChartModalOpen, setIsWeightChartModalOpen] = useState(false);
+  const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
   const [newWeightInput, setNewWeightInput] = useState('');
-  const [newWeightPeriodInput, setNewWeightPeriodInput] = useState('');
-
-  const [isModalityRadarModalOpen, setIsModalityRadarModalOpen] = useState(false);
-  const [isKmChartModalOpen, setIsKmChartModalOpen] = useState(false);
-  const [kmFilterModality, setKmFilterModality] = useState('Todas');
-
-  const [isTimeChartModalOpen, setIsTimeChartModalOpen] = useState(false);
-  const [timeFilterModality, setTimeFilterModality] = useState('Todas');
 
   const [personalGoals, setPersonalGoals] = useState([]);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
@@ -312,21 +299,23 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Timer para expirar os stories após 24h
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
       const twentyFourHours = 24 * 60 * 60 * 1000;
       setAthleteStories(prev => prev.filter(st => now - st.createdAt < twentyFourHours));
-    }, 60000);
+    }, 60000); // verifica a cada minuto
     return () => clearInterval(interval);
   }, []);
 
+  // Temporizador para fechar o visualizador de story após 30 segundos
   useEffect(() => {
     let timer;
     if (activeStoryView) {
       timer = setTimeout(() => {
         setActiveStoryView(null);
-      }, 30000);
+      }, 30000); // 30 segundos
     }
     return () => clearTimeout(timer);
   }, [activeStoryView]);
@@ -1202,9 +1191,11 @@ export default function App() {
     }
   };
 
+  // Função customizada para adicionar story com baixa qualidade e opção de salvar no dispositivo
   const handleAddStory = () => {
     handleTriggerPhoto('camera', (base64Img) => {
       if (base64Img) {
+        // Reduz qualidade reduzindo resolução via canvas se necessário ou adicionando direto
         const newStory = {
           id: `st_${Date.now()}`,
           uri: base64Img,
@@ -1213,6 +1204,7 @@ export default function App() {
 
         setAthleteStories(prev => [...prev, newStory]);
 
+        // Solicita salvar a foto/vídeo no dispositivo
         if (Platform.OS === 'web') {
           const downloadLink = document.createElement('a');
           downloadLink.href = base64Img;
@@ -2228,6 +2220,7 @@ export default function App() {
               <View style={styles.sectionContainerBox}>
                 <Text style={styles.sectionHeaderTitle}>Histórias de Atleta (24h)</Text>
                 
+                {/* Lista de Stories atualizada conforme suas especificações */}
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', gap: 8, marginVertical: 4 }}>
                   {viewedUser.id === currentUser.id && (
                     <TouchableOpacity style={styles.storyAddBtnCircle} onPress={handleAddStory}>
@@ -2274,45 +2267,28 @@ export default function App() {
                 </View>
               </View>
 
-              {/* Seção Evolução & Estatísticas com itens totalmente clicáveis para abertura de gráficos */}
               <View style={styles.sectionContainerBox}>
-                <Text style={styles.sectionHeaderTitle}>Evolução & Estatísticas do Atleta (Toque para ver Gráficos)</Text>
+                <Text style={styles.sectionHeaderTitle}>Evolução & Estatísticas do Atleta</Text>
 
-                {/* 1. Evolução de Peso */}
                 <TouchableOpacity 
                   style={styles.statsCardItemButton}
-                  onPress={() => setIsWeightChartModalOpen(true)}
+                  onPress={() => {
+                    if (viewedUser.id === currentUser.id) setIsWeightModalOpen(true);
+                  }}
                 >
-                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>📊 1. Evolução de Peso (kg)</Text>
-                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>{athleteWeightLog} (Toque para ver gráfico e gerenciar histórico)</Text>
+                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>📊 Evolução de Peso (kg)</Text>
+                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>{athleteWeightLog}</Text>
                 </TouchableOpacity>
 
-                {/* 2. Atividades Mais Praticadas */}
-                <TouchableOpacity 
-                  style={styles.statsCardItemButton}
-                  onPress={() => setIsModalityRadarModalOpen(true)}
-                >
-                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>📈 2. Atividades Mais Praticadas (Top 3)</Text>
-                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>1º Musculação (50%) | 2º Corrida (30%) | 3º Bicicleta (20%) — Toque para ver Radar</Text>
-                </TouchableOpacity>
+                <View style={styles.statsCardItemButton}>
+                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>📈 Modalidades Mais Praticadas</Text>
+                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>1º Musculação (50%) | 2º Corrida (30%) | 3º Bicicleta (20%)</Text>
+                </View>
 
-                {/* 3. KM Percorrido Acumulado */}
-                <TouchableOpacity 
-                  style={styles.statsCardItemButton}
-                  onPress={() => setIsKmChartModalOpen(true)}
-                >
-                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>🏃 3. KM Percorrido Acumulado</Text>
-                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>{displayedPerf.totalKm.toFixed(1)} km acumulados (Toque para ver Gráfico de Colunas)</Text>
-                </TouchableOpacity>
-
-                {/* 4. Tempo Total em Atividade */}
-                <TouchableOpacity 
-                  style={styles.statsCardItemButton}
-                  onPress={() => setIsTimeChartModalOpen(true)}
-                >
-                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>⏱️ 4. Tempo Total em Atividade</Text>
-                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>14h 30min registrados — Toque para ver Gráfico de Colunas por Período</Text>
-                </TouchableOpacity>
+                <View style={styles.statsCardItemButton}>
+                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>🏃 KM Total Percorrido</Text>
+                  <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>{displayedPerf.totalKm.toFixed(1)} km acumulados</Text>
+                </View>
               </View>
 
               <View style={styles.sectionContainerBox}>
@@ -2717,220 +2693,7 @@ export default function App() {
         </View>
       </View>
 
-      {/* MODAL 1: Gráfico de Evolução de Peso & Preenchimento Manual */}
-      <Modal visible={isWeightChartModalOpen} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContentLarge}>
-            <Text style={styles.modalTitle}>📊 Gráfico de Evolução de Peso (Peso x Mês/Ano)</Text>
-            <Text style={{ fontSize: 10, color: '#64748b', textAlign: 'center', marginBottom: 10 }}>
-              Visualização da linha de peso ao longo dos meses registrados.
-            </Text>
-
-            {/* Simulação Visual de Gráfico de Linha */}
-            <View style={{ backgroundColor: '#f8fafc', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 12, alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', width: '100%', height: '140px', paddingBottom: '10px', borderBottom: '2px solid #1e3a8a' }}>
-                {weightHistoryList.map((item, idx) => (
-                  <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#f97316' }}>{item.weight}kg</span>
-                    <div style={{ width: '16px', height: `${(item.weight - 70) * 8}px`, backgroundColor: '#1e3a8a', borderRadius: '4px 4px 0 0' }}></div>
-                    <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#475569' }}>{item.period}</span>
-                  </div>
-                ))}
-              </div>
-            </View>
-
-            <Text style={styles.inputLabel}>Adicionar Registro Manual de Peso:</Text>
-            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8 }}>
-              <TextInput 
-                style={[styles.input, { flex: 1, marginBottom: 0 }]} 
-                placeholder="Período (Ex: Abr/2026)" 
-                value={newWeightPeriodInput} 
-                onChangeText={setNewWeightPeriodInput} 
-              />
-              <TextInput 
-                style={[styles.input, { flex: 1, marginBottom: 0 }]} 
-                placeholder="Peso em kg (Ex: 85)" 
-                keyboardType="numeric" 
-                value={newWeightInput} 
-                onChangeText={setNewWeightInput} 
-              />
-            </View>
-
-            <TouchableOpacity 
-              style={[styles.primaryBtn, { marginBottom: 10 }]} 
-              onPress={() => {
-                const wNum = parseFloat(newWeightInput);
-                if (newWeightPeriodInput.trim() && !isNaN(wNum)) {
-                  const newEntry = { id: `w_${Date.now()}`, period: newWeightPeriodInput.trim(), weight: wNum };
-                  setWeightHistoryList([...weightHistoryList, newEntry]);
-                  setAthleteWeightLog(`${wNum}kg`);
-                  setNewWeightInput('');
-                  setNewWeightPeriodInput('');
-                  Alert.alert('Sucesso', 'Novo registro de peso adicionado ao gráfico!');
-                } else {
-                  Alert.alert('Atenção', 'Preencha o período e um peso válido.');
-                }
-              }}
-            >
-              <Text style={styles.primaryBtnText}>ADICIONAR REGISTRO AO GRÁFICO</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsWeightChartModalOpen(false)}>
-              <Text style={styles.cancelBtnText}>FECHAR</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* MODAL 2: Gráfico em Radar para Atividades Mais Praticadas */}
-      <Modal visible={isModalityRadarModalOpen} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContentLarge}>
-            <Text style={styles.modalTitle}>📈 Distribuição de Atividades (Gráfico Radar / Proporção)</Text>
-            <Text style={{ fontSize: 10, color: '#64748b', textAlign: 'center', marginBottom: 10 }}>
-              Top 3 e percentual de todas as modalidades praticadas.
-            </Text>
-
-            <View style={{ backgroundColor: '#f8fafc', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 12 }}>
-              <View style={{ gap: 8 }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: 'bold', color: '#1e3a8a', marginBottom: '2px' }}>
-                    <span>1º 🏋️ Musculação</span>
-                    <span>50%</span>
-                  </div>
-                  <div style={{ width: '100%', height: '10px', backgroundColor: '#e2e8f0', borderRadius: '5px', overflow: 'hidden' }}>
-                    <div style={{ width: '50%', height: '100%', backgroundColor: '#f97316' }}></div>
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: 'bold', color: '#1e3a8a', marginBottom: '2px' }}>
-                    <span>2º 🏃 Corrida</span>
-                    <span>30%</span>
-                  </div>
-                  <div style={{ width: '100%', height: '10px', backgroundColor: '#e2e8f0', borderRadius: '5px', overflow: 'hidden' }}>
-                    <div style={{ width: '30%', height: '100%', backgroundColor: '#1e3a8a' }}></div>
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: 'bold', color: '#1e3a8a', marginBottom: '2px' }}>
-                    <span>3º 🚴 Bicicleta</span>
-                    <span>20%</span>
-                  </div>
-                  <div style={{ width: '100%', height: '10px', backgroundColor: '#e2e8f0', borderRadius: '5px', overflow: 'hidden' }}>
-                    <div style={{ width: '20%', height: '100%', backgroundColor: '#16a34a' }}></div>
-                  </div>
-                </div>
-              </div>
-            </View>
-
-            <TouchableOpacity style={styles.primaryBtn} onPress={() => setIsModalityRadarModalOpen(false)}>
-              <Text style={styles.primaryBtnText}>FECHAR</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* MODAL 3: Gráfico em Coluna para KM Percorrido Acumulado */}
-      <Modal visible={isKmChartModalOpen} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContentLarge}>
-            <Text style={styles.modalTitle}>🏃 KM Percorrido Acumulado (Gráfico de Colunas)</Text>
-            <Text style={{ fontSize: 10, color: '#64748b', textAlign: 'center', marginBottom: 8 }}>
-              Condicionado à liga selecionada: <Text style={{ fontWeight: 'bold', color: '#1e3a8a' }}>{selectedChallenge?.title || 'Geral'}</Text>
-            </Text>
-
-            {/* Filtros por Modalidade */}
-            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 10, justifyContent: 'center' }}>
-              {['Todas', 'Corrida', 'Caminhada', 'Bike'].map((mod) => (
-                <TouchableOpacity 
-                  key={mod} 
-                  style={[styles.chipBtn, kmFilterModality === mod && styles.chipBtnActive]}
-                  onPress={() => setKmFilterModality(mod)}
-                >
-                  <Text style={[styles.chipText, kmFilterModality === mod && styles.chipTextActive]}>{mod}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <View style={{ backgroundColor: '#f8fafc', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 12, alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', width: '100%', height: '140px', paddingBottom: '10px', borderBottom: '2px solid #1e3a8a' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#f97316' }}>12.5 km</span>
-                  <div style={{ width: '30px', height: '90px', backgroundColor: '#f97316', borderRadius: '4px 4px 0 0' }}></div>
-                  <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#475569' }}>Semana 1</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#f97316' }}>18.0 km</span>
-                  <div style={{ width: '30px', height: '120px', backgroundColor: '#f97316', borderRadius: '4px 4px 0 0' }}></div>
-                  <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#475569' }}>Semana 2</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#f97316' }}>{displayedPerf.totalKm.toFixed(1)} km</span>
-                  <div style={{ width: '30px', height: '100px', backgroundColor: '#1e3a8a', borderRadius: '4px 4px 0 0' }}></div>
-                  <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#475569' }}>Atual</span>
-                </div>
-              </div>
-            </View>
-
-            <TouchableOpacity style={styles.primaryBtn} onPress={() => setIsKmChartModalOpen(false)}>
-              <Text style={styles.primaryBtnText}>FECHAR</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* MODAL 4: Gráfico em Coluna para Tempo Total em Atividade */}
-      <Modal visible={isTimeChartModalOpen} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContentLarge}>
-            <Text style={styles.modalTitle}>⏱️ Tempo Total em Atividade (Horas x Período)</Text>
-            <Text style={{ fontSize: 10, color: '#64748b', textAlign: 'center', marginBottom: 8 }}>
-              Condicionado à liga selecionada: <Text style={{ fontWeight: 'bold', color: '#1e3a8a' }}>{selectedChallenge?.title || 'Geral'}</Text>
-            </Text>
-
-            {/* Filtros por Modalidade */}
-            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-              {['Todas', 'Musculação', 'Corrida', 'Aeróbico'].map((mod) => (
-                <TouchableOpacity 
-                  key={mod} 
-                  style={[styles.chipBtn, timeFilterModality === mod && styles.chipBtnActive]}
-                  onPress={() => setTimeFilterModality(mod)}
-                >
-                  <Text style={[styles.chipText, timeFilterModality === mod && styles.chipTextActive]}>{mod}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <View style={{ backgroundColor: '#f8fafc', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 12, alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', width: '100%', height: '140px', paddingBottom: '10px', borderBottom: '2px solid #1e3a8a' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#16a34a' }}>5h 30m</span>
-                  <div style={{ width: '30px', height: '80px', backgroundColor: '#16a34a', borderRadius: '4px 4px 0 0' }}></div>
-                  <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#475569' }}>Semana 1</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#16a34a' }}>6h 45m</span>
-                  <div style={{ width: '30px', height: '110px', backgroundColor: '#16a34a', borderRadius: '4px 4px 0 0' }}></div>
-                  <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#475569' }}>Semana 2</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#16a34a' }}>14h 30m</span>
-                  <div style={{ width: '30px', height: '130px', backgroundColor: '#1e3a8a', borderRadius: '4px 4px 0 0' }}></div>
-                  <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#475569' }}>Acumulado</span>
-                </div>
-              </div>
-            </View>
-
-            <TouchableOpacity style={styles.primaryBtn} onPress={() => setIsTimeChartModalOpen(false)}>
-              <Text style={styles.primaryBtnText}>FECHAR</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Story View Modal */}
+      {/* Modal para visualizar Story em Tela Cheia por 30 segundos */}
       <Modal visible={activeStoryView !== null} transparent animationType="fade">
         <View style={styles.storyModalOverlay}>
           <View style={styles.storyModalContainer}>
@@ -2949,6 +2712,33 @@ export default function App() {
               onPress={() => setActiveStoryView(null)}
             >
               <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: 'bold' }}>✕ Fechar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={isWeightModalOpen} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>⚖️ Atualizar Evolução de Peso</Text>
+            <TextInput 
+              style={styles.input} 
+              placeholder="Ex: 81kg ➔ 78kg (Outubro)" 
+              value={newWeightInput} 
+              onChangeText={setNewWeightInput} 
+            />
+            <TouchableOpacity style={styles.primaryBtn} onPress={() => {
+              if (newWeightInput.trim()) {
+                setAthleteWeightLog(newWeightInput.trim());
+                setIsWeightModalOpen(false);
+                setNewWeightInput('');
+                Alert.alert('Atualizado!', 'Evolução de peso registrada.');
+              }
+            }}>
+              <Text style={styles.primaryBtnText}>SALVAR</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsWeightModalOpen(false)}>
+              <Text style={styles.cancelBtnText}>CANCELAR</Text>
             </TouchableOpacity>
           </View>
         </View>
