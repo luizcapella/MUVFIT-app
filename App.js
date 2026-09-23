@@ -1047,6 +1047,10 @@ export default function App() {
       total_steps: newStepsTotal
     }).eq('id', manualSelectedAthleteId);
 
+    let captionExtras = [];
+    if (checkBonusInquebravel) captionExtras.push('Bônus O Inquebrável');
+    if (checkBonusDesperta) captionExtras.push('Bônus O Desperta');
+
     const newPost = {
       id: `p_man_${Date.now()}`,
       challenge_id: selectedChallenge.id,
@@ -1055,7 +1059,7 @@ export default function App() {
       user_nickname: member.nickname,
       user_avatar: member.avatar,
       activity_type: manualActivity.toUpperCase(),
-      caption: `Lançamento manual de pontos pelo Administrador (${manualActivity})`,
+      caption: `Lançamento manual de pontos pelo Administrador (${manualActivity})${captionExtras.length ? ' | ' + captionExtras.join(' | ') : ''}`,
       photo_evidence: 'https://picsum.photos/seed/admin/400/300',
       all_photos: ['https://picsum.photos/seed/admin/400/300'],
       points_to_ranking: rPts + bonusTotal,
@@ -1285,17 +1289,20 @@ export default function App() {
     }
 
     let bonusAppliedMsg = '';
+    let bonusNamesArray = [];
     if (bonusConfig.despertaEnabled) {
       const submissionCurrentTime = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
       if (submissionCurrentTime <= bonusConfig.despertaLimitTime) {
         calculatedPts += parseInt(bonusConfig.despertaPts, 10) || 3000;
         bonusAppliedMsg += ' | ⏰ Bônus "O Desperta"';
+        bonusNamesArray.push('Bônus O Desperta');
       }
     }
 
     if (bonusConfig.inquebravelEnabled) {
       calculatedPts += parseInt(bonusConfig.inquebravelPts, 10) || 5000;
       bonusAppliedMsg += ' | 🪨 Bônus "O Inquebrável"';
+      bonusNamesArray.push('Bônus O Inquebrável');
     }
 
     let ptsRanking = calculatedPts;
@@ -1560,6 +1567,10 @@ export default function App() {
   const athleteFilteredPosts = athletePerfScope === 'global' 
     ? athleteFeedPostsAll 
     : athleteFeedPostsAll.filter(p => String(p.challenge_id) === String(athletePerfScope));
+
+  // Contagem dinâmica dos bônus com base no filtro atual (Visualizar Desempenho Por)
+  const countInquebravel = athleteFilteredPosts.filter(p => (p.caption || '').toLowerCase().includes('inquebrável')).length;
+  const countDesperta = athleteFilteredPosts.filter(p => (p.caption || '').toLowerCase().includes('desperta')).length;
 
   const calculatedStepsPoints = Math.round(
     (parseFloat(dailyStepsConfig.manualStepsInput) || 0) * (parseFloat(dailyStepsConfig.multiplier) || 0)
@@ -2109,7 +2120,6 @@ export default function App() {
               <View style={styles.profileHeaderCard}>
                 <Image source={{ uri: viewedUser.avatar }} style={styles.avatarLarge} />
                 
-                {/* Nome completo omitido conforme solicitado, exibindo apenas o apelido/nome principal */}
                 <Text style={styles.profileNicknameDisplay}>{viewedUser.nickname || viewedUser.name}</Text>
                 <Text style={styles.profileMeta}>
                   {viewedUser.age ? `${viewedUser.age} anos` : 'Idade não informada'} | {viewedUser.gender || 'Masculino'}
@@ -2192,9 +2202,13 @@ export default function App() {
 
               <View style={styles.sectionContainerBox}>
                 <Text style={styles.sectionHeaderTitle}>Insígnias de Bônus & Conquistas</Text>
-                <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
-                  <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>🪨 O Inquebrável (Ativo)</Text>
-                  <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>⏰ O Desperta (Ativo)</Text>
+                <View style={{ flexDirection: 'row', gap: 12, marginTop: 4, flexWrap: 'wrap' }}>
+                  <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>
+                    🪨 O Inquebrável ({countInquebravel}x)
+                  </Text>
+                  <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>
+                    ⏰ O Desperta ({countDesperta}x)
+                  </Text>
                 </View>
               </View>
 
