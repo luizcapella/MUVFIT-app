@@ -2622,12 +2622,12 @@ export default function App() {
         </View>
       </View>
 
-      {/* MODAL DE ESCOPO DA CENTRAL DO ATLETA */}
+      {/* MODAL DE ESCOPO DA CENTRAL DO ATLETA (CORRIGIDO PARA CLIQUE WEB) */}
       <Modal visible={isScopeModalOpen} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsScopeModalOpen(false)}>
+        <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Visualizar Desempenho Por:</Text>
-            <ScrollView>
+            <ScrollView style={{ maxHeight: 300 }}>
               <TouchableOpacity 
                 style={styles.selectOptionRow}
                 onPress={() => { setAthletePerfScope('global'); setIsScopeModalOpen(false); }}
@@ -2644,8 +2644,11 @@ export default function App() {
                 </TouchableOpacity>
               ))}
             </ScrollView>
+            <TouchableOpacity style={[styles.cancelBtn, { marginTop: 10 }]} onPress={() => setIsScopeModalOpen(false)}>
+              <Text style={styles.cancelBtnText}>FECHAR</Text>
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
 
       {/* MODAL EDITAR PESO */}
