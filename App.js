@@ -2116,7 +2116,7 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* CENTRAL DO ATLETA APRIMORADA COM CORREÇÃO DE EXIBIÇÃO DA LIGA SELECIONADA */}
+          {/* CENTRAL DO ATLETA APRIMORADA COM EXIBIÇÃO CORRETA DO ITEM SELECIONADO NA ABA */}
           {currentScreen === 'athlete_center' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.profileHeaderCard}>
@@ -2147,7 +2147,7 @@ export default function App() {
                     onPress={() => setIsScopeModalOpen(true)}
                   >
                     <Text style={styles.scopeSelectorButtonText}>
-                      {athletePerfScope === 'global' ? '🌐 Somatório Geral (Todos os Desafios)' : `🏆 ${challenges.find(c => String(c.id) === String(athletePerfScope))?.title || 'Liga Selecionada'}`} ▼
+                      {athletePerfScope === 'global' ? '🌐 Somatório Geral (Todos os Desafios)' : `🏆 ${athleteChallengesList.find(c => String(c.id) === String(athletePerfScope))?.title || 'Liga Selecionada'}`} ▼
                     </Text>
                   </TouchableOpacity>
                 </View>
