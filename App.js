@@ -2023,13 +2023,13 @@ const handleForgotPassword = async () => {
               </TouchableOpacity>
             </View>
 <TouchableOpacity 
-  style={{ alignSelf: 'flex-end', marginTop: 8, marginBottom: 12 }}
-  onPress={() => setAuthSubView('forgot')}
->
-  <Text style={{ color: '#16a34a', fontSize: 12, fontWeight: 'bold' }}>
-    Esqueceu a senha?
-  </Text>
-</TouchableOpacity>
+        style={{ alignSelf: 'flex-end', marginTop: 8, marginBottom: 12 }}
+        onPress={() => setAuthSubView('forgot')}
+      >
+        <Text style={{ color: '#16a34a', fontSize: 12, fontWeight: 'bold' }}>
+          Esqueceu a senha?
+        </Text>
+      </TouchableOpacity>
             <TouchableOpacity style={styles.primaryBtn} onPress={handleAuthAction} disabled={authSubmitting}>
               {authSubmitting ? (
                 <ActivityIndicator color="#ffffff" />
