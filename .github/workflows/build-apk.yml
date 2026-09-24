@@ -21,10 +21,10 @@ jobs:
           expo-version: latest
           eas-version: latest
 
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps
+      - name: Install dependencies with npm
+        run: npm install
 
       - name: Build APK on EAS
-        run: eas build --platform android --profile preview --non-interactive
+        run: npx eas-cli build --platform android --profile preview --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
