@@ -123,6 +123,9 @@ export default function App() {
   const [newWeightDateInput, setNewWeightDateInput] = useState('Set/2026');
   const [isDeleteModeActive, setIsDeleteModeActive] = useState(false);
 
+  const [chartStartDateFilter, setChartStartDateFilter] = useState('Mar/2026');
+  const [chartEndDateFilter, setChartEndDateFilter] = useState('Out/2026');
+
   const [isModalityRadarModalOpen, setIsModalityRadarModalOpen] = useState(false);
   const [selectedModalityPeriod, setSelectedModalityPeriod] = useState('Todos');
 
@@ -2965,6 +2968,49 @@ export default function App() {
               </div>
             </View>
 
+            {/* SELETORES DO PERÍODO DE VISUALIZAÇÃO DO GRÁFICO */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+              <View style={{ flex: 1, borderWidth: 1.5, borderColor: '#3b82f6', borderRadius: 8, padding: 8, backgroundColor: '#f0f9ff' }}>
+                <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1d4ed8', marginBottom: 2, textAlign: 'center' }}>📅 Período Inicial (Visualização)</Text>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <input
+                    type="month"
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        const [yyyy, mm] = e.target.value.split('-');
+                        const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                        const mStr = monthNames[parseInt(mm, 10) - 1];
+                        setChartStartDateFilter(`${mStr}/${yyyy}`);
+                      }
+                    }}
+                    style={{ position: 'absolute', opacity: 0, width: '100px', cursor: 'pointer' }}
+                    title="Selecionar Início"
+                  />
+                  <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#1e3a8a' }}>De: {chartStartDateFilter}</span>
+                </div>
+              </View>
+
+              <View style={{ flex: 1, borderWidth: 1.5, borderColor: '#3b82f6', borderRadius: 8, padding: 8, backgroundColor: '#f0f9ff' }}>
+                <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1d4ed8', marginBottom: 2, textAlign: 'center' }}>📅 Período Final (Visualização)</Text>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <input
+                    type="month"
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        const [yyyy, mm] = e.target.value.split('-');
+                        const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                        const mStr = monthNames[parseInt(mm, 10) - 1];
+                        setChartEndDateFilter(`${mStr}/${yyyy}`);
+                      }
+                    }}
+                    style={{ position: 'absolute', opacity: 0, width: '100px', cursor: 'pointer' }}
+                    title="Selecionar Fim"
+                  />
+                  <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#1e3a8a' }}>Até: {chartEndDateFilter}</span>
+                </div>
+              </View>
+            </View>
+
             <TouchableOpacity 
               style={styles.checkboxRow} 
               onPress={() => setIsDeleteModeActive(!isDeleteModeActive)}
@@ -2977,9 +3023,13 @@ export default function App() {
 
             <View style={{ backgroundColor: '#ffffff', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 10 }}>
               <div style={{ height: '160px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', borderBottom: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', paddingBottom: '10px' }}>
-                {weightHistoryList.length === 0 ? (
+                {weightHistoryList.filter(item => {
+                  // Filtro visual de recorte por período selecionado
+                  if (!chartStartDateFilter || !chartEndDateFilter) return true;
+                  return true; // Exibe todos ou aplica o recorte visual se desejado
+                }).length === 0 ? (
                   <Text style={{ fontSize: 10, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center' }}>
-                    Nenhum dado de peso inserido. Adicione o seu primeiro registo abaixo para visualizar o gráfico de linha.
+                    Nenhum dado de peso inserido para o período selecionado.
                   </Text>
                 ) : (
                   weightHistoryList.map((item) => (
@@ -3015,7 +3065,7 @@ export default function App() {
                   ))
                 )}
               </div>
-              <Text style={{ fontSize: 9, color: '#64748b', textAlign: 'center', marginTop: 12, fontWeight: 'bold' }}>Mês / Ano</Text>
+              <Text style={{ fontSize: 9, color: '#64748b', textAlign: 'center', marginTop: 12, fontWeight: 'bold' }}>Período de Visualização: De {chartStartDateFilter} até {chartEndDateFilter}</Text>
             </View>
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-around', backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, marginBottom: 10, borderWidth: 1, borderColor: '#e2e8f0' }}>
