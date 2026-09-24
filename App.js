@@ -100,6 +100,7 @@ export default function App() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [fullNameInput, setFullNameInput] = useState('');
   const [genderInput, setGenderInput] = useState('Masculino');
   const [authSubmitting, setAuthSubmitting] = useState(false);
@@ -147,6 +148,7 @@ export default function App() {
   const [subAbaConfig, setSubAbaConfig] = useState('conta');
   const [accountPhone, setAccountPhone] = useState('');
   const [accountNewPassword, setAccountNewPassword] = useState('');
+  const [showAccountPassword, setShowAccountPassword] = useState(false);
   const [fontSizeScale, setFontSizeScale] = useState(1);
   const [highContrast, setHighContrast] = useState(false);
   const [appLanguage, setAppLanguage] = useState('pt-BR');
@@ -1888,13 +1890,22 @@ export default function App() {
               value={emailInput}
               onChangeText={setEmailInput}
             />
-            <TextInput
-              style={styles.input}
-              placeholder="Palavra-passe"
-              secureTextEntry
-              value={passwordInput}
-              onChangeText={setPasswordInput}
-            />
+
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Palavra-passe"
+                secureTextEntry={!showPassword}
+                value={passwordInput}
+                onChangeText={setPasswordInput}
+              />
+              <TouchableOpacity
+                style={styles.eyeBtn}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Text style={{ fontSize: 16 }}>{showPassword ? '👁️' : '🙈'}</Text>
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity style={styles.primaryBtn} onPress={handleAuthAction} disabled={authSubmitting}>
               {authSubmitting ? (
@@ -2261,7 +2272,21 @@ export default function App() {
                     <TextInput style={styles.input} placeholder="Ex: (21) 99999-9999" value={accountPhone} onChangeText={setAccountPhone} />
 
                     <Text style={styles.inputLabel}>Trocar Palavra-passe (Senha):</Text>
-                    <TextInput style={styles.input} placeholder="Digite a nova senha" secureTextEntry value={accountNewPassword} onChangeText={setAccountNewPassword} />
+                    <View style={styles.passwordContainer}>
+                      <TextInput
+                        style={styles.passwordInput}
+                        placeholder="Digite a nova senha"
+                        secureTextEntry={!showAccountPassword}
+                        value={accountNewPassword}
+                        onChangeText={setAccountNewPassword}
+                      />
+                      <TouchableOpacity
+                        style={styles.eyeBtn}
+                        onPress={() => setShowAccountPassword(!showAccountPassword)}
+                      >
+                        <Text style={{ fontSize: 16 }}>{showAccountPassword ? '👁️' : '🙈'}</Text>
+                      </TouchableOpacity>
+                    </View>
                     
                     <TouchableOpacity style={[styles.primaryBtn, { marginBottom: 16 }]} onPress={handleChangePassword}>
                       <Text style={styles.primaryBtnText}>ATUALIZAR PALAVRA-PASSE</Text>
@@ -4855,6 +4880,10 @@ const styles = StyleSheet.create({
   inputLabel: { fontSize: 10, fontWeight: 'bold', color: '#475569', marginVertical: 4 },
   inputLabelMini: { fontSize: 9, fontWeight: 'bold', color: '#475569', marginVertical: 2 },
   input: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 6, fontSize: 11, marginBottom: 6 },
+
+  passwordContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, backgroundColor: '#ffffff', marginBottom: 6 },
+  passwordInput: { flex: 1, padding: 6, fontSize: 11 },
+  eyeBtn: { paddingHorizontal: 10, justifyContent: 'center', alignItems: 'center' },
 
   scoringModeBoxContainer: { backgroundColor: '#f8fafc', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', marginTop: 10 },
 
