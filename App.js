@@ -2038,7 +2038,7 @@ const handleForgotPassword = async () => {
               )}
             </TouchableOpacity>
 </TouchableOpacity>
-      </>
+    
   style={styles.loginApkDownloadBtn}
   onPress={handleDownloadAPK}
 >
