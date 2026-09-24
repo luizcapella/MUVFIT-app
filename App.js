@@ -92,7 +92,17 @@ function getChampionTitle(goldCount) {
   if (goldCount === 6) return 'Hexa-campeão';
   return `${goldCount}x Campeão`;
 }
+const APK_DOWNLOAD_URL = "https://muvfit-app.vercel.app/muvfit.apk";
 
+const handleDownloadAPK = () => {
+  if (Platform.OS === 'web') {
+    window.open(APK_DOWNLOAD_URL, '_blank');
+  } else {
+    Linking.openURL(APK_DOWNLOAD_URL).catch(() => {
+      Alert.alert("Erro", "Não foi possível iniciar o download do APK.");
+    });
+  }
+}
 export default function App() {
   const [session, setSession] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
@@ -1914,7 +1924,15 @@ export default function App() {
                 <Text style={styles.primaryBtnText}>{isSignUp ? 'CADASTRAR CONTA' : 'ENTRAR NO MUVFIT'}</Text>
               )}
             </TouchableOpacity>
-
+<TouchableOpacity 
+  style={styles.loginApkDownloadBtn}
+  onPress={handleDownloadAPK}
+>
+  <Text style={{ fontSize: 13 }}>📲</Text>
+  <Text style={styles.loginApkDownloadBtnText}>
+    BAIXAR APP PARA ANDROID (.APK)
+  </Text>
+</TouchableOpacity>
             <TouchableOpacity style={{ marginTop: 14, alignItems: 'center' }} onPress={() => setIsSignUp(!isSignUp)}>
               <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>
                 {isSignUp ? 'Já tem conta? Faça Login' : 'Não tem conta? Registe-se gratuitamente'}
@@ -2122,7 +2140,15 @@ export default function App() {
             <Text style={[styles.sidebarText, { fontSize: 9 * fontSizeScale }, currentScreen === 'configuracao_conta' && styles.sidebarTextActive]}>Config. Conta</Text>
           </TouchableOpacity>
         </View>
-
+<TouchableOpacity 
+  style={styles.sidebarApkDownloadBtn} 
+  onPress={handleDownloadAPK}
+>
+  <Text style={{ fontSize: 11 }}>📲</Text>
+  <Text style={{ color: '#ffffff', fontSize: 7 * fontSizeScale, fontWeight: 'bold', textAlign: 'center' }}>
+    Baixar APK
+  </Text>
+</TouchableOpacity>
         <View style={[{ flex: 1, backgroundColor: '#ffffff' }, highContrast && { backgroundColor: '#000000' }]}>
           {currentScreen === 'dashboard' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
@@ -4880,7 +4906,9 @@ const styles = StyleSheet.create({
   inputLabel: { fontSize: 10, fontWeight: 'bold', color: '#475569', marginVertical: 4 },
   inputLabelMini: { fontSize: 9, fontWeight: 'bold', color: '#475569', marginVertical: 2 },
   input: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 6, fontSize: 11, marginBottom: 6 },
-
+loginApkDownloadBtn: { backgroundColor: '#16a34a', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 14, elevation: 3 },
+  loginApkDownloadBtnText: { color: '#ffffff', fontSize: 10, fontWeight: 'bold' },
+  sidebarApkDownloadBtn: { backgroundColor: '#16a34a', paddingVertical: 8, paddingHorizontal: 6, borderRadius: 6, alignItems: 'center', justifyContent: 'center', gap: 2, marginHorizontal: 6, marginTop: 16 },
   passwordContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, backgroundColor: '#ffffff', marginBottom: 6 },
   passwordInput: { flex: 1, padding: 6, fontSize: 11 },
   eyeBtn: { paddingHorizontal: 10, justifyContent: 'center', alignItems: 'center' },
