@@ -22,7 +22,7 @@ jobs:
           eas-version: latest
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Build APK on EAS
         run: eas build --platform android --profile preview --non-interactive
