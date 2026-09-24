@@ -1174,12 +1174,12 @@ export default function App() {
     Alert.alert('Treino Rejeitado', 'O registro foi removido.');
   }
 
-  // Função CORRIGIDA para abrir Câmera ou Galeria com suporte nativo Web/Mobile
+  // Função CORRIGIDA para forçar o acionamento direto da câmara no telemóvel
   const handleTriggerPhoto = (mode, setter) => {
     if (Platform.OS === 'web') {
       const input = document.createElement('input');
       input.type = 'file';
-      input.accept = 'image/*,video/*';
+      input.accept = 'image/*';
       
       if (mode === 'camera') {
         input.setAttribute('capture', 'environment');
@@ -1196,7 +1196,12 @@ export default function App() {
         }
       };
 
+      input.style.display = 'none';
+      document.body.appendChild(input);
       input.click();
+      setTimeout(() => {
+        document.body.removeChild(input);
+      }, 1000);
     } else {
       Alert.alert(
         '📷 Câmera / Mídia',
