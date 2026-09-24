@@ -2947,14 +2947,14 @@ export default function App() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                 <span style={{ fontSize: '14px' }}>🎯</span>
                 <input
-                  type="number"
-                  step="0.1"
+                  type="text"
                   placeholder="75.0"
                   value={targetWeightValue}
                   onChange={(e) => {
                     const val = e.target.value;
                     setTargetWeightValue(val);
-                    saveWeightDataToSupabase(weightHistoryList, val);
+                    const safeTarget = val.trim() === '' ? null : parseFloat(val);
+                    saveWeightDataToSupabase(weightHistoryList, isNaN(safeTarget) ? null : safeTarget);
                   }}
                   style={{ width: '80px', border: 'none', background: 'transparent', fontSize: '14px', fontWeight: 'bold', color: '#1e3a8a', outline: 'none', textAlign: 'center' }}
                 />
@@ -2996,7 +2996,8 @@ export default function App() {
                           onPress={() => {
                             const updatedList = weightHistoryList.filter(w => w.id !== item.id);
                             setWeightHistoryList(updatedList);
-                            saveWeightDataToSupabase(updatedList, targetWeightValue);
+                            const safeTarget = targetWeightValue.trim() === '' ? null : parseFloat(targetWeightValue);
+                            saveWeightDataToSupabase(updatedList, isNaN(safeTarget) ? null : safeTarget);
                           }}
                         >
                           <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold', lineHeight: 10 }}>-</Text>
@@ -3014,7 +3015,7 @@ export default function App() {
             </View>
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-around', backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, marginBottom: 10, borderWidth: 1, borderColor: '#e2e8f0' }}>
-              <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>Meta: {targetWeightValue} kg</Text>
+              <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>Meta: {targetWeightValue || '0.0'} kg</Text>
               <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#16a34a' }}>
                 Atual: {weightHistoryList.length > 0 ? `${weightHistoryList[weightHistoryList.length - 1].weight} kg` : '0.0 kg'}
               </Text>
@@ -3028,7 +3029,10 @@ export default function App() {
                   const updatedList = [...weightHistoryList, { id: `w_${Date.now()}`, period: newWeightDateInput, weight: wNum }];
                   setWeightHistoryList(updatedList);
                   setNewWeightValueInput('');
-                  await saveWeightDataToSupabase(updatedList, targetWeightValue);
+                  
+                  const safeTarget = targetWeightValue.trim() === '' ? null : parseFloat(targetWeightValue);
+                  await saveWeightDataToSupabase(updatedList, isNaN(safeTarget) ? null : safeTarget);
+                  
                   Alert.alert('Sucesso', 'Registo de peso adicionado e salvo com sucesso!');
                 } else {
                   Alert.alert('Atenção', 'Insira o valor do peso.');
