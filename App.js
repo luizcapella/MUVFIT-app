@@ -121,7 +121,7 @@ export default function App() {
   const [isWeightChartModalOpen, setIsWeightChartModalOpen] = useState(false);
   const [newWeightValueInput, setNewWeightValueInput] = useState('');
   const [newWeightDateInput, setNewWeightDateInput] = useState('Set/2026');
-  const [isDeleteModeActive, setIsDeleteModeActive] = useState(false); // Novo estado para o modo de apagar peso
+  const [isDeleteModeActive, setIsDeleteModeActive] = useState(false);
 
   const [isModalityRadarModalOpen, setIsModalityRadarModalOpen] = useState(false);
   const [selectedModalityPeriod, setSelectedModalityPeriod] = useState('Todos');
@@ -346,13 +346,18 @@ export default function App() {
 
         const computedAge = formattedDate ? calculateAge(formattedDate) : 0;
 
+        // CORREÇÃO CRUCIAL: Garantir o carregamento persistente do histórico de peso da nuvem
         if (data.weight_history) {
           try {
             const parsedWeights = typeof data.weight_history === 'string' ? JSON.parse(data.weight_history) : data.weight_history;
             if (Array.isArray(parsedWeights)) setWeightHistoryList(parsedWeights);
-          } catch(e) {}
+          } catch(e) {
+            console.log('Erro ao parsear weight_history:', e);
+          }
         }
-        if (data.target_weight) {
+        
+        // CORREÇÃO CRUCIAL: Garantir o carregamento persistente da meta de peso da nuvem
+        if (data.target_weight !== null && data.target_weight !== undefined) {
           setTargetWeightValue(String(data.target_weight));
         }
 
@@ -1760,7 +1765,7 @@ export default function App() {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1e3a8a' }}>
         <ActivityIndicator size="large" color="#f97316" />
-        <Text style={{ color: '#ffffff', marginTop: 12, fontWeight: 'bold' }}>Carregando MuvFit...</Text>
+        <Text style={{ color: '#ffffff', marginTop: 12, fontWeight: 'bold' }}>A carregar MuvFit...</Text>
       </View>
     );
   }
@@ -1776,7 +1781,7 @@ export default function App() {
 
           <View style={{ backgroundColor: '#ffffff', borderRadius: 12, padding: 16, elevation: 5 }}>
             <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center', marginBottom: 16 }}>
-              {isSignUp ? 'Criar Nova Conta' : 'Acessar Plataforma'}
+              {isSignUp ? 'Criar Nova Conta' : 'Aceder à Plataforma'}
             </Text>
 
             {isSignUp && (
@@ -1815,7 +1820,7 @@ export default function App() {
             />
             <TextInput
               style={styles.input}
-              placeholder="Senha"
+              placeholder="Palavra-passe"
               secureTextEntry
               value={passwordInput}
               onChangeText={setPasswordInput}
@@ -1831,7 +1836,7 @@ export default function App() {
 
             <TouchableOpacity style={{ marginTop: 14, alignItems: 'center' }} onPress={() => setIsSignUp(!isSignUp)}>
               <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>
-                {isSignUp ? 'Já tem uma conta? Faça Login' : 'Não tem conta? Cadastre-se gratuitamente'}
+                {isSignUp ? 'Já tem conta? Faça Login' : 'Não tem conta? Registe-se gratuitamente'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -1897,7 +1902,7 @@ export default function App() {
           {isSearchOpen && (
             <View style={styles.searchResultsDropdown}>
               <View style={styles.searchHeaderTop}>
-                <Text style={styles.searchHeaderTitle}>🔎 Pesquisa Geral no App</Text>
+                <Text style={styles.searchHeaderTitle}>🔎 Pesquisa Geral na App</Text>
                 <TouchableOpacity onPress={() => setIsSearchOpen(false)} style={styles.closeSearchBtn}>
                   <Text style={styles.closeSearchText}>✕ FECHAR</Text>
                 </TouchableOpacity>
@@ -1920,7 +1925,7 @@ export default function App() {
               <ScrollView style={{ maxHeight: 220 }} keyboardShouldPersistTaps="handled">
                 {(searchFilter === 'all' || searchFilter === 'athlete') && (
                   <View style={{ marginBottom: 6 }}>
-                    <Text style={styles.searchSectionHeader}>🏃 ATLETAS CADASTRADOS ({searchResultsAthletes.length})</Text>
+                    <Text style={styles.searchSectionHeader}>🏃 ATLETAS REGISTRADOS ({searchResultsAthletes.length})</Text>
                     {searchResultsAthletes.length === 0 ? (
                       <Text style={styles.emptySearchText}>Nenhum atleta encontrado.</Text>
                     ) : (
@@ -1937,7 +1942,7 @@ export default function App() {
                           <Image source={{ uri: athlete.avatar }} style={styles.avatarMini} />
                           <View style={{ marginLeft: 8, flex: 1 }}>
                             <Text style={styles.searchResultTitle}>{athlete.nickname || athlete.name}</Text>
-                            <Text style={styles.searchResultSub}>Acessar Perfil ➔</Text>
+                            <Text style={styles.searchResultSub}>Aceder ao Perfil ➔</Text>
                           </View>
                         </TouchableOpacity>
                       ))
@@ -1978,7 +1983,7 @@ export default function App() {
                                   setSearchQuery('');
                                 }}
                               >
-                                <Text style={styles.btnMiniText}>Acessar Liga ➔</Text>
+                                <Text style={styles.btnMiniText}>Aceder à Liga ➔</Text>
                               </TouchableOpacity>
                             )}
                           </View>
@@ -2047,9 +2052,9 @@ export default function App() {
                 </View>
               )}
 
-              <Text style={styles.sectionHeaderTitle}>🔑 Ligas que Você Administra</Text>
+              <Text style={styles.sectionHeaderTitle}>🔑 Ligas que Administra</Text>
               {adminChallenges.length === 0 ? (
-                <Text style={styles.emptyNoticeText}>Você ainda não criou nenhum desafio no Supabase.</Text>
+                <Text style={styles.emptyNoticeText}>Ainda não criou nenhum desafio no Supabase.</Text>
               ) : (
                 adminChallenges.map((c) => (
                   <View key={c.id} style={[styles.cardBox, { borderColor: '#f97316', borderWidth: 1.5 }]}>
@@ -2080,16 +2085,16 @@ export default function App() {
                       )}
 
                       <TouchableOpacity style={styles.dashboardActionBtnRed} onPress={() => handleDeleteChallenge(c.id)}>
-                        <Text style={styles.dashboardActionBtnText}>🗑️ DELETAR</Text>
+                        <Text style={styles.dashboardActionBtnText}>🗑️ ELIMINAR</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
                 ))
               )}
 
-              <Text style={[styles.sectionHeaderTitle, { marginTop: 16 }]}>⚡ Ligas em que Você é Participante / Comunidade</Text>
+              <Text style={[styles.sectionHeaderTitle, { marginTop: 16 }]}>⚡ Ligas em que é Participante / Comunidade</Text>
               {participantChallenges.length === 0 ? (
-                <Text style={styles.emptyNoticeText}>Você não está inscrito em outros desafios.</Text>
+                <Text style={styles.emptyNoticeText}>Não está inscrito noutros desafios.</Text>
               ) : (
                 participantChallenges.map((c) => (
                   <View key={c.id} style={styles.cardBox}>
@@ -2105,7 +2110,7 @@ export default function App() {
 
                     <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
                       <TouchableOpacity style={[styles.actionBtn, { flex: 1, marginBottom: 0 }]} onPress={() => selectChallengeContext(c, false)}>
-                        <Text style={styles.actionBtnText}>ACESSAR LIGA ➔</Text>
+                        <Text style={styles.actionBtnText}>ACEDER À LIGA ➔</Text>
                       </TouchableOpacity>
                       
                       <TouchableOpacity style={styles.inviteBtn} onPress={() => handleShareInvite(c)}>
@@ -2129,12 +2134,12 @@ export default function App() {
 
               {currentUserMembershipInActiveChallenge?.role === 'active' ? (
                 <TouchableOpacity style={styles.actionBtn} onPress={() => setIsWorkoutModalOpen(true)}>
-                  <Text style={styles.actionBtnText}>+ REGISTRAR NOVO TREINO / PASSOS</Text>
+                  <Text style={styles.actionBtnText}>+ REGISTAR NOVO TREINO / PASSOS</Text>
                 </TouchableOpacity>
               ) : (
                 <View style={styles.restrictedNoticeBox}>
                   <Text style={styles.restrictedNoticeText}>
-                    🔒 Você está acompanhando como Torcedor/Atleta Pendente. Solicite participação como Atleta Ativo no topo do Ranking para enviar treinos!
+                    🔒 Está a acompanhar como Torcedor/Atleta Pendente. Solicite participação como Atleta Ativo no topo do Ranking para enviar treinos!
                   </Text>
                 </View>
               )}
@@ -2172,7 +2177,7 @@ export default function App() {
                         <View style={styles.socialBar}>
                           <TouchableOpacity style={styles.socialBtn} onPress={() => handleToggleLike(post.id)}>
                             <Text style={[styles.socialBtnText, post.isLiked && { color: '#dc2626' }]}>
-                              {post.isLiked ? '❤️' : '🤍'} {post.likes} Curtidas
+                              {post.isLiked ? '❤️' : '🤍'} {post.likes} Gostos
                             </Text>
                           </TouchableOpacity>
                           <Text style={styles.socialBtnText}>💬 {(post.comments || []).length} Comentários</Text>
@@ -2278,7 +2283,7 @@ export default function App() {
                       <View style={{ flex: 1, marginLeft: 8 }}>
                         <Text style={styles.rankingMemberName}>{spectator.nickname || spectator.name}</Text>
                         <Text style={{ fontSize: 9, color: '#64748b', fontStyle: 'italic' }}>
-                          {spectator.role === 'pending_athlete' ? '⏳ Candidato a Atleta Ativo' : 'Acompanhando o desafio'}
+                          {spectator.role === 'pending_athlete' ? '⏳ Candidato a Atleta Ativo' : 'Acompanha o desafio'}
                         </Text>
                       </View>
                       <Text style={styles.spectatorBadge}>
@@ -2321,7 +2326,7 @@ export default function App() {
                       value={athletePerfScope}
                       onChange={(e) => setAthletePerfScope(e.target.value)}
                     >
-                      <option value="global">🌐 Somatório Geral (Suas Ligas)</option>
+                      <option value="global">🌐 Somatório Geral (As suas Ligas)</option>
                       {athleteChallengesList.map(ch => (
                         <option key={ch.id} value={ch.id}>🏆 {ch.title}</option>
                       ))}
@@ -2446,7 +2451,7 @@ export default function App() {
                   <Text style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>
                     {weightHistoryList.length > 0
                       ? `${weightHistoryList[weightHistoryList.length - 1].weight}kg (${weightHistoryList[weightHistoryList.length - 1].period})`
-                      : 'Nenhum registro de peso efetuado'}
+                      : 'Nenhum registo de peso efetuado'}
                   </Text>
                 </TouchableOpacity>
 
@@ -2497,7 +2502,7 @@ export default function App() {
 
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ gap: 8 }}>
                   {athleteFeedPostsAll.length === 0 ? (
-                    <Text style={styles.emptyNoticeText}>Nenhuma evidência registrada.</Text>
+                    <Text style={styles.emptyNoticeText}>Nenhuma evidência registada.</Text>
                   ) : (
                     athleteFeedPostsAll.slice(0, 3).map(post => (
                       <View key={post.id} style={{ width: 120, marginRight: 8, backgroundColor: '#f8fafc', borderRadius: 6, padding: 4, borderWidth: 1, borderColor: '#cbd5e1' }}>
@@ -2521,7 +2526,7 @@ export default function App() {
                 </View>
 
                 {personalGoals.length === 0 ? (
-                  <Text style={styles.emptyNoticeText}>Nenhum objetivo cadastrado. Clique em "+ OBJETIVO" para adicionar.</Text>
+                  <Text style={styles.emptyNoticeText}>Nenhum objetivo registado. Clique em "+ OBJETIVO" para adicionar.</Text>
                 ) : (
                   personalGoals.map(goal => (
                     <View key={goal.id} style={styles.goalCheckboxRow}>
@@ -2575,7 +2580,7 @@ export default function App() {
                 {expandedSec1 && (
                   <View style={styles.accordionBody}>
                     {currentPendingWorkouts.length === 0 ? (
-                      <Text style={styles.emptyNoticeText}>Nenhum treino aguardando aprovação.</Text>
+                      <Text style={styles.emptyNoticeText}>Nenhum treino a aguardar aprovação.</Text>
                     ) : (
                       currentPendingWorkouts.map((w) => {
                         const pendingImages = [];
@@ -2688,7 +2693,7 @@ export default function App() {
                       ⚡ Atletas Ativos na Liga ({activeMembersInChallenge.length}):
                     </Text>
                     {activeMembersInChallenge.length === 0 ? (
-                      <Text style={styles.emptyNoticeText}>Nenum atleta ativo cadastrado nesta liga.</Text>
+                      <Text style={styles.emptyNoticeText}>Nenhum atleta ativo cadastrado nesta liga.</Text>
                     ) : (
                       activeMembersInChallenge.map((m) => (
                         <View key={m.id} style={styles.participantRow}>
@@ -2901,7 +2906,7 @@ export default function App() {
 
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
               <View style={{ flex: 1, borderWidth: 1.5, borderColor: '#f97316', borderRadius: 8, padding: 8, backgroundColor: '#fff7ed' }}>
-                <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#c2410c', marginBottom: 2, textAlign: 'center' }}>Novo Registro (kg)</Text>
+                <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#c2410c', marginBottom: 2, textAlign: 'center' }}>Novo Registo (kg)</Text>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                   <span style={{ fontSize: '16px' }}>⚖️</span>
                   <input
@@ -2937,7 +2942,6 @@ export default function App() {
               </View>
             </View>
 
-            {/* Caixa de preenchimento manual do Peso Meta */}
             <View style={{ borderWidth: 1.5, borderColor: '#1e3a8a', borderRadius: 8, padding: 8, backgroundColor: '#eff6ff', marginBottom: 10 }}>
               <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 2, textAlign: 'center' }}>🎯 Definir Peso Meta (kg)</Text>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
@@ -2959,7 +2963,6 @@ export default function App() {
               </div>
             </View>
 
-            {/* Checkbox para ativar o modo de apagar dados de peso */}
             <TouchableOpacity 
               style={styles.checkboxRow} 
               onPress={() => setIsDeleteModeActive(!isDeleteModeActive)}
@@ -2979,7 +2982,6 @@ export default function App() {
                 ) : (
                   weightHistoryList.map((item) => (
                     <div key={item.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', flex: 1 }}>
-                      {/* Botão de "-" que aparece apenas se o modo de exclusão estiver ativo */}
                       {isDeleteModeActive && (
                         <TouchableOpacity
                           style={{
@@ -3035,7 +3037,7 @@ export default function App() {
                 }
               }}
             >
-              <Text style={styles.primaryBtnText}>ADICIONAR REGISTRO AO GRÁFICO</Text>
+              <Text style={styles.primaryBtnText}>ADICIONAR REGISTO AO GRÁFICO</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.cancelBtn, { marginTop: 6 }]} onPress={() => setIsWeightChartModalOpen(false)}>
@@ -3334,7 +3336,7 @@ export default function App() {
             <Text style={styles.modalTitle}>📸 Histórico Completo de Evidências</Text>
             <ScrollView style={{ maxHeight: 400 }}>
               {athleteFeedPostsAll.length === 0 ? (
-                <Text style={styles.emptyNoticeText}>Nenhuma evidência registrada.</Text>
+                <Text style={styles.emptyNoticeText}>Nenhuma evidência registada.</Text>
               ) : (
                 athleteFeedPostsAll.map(post => (
                   <View key={post.id} style={{ marginBottom: 12, backgroundColor: '#f8fafc', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1' }}>
@@ -3509,7 +3511,7 @@ export default function App() {
                           />
 
                           <Text style={[styles.inputLabel, { color: '#1e3a8a', fontWeight: 'bold', marginTop: 6 }]}>
-                            Multiplicador de Passos (de 0,1 à 1,0):
+                            Multiplicador de Passos (de 0,1 a 1,0):
                           </Text>
                           <TextInput
                             style={styles.input}
@@ -4085,7 +4087,7 @@ export default function App() {
           <View style={styles.modalContent}>
             <ScrollView style={{ width: '100%', maxHeight: 540 }} keyboardShouldPersistTaps="handled">
               
-              <Text style={styles.modalTitle}>Registrar Treino ({selectedChallenge?.title || 'MuvFit'})</Text>
+              <Text style={styles.modalTitle}>Registar Treino ({selectedChallenge?.title || 'MuvFit'})</Text>
 
               <View style={styles.rulesCardBox}>
                 <Text style={styles.rulesCardTitle}>📜 Regras Ativas da Modalidade:</Text>
