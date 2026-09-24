@@ -402,15 +402,19 @@ export default function App() {
     try {
       const targetVal = (newTarget === '' || newTarget === null || isNaN(newTarget)) ? null : parseFloat(newTarget);
       
-      await supabase.from('profiles').upsert([
-        {
-          id: currentUser.id,
+      const { error } = await supabase
+        .from('profiles')
+        .update({
           weight_history: updatedList,
           target_weight: targetVal
-        }
-      ], { onConflict: 'id' });
+        })
+        .eq('id', currentUser.id);
+
+      if (error) {
+        console.log('Erro ao salvar dados de peso no Supabase:', error.message);
+      }
     } catch (err) {
-      console.log('Erro ao salvar dados de peso no Supabase:', err);
+      console.log('Erro inesperado ao salvar dados de peso:', err);
     }
   }
 
