@@ -346,7 +346,6 @@ export default function App() {
 
         const computedAge = formattedDate ? calculateAge(formattedDate) : 0;
 
-        // CORREÇÃO CRUCIAL: Garantir o carregamento persistente do histórico de peso da nuvem
         if (data.weight_history) {
           try {
             const parsedWeights = typeof data.weight_history === 'string' ? JSON.parse(data.weight_history) : data.weight_history;
@@ -356,7 +355,6 @@ export default function App() {
           }
         }
         
-        // CORREÇÃO CRUCIAL: Garantir o carregamento persistente da meta de peso da nuvem
         if (data.target_weight !== null && data.target_weight !== undefined) {
           setTargetWeightValue(String(data.target_weight));
         }
@@ -402,11 +400,13 @@ export default function App() {
   async function saveWeightDataToSupabase(updatedList, newTarget) {
     if (!currentUser.id) return;
     try {
+      const targetVal = (newTarget === '' || newTarget === null || isNaN(newTarget)) ? null : parseFloat(newTarget);
+      
       await supabase.from('profiles').upsert([
         {
           id: currentUser.id,
           weight_history: updatedList,
-          target_weight: newTarget
+          target_weight: targetVal
         }
       ], { onConflict: 'id' });
     } catch (err) {
@@ -2954,9 +2954,7 @@ export default function App() {
                   onChange={(e) => {
                     const val = e.target.value;
                     setTargetWeightValue(val);
-                    if (val !== '') {
-                      saveWeightDataToSupabase(weightHistoryList, val);
-                    }
+                    saveWeightDataToSupabase(weightHistoryList, val);
                   }}
                   style={{ width: '80px', border: 'none', background: 'transparent', fontSize: '14px', fontWeight: 'bold', color: '#1e3a8a', outline: 'none', textAlign: 'center' }}
                 />
@@ -3024,13 +3022,13 @@ export default function App() {
 
             <TouchableOpacity 
               style={styles.primaryBtn} 
-              onPress={() => {
+              onPress={async () => {
                 if (newWeightValueInput.trim()) {
                   const wNum = parseFloat(newWeightValueInput) || 0;
                   const updatedList = [...weightHistoryList, { id: `w_${Date.now()}`, period: newWeightDateInput, weight: wNum }];
                   setWeightHistoryList(updatedList);
                   setNewWeightValueInput('');
-                  saveWeightDataToSupabase(updatedList, targetWeightValue);
+                  await saveWeightDataToSupabase(updatedList, targetWeightValue);
                   Alert.alert('Sucesso', 'Registo de peso adicionado e salvo com sucesso!');
                 } else {
                   Alert.alert('Atenção', 'Insira o valor do peso.');
