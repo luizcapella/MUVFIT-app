@@ -117,6 +117,7 @@ export default function App() {
   const [activeStoryView, setActiveStoryView] = useState(null);
 
   const [weightHistoryList, setWeightHistoryList] = useState([]);
+  const [targetWeightValue, setTargetWeightValue] = useState('75.0');
   const [isWeightChartModalOpen, setIsWeightChartModalOpen] = useState(false);
   const [newWeightValueInput, setNewWeightValueInput] = useState('');
   const [newWeightDateInput, setNewWeightDateInput] = useState('Set/2026');
@@ -344,6 +345,17 @@ export default function App() {
 
         const computedAge = formattedDate ? calculateAge(formattedDate) : 0;
 
+        // Recuperar dados de peso salvos no perfil, se houver
+        if (data.weight_history) {
+          try {
+            const parsedWeights = typeof data.weight_history === 'string' ? JSON.parse(data.weight_history) : data.weight_history;
+            if (Array.isArray(parsedWeights)) setWeightHistoryList(parsedWeights);
+          } catch(e) {}
+        }
+        if (data.target_weight) {
+          setTargetWeightValue(String(data.target_weight));
+        }
+
         const loadedUser = {
           id: data.id,
           name: data.full_name || userEmail.split('@')[0],
@@ -379,6 +391,22 @@ export default function App() {
       }
     } catch (err) {
       console.log('Erro ao buscar perfil:', err);
+    }
+  }
+
+  // Função para salvar o histórico de pesos e meta no Supabase
+  async function saveWeightDataToSupabase(updatedList, newTarget) {
+    if (!currentUser.id) return;
+    try {
+      await supabase.from('profiles').upsert([
+        {
+          id: currentUser.id,
+          weight_history: updatedList,
+          target_weight: newTarget
+        }
+      ], { onConflict: 'id' });
+    } catch (err) {
+      console.log('Erro ao salvar dados de peso no Supabase:', err);
     }
   }
 
@@ -1174,7 +1202,6 @@ export default function App() {
     Alert.alert('Treino Rejeitado', 'O registro foi removido.');
   }
 
-  // Função CORRIGIDA para forçar o acionamento direto da câmara no telemóvel
   const handleTriggerPhoto = (mode, setter) => {
     if (Platform.OS === 'web') {
       const input = document.createElement('input');
@@ -1556,6 +1583,7 @@ export default function App() {
     athleteStatusText: 'N/A'
   };
 
+  // Se o escopo for global ou específico da liga, calculamos o desempenho para exibir nos cards do item da Central do Atleta
   if (athletePerfScope === 'global') {
     displayedPerf.rankingPoints = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.rankingPoints || 0), 0);
     displayedPerf.bankPoints = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.bankPoints || 0), 0);
@@ -1585,13 +1613,11 @@ export default function App() {
     }
   }
 
+  // Dados globais do atleta para os gráficos e modais (independente do filtro de liga selecionado na caixa superior)
   const athleteFeedPostsAll = feedPosts.filter(p => p.user_id === viewedUser.id);
-  const athleteFilteredPosts = athletePerfScope === 'global' 
-    ? athleteFeedPostsAll 
-    : athleteFeedPostsAll.filter(p => String(p.challenge_id) === String(athletePerfScope));
 
-  const countInquebravel = athleteFilteredPosts.filter(p => (p.caption || '').toLowerCase().includes('inquebrável')).length;
-  const countDesperta = athleteFilteredPosts.filter(p => (p.caption || '').toLowerCase().includes('desperta')).length;
+  const countInquebravel = athleteFeedPostsAll.filter(p => (p.caption || '').toLowerCase().includes('inquebrável')).length;
+  const countDesperta = athleteFeedPostsAll.filter(p => (p.caption || '').toLowerCase().includes('desperta')).length;
 
   const calculatedStepsPoints = Math.round(
     (parseFloat(dailyStepsConfig.manualStepsInput) || 0) * (parseFloat(dailyStepsConfig.multiplier) || 0)
@@ -1608,7 +1634,7 @@ export default function App() {
     { label: 'Esportes Coletivos', color: '#92400e' }
   ];
 
-  const filteredPostsByModalityPeriod = athleteFilteredPosts.filter(p => {
+  const filteredPostsByModalityPeriod = athleteFeedPostsAll.filter(p => {
     if (selectedModalityPeriod === 'Todos') return true;
     const postDateStr = p.created_at || '';
     return postDateStr.includes(selectedModalityPeriod);
@@ -1639,7 +1665,7 @@ export default function App() {
   });
 
   const availablePeriodsSet = new Set(['Todos']);
-  athleteFilteredPosts.forEach(p => {
+  athleteFeedPostsAll.forEach(p => {
     const dateText = p.created_at || '';
     const parts = dateText.split('/');
     if (parts.length >= 3) {
@@ -1658,7 +1684,7 @@ export default function App() {
 
   const currentLeaguePeriodType = currentActiveChallengeObj?.rules_config?.leaguePeriod || 'Monthly';
   
-  const kmFilteredPosts = athleteFilteredPosts.filter(p => {
+  const kmFilteredPosts = athleteFeedPostsAll.filter(p => {
     const act = (p.activity_type || '').toUpperCase();
     return act.includes('CORRIDA') || act.includes('CAMINHADA') || act.includes('BIKE');
   });
@@ -1666,33 +1692,9 @@ export default function App() {
   const totalKmAccumulated = kmFilteredPosts.reduce((acc, curr) => {
     const d = parseFloat(curr.distance_km || 0);
     return acc + (isNaN(d) ? 0 : d);
-  }, 0) + (selectedMembershipForAthlete?.totalKm || (athletePerfScope === 'global' ? displayedPerf.totalKm : 0));
+  }, 0) + athleteMembershipsAll.reduce((acc, curr) => acc + (curr.totalKm || 0), 0);
 
-  let kmButtonSubtitleText = '0,0 km acumulados';
-  if (currentLeaguePeriodType === 'Weekly') {
-    let daysCount = 3;
-    if (currentActiveChallengeObj?.startDate || currentActiveChallengeObj?.start_date) {
-      const [sd, sm, sy] = (currentActiveChallengeObj.startDate || currentActiveChallengeObj.start_date).split('/');
-      const startDt = new Date(sy, sm - 1, sd);
-      const diffTime = Math.abs(new Date() - startDt);
-      daysCount = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-    }
-    kmButtonSubtitleText = `${totalKmAccumulated.toFixed(1)} km acumulados - ${daysCount} dias`;
-  } else if (currentLeaguePeriodType === 'Yearly') {
-    let creationMonth = 1;
-    if (currentActiveChallengeObj?.startDate || currentActiveChallengeObj?.start_date) {
-      const parts = (currentActiveChallengeObj.startDate || currentActiveChallengeObj.start_date).split('/');
-      if (parts.length >= 2) creationMonth = parseInt(parts[1], 10);
-    }
-    const currentMonthNum = new Date().getMonth() + 1;
-    const monthsCount = Math.max(1, (currentMonthNum - creationMonth) + 1);
-    kmButtonSubtitleText = `${totalKmAccumulated.toFixed(1)} km acumulados - ${monthsCount} meses`;
-  } else {
-    const monthsMap = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    const now = new Date();
-    const periodStr = `${monthsMap[now.getMonth()]}/${now.getFullYear()}`;
-    kmButtonSubtitleText = `${totalKmAccumulated.toFixed(1)} km acumulados - Período: ${periodStr}`;
-  }
+  let kmButtonSubtitleText = `${totalKmAccumulated.toFixed(1)} km acumulados`;
 
   const kmActivitiesList = [
     { label: 'Corrida', color: '#ef4444' },
@@ -1724,39 +1726,16 @@ export default function App() {
 
   const kmPeriodsArray = Object.keys(kmByPeriodMap).length > 0 ? Object.keys(kmByPeriodMap) : ['Set/26'];
 
-  const totalMinutesAccumulated = athleteFilteredPosts.reduce((acc, curr) => {
+  const totalMinutesAccumulated = athleteFeedPostsAll.reduce((acc, curr) => {
     const m = parseInt(curr.duration_minutes || 0, 10);
     return acc + (isNaN(m) ? 0 : m);
-  }, 0) + (selectedMembershipForAthlete?.activeDays || (athletePerfScope === 'global' ? displayedPerf.activeDays : 0));
+  }, 0) + athleteMembershipsAll.reduce((acc, curr) => acc + (curr.activeDays || 0), 0);
 
-  let timeButtonSubtitleText = '0 minutos registrados';
-  if (currentLeaguePeriodType === 'Weekly') {
-    let daysCount = 3;
-    if (currentActiveChallengeObj?.startDate || currentActiveChallengeObj?.start_date) {
-      const [sd, sm, sy] = (currentActiveChallengeObj.startDate || currentActiveChallengeObj.start_date).split('/');
-      const startDt = new Date(sy, sm - 1, sd);
-      const diffTime = Math.abs(new Date() - startDt);
-      daysCount = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-    }
-    timeButtonSubtitleText = `Tempo em atividade - ${daysCount} dias: ${totalMinutesAccumulated} minutos`;
-  } else if (currentLeaguePeriodType === 'Yearly') {
-    let creationMonth = 1;
-    if (currentActiveChallengeObj?.startDate || currentActiveChallengeObj?.start_date) {
-      const parts = (currentActiveChallengeObj.startDate || currentActiveChallengeObj.start_date).split('/');
-      if (parts.length >= 2) creationMonth = parseInt(parts[1], 10);
-    }
-    const currentMonthNum = new Date().getMonth() + 1;
-    const monthsCount = Math.max(1, (currentMonthNum - creationMonth) + 1);
-    timeButtonSubtitleText = `Tempo em atividade - ${monthsCount} meses: ${totalMinutesAccumulated} minutos`;
-  } else {
-    const monthsMap = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    const now = new Date();
-    const periodStr = `${monthsMap[now.getMonth()]}/${now.getFullYear()}`;
-    timeButtonSubtitleText = `Tempo em atividade - Período (${periodStr}): ${totalMinutesAccumulated} minutos`;
-  }
+  const totalHoursAccumulated = (totalMinutesAccumulated / 60).toFixed(1);
+  let timeButtonSubtitleText = `${totalHoursAccumulated} horas registradas`;
 
   const timeByPeriodMap = {};
-  athleteFilteredPosts.forEach(p => {
+  athleteFeedPostsAll.forEach(p => {
     const dateText = p.created_at || '';
     const parts = dateText.split('/');
     let periodKey = 'Atual';
@@ -2386,7 +2365,6 @@ export default function App() {
                 </View>
               </View>
 
-              {/* Histórias de Atleta com opção de TIRAR FOTO (Câmera) ou GALERIA */}
               <View style={styles.sectionContainerBox}>
                 <Text style={styles.sectionHeaderTitle}>Histórias de Atleta (24h)</Text>
                 
@@ -2521,10 +2499,10 @@ export default function App() {
                 </View>
 
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ gap: 8 }}>
-                  {athleteFilteredPosts.length === 0 ? (
-                    <Text style={styles.emptyNoticeText}>Nenhuma evidência registrada neste filtro.</Text>
+                  {athleteFeedPostsAll.length === 0 ? (
+                    <Text style={styles.emptyNoticeText}>Nenhuma evidência registrada.</Text>
                   ) : (
-                    athleteFilteredPosts.slice(0, 3).map(post => (
+                    athleteFeedPostsAll.slice(0, 3).map(post => (
                       <View key={post.id} style={{ width: 120, marginRight: 8, backgroundColor: '#f8fafc', borderRadius: 6, padding: 4, borderWidth: 1, borderColor: '#cbd5e1' }}>
                         <Image source={{ uri: post.photo_evidence }} style={{ width: '100%', height: 100, borderRadius: 4 }} />
                         <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#0f172a', marginTop: 2 }} numberOfLines={1}>{post.activity_type}</Text>
@@ -2914,6 +2892,7 @@ export default function App() {
         </View>
       </View>
 
+      {/* Modal de Evolução de Peso atualizado com campo de Peso Meta */}
       <Modal visible={isWeightChartModalOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
@@ -2926,7 +2905,7 @@ export default function App() {
 
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
               <View style={{ flex: 1, borderWidth: 1.5, borderColor: '#f97316', borderRadius: 8, padding: 8, backgroundColor: '#fff7ed' }}>
-                <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#c2410c', marginBottom: 2, textAlign: 'center' }}>Peso Atual (kg)</Text>
+                <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#c2410c', marginBottom: 2, textAlign: 'center' }}>Novo Registro (kg)</Text>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                   <span style={{ fontSize: '16px' }}>⚖️</span>
                   <input
@@ -2962,6 +2941,25 @@ export default function App() {
               </View>
             </View>
 
+            {/* Caixa de preenchimento manual do Peso Meta */}
+            <View style={{ borderWidth: 1.5, borderColor: '#1e3a8a', borderRadius: 8, padding: 8, backgroundColor: '#eff6ff', marginBottom: 10 }}>
+              <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 2, textAlign: 'center' }}>🎯 Definir Peso Meta (kg)</Text>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '14px' }}>🎯</span>
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="75.0"
+                  value={targetWeightValue}
+                  onChange={(e) => {
+                    setTargetWeightValue(e.target.value);
+                    saveWeightDataToSupabase(weightHistoryList, e.target.value);
+                  }}
+                  style={{ width: '80px', border: 'none', background: 'transparent', fontSize: '14px', fontWeight: 'bold', color: '#1e3a8a', outline: 'none', textAlign: 'center' }}
+                />
+              </div>
+            </View>
+
             <View style={{ backgroundColor: '#ffffff', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 10 }}>
               <div style={{ height: '160px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', borderBottom: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', paddingBottom: '10px' }}>
                 {weightHistoryList.length === 0 ? (
@@ -2982,9 +2980,9 @@ export default function App() {
             </View>
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-around', backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, marginBottom: 10, borderWidth: 1, borderColor: '#e2e8f0' }}>
-              <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>Meta: 75.0 kg</Text>
+              <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>Meta: {targetWeightValue} kg</Text>
               <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#16a34a' }}>
-                Progresso: {weightHistoryList.length > 0 ? `${(weightHistoryList[weightHistoryList.length - 1].weight - 75).toFixed(1)} kg` : '0.0 kg'}
+                Atual: {weightHistoryList.length > 0 ? `${weightHistoryList[weightHistoryList.length - 1].weight} kg` : '0.0 kg'}
               </Text>
             </View>
 
@@ -2993,9 +2991,11 @@ export default function App() {
               onPress={() => {
                 if (newWeightValueInput.trim()) {
                   const wNum = parseFloat(newWeightValueInput) || 0;
-                  setWeightHistoryList([...weightHistoryList, { id: `w_${Date.now()}`, period: newWeightDateInput, weight: wNum }]);
+                  const updatedList = [...weightHistoryList, { id: `w_${Date.now()}`, period: newWeightDateInput, weight: wNum }];
+                  setWeightHistoryList(updatedList);
                   setNewWeightValueInput('');
-                  Alert.alert('Sucesso', 'Registo de peso adicionado ao gráfico!');
+                  saveWeightDataToSupabase(updatedList, targetWeightValue);
+                  Alert.alert('Sucesso', 'Registo de peso adicionado e salvo com sucesso!');
                 } else {
                   Alert.alert('Atenção', 'Insira o valor do peso.');
                 }
@@ -3193,7 +3193,7 @@ export default function App() {
             </View>
 
             <View style={{ backgroundColor: '#e0f2fe', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#38bdf8', marginBottom: 10, alignItems: 'center' }}>
-              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0369a1' }}>Tempo em atividade período atual: {totalMinutesAccumulated} minutos</Text>
+              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0369a1' }}>Tempo total registrado: {totalHoursAccumulated} horas ({totalMinutesAccumulated} minutos)</Text>
             </View>
 
             <View style={{ marginBottom: 12 }}>
@@ -3299,10 +3299,10 @@ export default function App() {
           <View style={styles.modalContentLarge}>
             <Text style={styles.modalTitle}>📸 Histórico Completo de Evidências</Text>
             <ScrollView style={{ maxHeight: 400 }}>
-              {athleteFilteredPosts.length === 0 ? (
+              {athleteFeedPostsAll.length === 0 ? (
                 <Text style={styles.emptyNoticeText}>Nenhuma evidência registrada.</Text>
               ) : (
-                athleteFilteredPosts.map(post => (
+                athleteFeedPostsAll.map(post => (
                   <View key={post.id} style={{ marginBottom: 12, backgroundColor: '#f8fafc', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1' }}>
                     <Image source={{ uri: post.photo_evidence }} style={{ width: '100%', height: 180, borderRadius: 6, marginBottom: 4 }} />
                     <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>{post.activity_type}</Text>
