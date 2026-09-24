@@ -114,12 +114,7 @@ export default function App() {
   const [fullNameInput, setFullNameInput] = useState('');
   const [genderInput, setGenderInput] = useState('Masculino');
   const [authSubmitting, setAuthSubmitting] = useState(false);
-const [authSubView, setAuthSubView] = useState('login'); // 'login' | 'forgot' | 'update_password'
-  const [forgotEmailInput, setForgotEmailInput] = useState('');
-  const [newPasswordInput, setNewPasswordInput] = useState('');
-  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editFullName, setEditFullName] = useState('');
   const [editNickname, setEditNickname] = useState('');
@@ -538,49 +533,7 @@ const [authSubView, setAuthSubView] = useState('login'); // 'login' | 'forgot' |
       setAuthSubmitting(false);
     }
   }
-const handleForgotPassword = async () => {
-    if (!forgotEmailInput.trim()) {
-      Alert.alert("Atenção", "Por favor, insira o seu e-mail cadastrado.");
-      return;
-    }
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmailInput.trim(), {
-        redirectTo: 'https://muvfit-app.vercel.app',
-      });
-      if (error) {
-        Alert.alert("Erro", error.message);
-      } else {
-        Alert.alert("Mensagem Enviada ✉️", "Verifique a sua caixa de entrada para redefinir a senha.");
-        setAuthSubView('login');
-      }
-    } catch (err) {
-      Alert.alert("Erro", "Ocorreu um erro ao enviar o e-mail de recuperação.");
-    }
-  };
 
-  const handleUpdatePassword = async () => {
-    if (!newPasswordInput || newPasswordInput.length < 6) {
-      Alert.alert("Atenção", "A nova senha deve ter pelo menos 6 caracteres.");
-      return;
-    }
-    if (newPasswordInput !== confirmPasswordInput) {
-      Alert.alert("Atenção", "As senhas não coincidem.");
-      return;
-    }
-    try {
-      const { error } = await supabase.auth.updateUser({ password: newPasswordInput });
-      if (error) {
-        Alert.alert("Erro", error.message);
-      } else {
-        Alert.alert("Sucesso", "Nova Senha Cadastrada com sucesso!");
-        setNewPasswordInput('');
-        setConfirmPasswordInput('');
-        setAuthSubView('login');
-      }
-    } catch (err) {
-      Alert.alert("Erro", "Não foi possível atualizar a senha.");
-    }
-  };
   function handleOpenEditProfile() {
     setEditFullName(currentUser.name || '');
     setEditNickname(currentUser.nickname || '');
@@ -1938,66 +1891,7 @@ const handleForgotPassword = async () => {
                 </View>
               </>
             )}
-{authSubView === 'forgot' ? (
-  <View style={{ width: '100%', alignItems: 'center' }}>
-    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 14, textAlign: 'center' }}>
-      Recuperar Senha
-    </Text>
-    <TextInput
-      style={styles.input}
-      placeholder="E-mail Cadastrado"
-      keyboardType="email-address"
-      autoCapitalize="none"
-      value={forgotEmailInput}
-      onChangeText={setForgotEmailInput}
-    />
-    <TouchableOpacity style={[styles.primaryBtn, { width: '100%', marginTop: 10 }]} onPress={handleForgotPassword}>
-      <Text style={styles.primaryBtnText}>ENVIAR</Text>
-    </TouchableOpacity>
-    <TouchableOpacity 
-      style={{ marginTop: 14 }}
-      onPress={() => setAuthSubView('login')}
-    >
-      <Text style={{ color: '#16a34a', fontSize: 12, fontWeight: 'bold' }}>
-        Voltar ao Login
-      </Text>
-    </TouchableOpacity>
-  </View>
-) : authSubView === 'update_password' ? (
-  <View style={{ width: '100%', alignItems: 'center' }}>
-    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 14, textAlign: 'center' }}>
-      Definir Nova Senha
-    </Text>
-    <View style={[styles.passwordContainer, { width: '100%', marginBottom: 10 }]}>
-      <TextInput
-        style={styles.passwordInput}
-        placeholder="Nova Senha"
-        secureTextEntry={!showNewPassword}
-        value={newPasswordInput}
-        onChangeText={setNewPasswordInput}
-      />
-      <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowNewPassword(!showNewPassword)}>
-        <Text style={{ fontSize: 16 }}>{showNewPassword ? '👁️' : '🙈'}</Text>
-      </TouchableOpacity>
-    </View>
-    <View style={[styles.passwordContainer, { width: '100%', marginBottom: 14 }]}>
-      <TextInput
-        style={styles.passwordInput}
-        placeholder="Confirme a Nova Senha"
-        secureTextEntry={!showConfirmPassword}
-        value={confirmPasswordInput}
-        onChangeText={setConfirmPasswordInput}
-      />
-      <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-        <Text style={{ fontSize: 16 }}>{showConfirmPassword ? '👁️' : '🙈'}</Text>
-      </TouchableOpacity>
-    </View>
-    <TouchableOpacity style={[styles.primaryBtn, { width: '100%' }]} onPress={handleUpdatePassword}>
-      <Text style={styles.primaryBtnText}>CADASTRAR NOVA SENHA</Text>
-    </TouchableOpacity>
-  </View>
-) : (
-  <>
+
             <TextInput
               style={styles.input}
               placeholder="E-mail"
@@ -2022,14 +1916,7 @@ const handleForgotPassword = async () => {
                 <Text style={{ fontSize: 16 }}>{showPassword ? '👁️' : '🙈'}</Text>
               </TouchableOpacity>
             </View>
-<TouchableOpacity 
-        style={{ alignSelf: 'flex-end', marginTop: 8, marginBottom: 12 }}
-        onPress={() => setAuthSubView('forgot')}
-      >
-        <Text style={{ color: '#16a34a', fontSize: 12, fontWeight: 'bold' }}>
-          Esqueceu a senha?
-        </Text>
-      </TouchableOpacity>
+
             <TouchableOpacity style={styles.primaryBtn} onPress={handleAuthAction} disabled={authSubmitting}>
               {authSubmitting ? (
                 <ActivityIndicator color="#ffffff" />
@@ -2037,8 +1924,7 @@ const handleForgotPassword = async () => {
                 <Text style={styles.primaryBtnText}>{isSignUp ? 'CADASTRAR CONTA' : 'ENTRAR NO MUVFIT'}</Text>
               )}
             </TouchableOpacity>
-</TouchableOpacity>
-    
+<TouchableOpacity 
   style={styles.loginApkDownloadBtn}
   onPress={handleDownloadAPK}
 >
