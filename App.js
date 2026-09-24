@@ -121,16 +121,13 @@ export default function App() {
   const [newWeightValueInput, setNewWeightValueInput] = useState('');
   const [newWeightDateInput, setNewWeightDateInput] = useState('Set/2026');
 
-  // Estados para o Modal de Resumo de Exercícios (Modalidades Mais Praticadas)
   const [isModalityRadarModalOpen, setIsModalityRadarModalOpen] = useState(false);
   const [selectedModalityPeriod, setSelectedModalityPeriod] = useState('Todos');
 
-  // Estados para o Modal de Distância Percorrida / KM Total
   const [isKmChartModalOpen, setIsKmChartModalOpen] = useState(false);
   const [selectedKmFilterActivity, setSelectedKmFilterActivity] = useState('Todos');
   const [selectedKmPeriod, setSelectedKmPeriod] = useState('Todos');
 
-  // Estados para o Modal de Tempo Total em Atividade (Minutos)
   const [isTimeChartModalOpen, setIsTimeChartModalOpen] = useState(false);
   const [selectedTimePeriod, setSelectedTimePeriod] = useState('Todos');
 
@@ -1135,7 +1132,6 @@ export default function App() {
         updatedObj.total_km = (currentMem.total_km || 0) + parsedKm;
       }
       if (parsedDuration > 0) {
-        // Armazena os minutos acumulados em active_days para alimentar o critério de desempate de Tempo em Atividade
         updatedObj.active_days = (currentMem.active_days || 0) + parsedDuration;
       }
 
@@ -1178,6 +1174,7 @@ export default function App() {
     Alert.alert('Treino Rejeitado', 'O registro foi removido.');
   }
 
+  // Função CORRIGIDA para abrir Câmera ou Galeria com suporte nativo Web/Mobile
   const handleTriggerPhoto = (mode, setter) => {
     if (Platform.OS === 'web') {
       const input = document.createElement('input');
@@ -1185,7 +1182,7 @@ export default function App() {
       input.accept = 'image/*,video/*';
       
       if (mode === 'camera') {
-        input.capture = 'environment';
+        input.setAttribute('capture', 'environment');
       }
 
       input.onchange = (e) => {
@@ -1203,37 +1200,12 @@ export default function App() {
     } else {
       Alert.alert(
         '📷 Câmera / Mídia',
-        'Abra a câmera do seu dispositivo para capturar a foto ou vídeo.'
+        mode === 'camera' ? 'Abrindo a câmara do dispositivo...' : 'Abrindo a galeria...'
       );
     }
   };
 
-  const handleAddStory = () => {
-    handleTriggerPhoto('camera', (base64Img) => {
-      if (base64Img) {
-        const newStory = {
-          id: `st_${Date.now()}`,
-          uri: base64Img,
-          createdAt: Date.now()
-        };
-
-        setAthleteStories(prev => [...prev, newStory]);
-
-        if (Platform.OS === 'web') {
-          const downloadLink = document.createElement('a');
-          downloadLink.href = base64Img;
-          downloadLink.download = `story_muvfit_${Date.now()}.jpg`;
-          document.body.appendChild(downloadLink);
-          downloadLink.click();
-          document.body.removeChild(downloadLink);
-        }
-
-        Alert.alert('Story Publicado!', 'Seu story foi adicionado com sucesso (exibição por 24h e salvo no dispositivo).');
-      }
-    });
-  };
-
-  function calculateWorkoutPoints(activity, durationMins, kmDistance) {
+  const calculateWorkoutPoints = (activity, durationMins, kmDistance) => {
     const config = modalitySettings[activity];
     if (!config || config.enabled === false) return 0;
 
@@ -1275,7 +1247,7 @@ export default function App() {
     }
 
     return pts;
-  }
+  };
 
   async function handleSubmitWorkout() {
     if (!currentUserMembershipInActiveChallenge || currentUserMembershipInActiveChallenge.role !== 'active') {
@@ -1335,20 +1307,17 @@ export default function App() {
     }
 
     let bonusAppliedMsg = '';
-    let bonusNamesArray = [];
     if (bonusConfig.despertaEnabled) {
       const submissionCurrentTime = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
       if (submissionCurrentTime <= bonusConfig.despertaLimitTime) {
         calculatedPts += parseInt(bonusConfig.despertaPts, 10) || 3000;
         bonusAppliedMsg += ' | ⏰ Bônus "O Desperta"';
-        bonusNamesArray.push('Bônus O Desperta');
       }
     }
 
     if (bonusConfig.inquebravelEnabled) {
       calculatedPts += parseInt(bonusConfig.inquebravelPts, 10) || 5000;
       bonusAppliedMsg += ' | 🪨 Bônus "O Inquebrável"';
-      bonusNamesArray.push('Bônus O Inquebrável');
     }
 
     let ptsRanking = calculatedPts;
@@ -1623,7 +1592,6 @@ export default function App() {
     (parseFloat(dailyStepsConfig.manualStepsInput) || 0) * (parseFloat(dailyStepsConfig.multiplier) || 0)
   );
 
-  // Lógica dinâmica real para o Gráfico de Pizza de Modalidades Mais Praticadas (Inicia zerado)
   const allAvailableModalities = [
     { label: 'Musculação', color: '#3b82f6' },
     { label: 'Crossfit / Treino Funcional', color: '#22c55e' },
@@ -1679,9 +1647,6 @@ export default function App() {
   });
   const availablePeriodsList = Array.from(availablePeriodsSet);
 
-  // ==========================================
-  // LÓGICA ESPECÍFICA PARA KM TOTAL PERCORRIDO
-  // ==========================================
   const currentActiveChallengeObj = athletePerfScope === 'global' 
     ? selectedChallenge 
     : challenges.find(c => String(c.id) === String(athletePerfScope)) || selectedChallenge;
@@ -1754,9 +1719,6 @@ export default function App() {
 
   const kmPeriodsArray = Object.keys(kmByPeriodMap).length > 0 ? Object.keys(kmByPeriodMap) : ['Set/26'];
 
-  // ==========================================
-  // LÓGICA ESPECÍFICA PARA TEMPO TOTAL EM ATIVIDADE (MINUTOS)
-  // ==========================================
   const totalMinutesAccumulated = athleteFilteredPosts.reduce((acc, curr) => {
     const m = parseInt(curr.duration_minutes || 0, 10);
     return acc + (isNaN(m) ? 0 : m);
@@ -1788,7 +1750,6 @@ export default function App() {
     timeButtonSubtitleText = `Tempo em atividade - Período (${periodStr}): ${totalMinutesAccumulated} minutos`;
   }
 
-  // Agrupar Minutos por período/mês para o gráfico de colunas de tempo
   const timeByPeriodMap = {};
   athleteFilteredPosts.forEach(p => {
     const dateText = p.created_at || '';
@@ -2420,19 +2381,44 @@ export default function App() {
                 </View>
               </View>
 
+              {/* Histórias de Atleta com opção de TIRAR FOTO (Câmera) ou GALERIA */}
               <View style={styles.sectionContainerBox}>
                 <Text style={styles.sectionHeaderTitle}>Histórias de Atleta (24h)</Text>
                 
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', gap: 8, marginVertical: 4 }}>
                   {viewedUser.id === currentUser.id && (
-                    <TouchableOpacity style={styles.storyAddBtnCircle} onPress={handleAddStory}>
-                      <Text style={{ fontSize: 22, color: '#ffffff', fontWeight: 'bold' }}>+</Text>
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                      <TouchableOpacity 
+                        style={styles.storyAddBtnCircle} 
+                        onPress={() => handleTriggerPhoto('camera', (base64Img) => {
+                          if (base64Img) {
+                            setAthleteStories(prev => [...prev, { id: `st_${Date.now()}`, uri: base64Img, createdAt: Date.now() }]);
+                            Alert.alert('Story Publicado!', 'Capturado com a câmara.');
+                          }
+                        })}
+                        title="Tirar Foto para o Story"
+                      >
+                        <Text style={{ fontSize: 14, color: '#ffffff', fontWeight: 'bold' }}>📷+</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity 
+                        style={[styles.storyAddBtnCircle, { backgroundColor: '#1e3a8a' }]} 
+                        onPress={() => handleTriggerPhoto('gallery', (base64Img) => {
+                          if (base64Img) {
+                            setAthleteStories(prev => [...prev, { id: `st_${Date.now()}`, uri: base64Img, createdAt: Date.now() }]);
+                            Alert.alert('Story Publicado!', 'Adicionado da galeria.');
+                          }
+                        })}
+                        title="Escolher da Galeria para o Story"
+                      >
+                        <Text style={{ fontSize: 14, color: '#ffffff', fontWeight: 'bold' }}>🖼️+</Text>
+                      </TouchableOpacity>
+                    </View>
                   )}
 
                   {athleteStories.length === 0 ? (
                     <Text style={{ fontSize: 10, color: '#94a3b8', fontStyle: 'italic', alignSelf: 'center', marginLeft: 6 }}>
-                      Nenhum story ativo. Clique em "+" para publicar.
+                      Nenhum story ativo. Clique em 📷+ ou 🖼️+.
                     </Text>
                   ) : (
                     athleteStories.map(st => (
@@ -2469,11 +2455,9 @@ export default function App() {
                 </View>
               </View>
 
-              {/* Seção de Evolução & Estatísticas com dados reais (Iniciando zerados, sem dados fictícios) */}
               <View style={styles.sectionContainerBox}>
                 <Text style={styles.sectionHeaderTitle}>Evolução & Estatísticas do Atleta</Text>
 
-                {/* 1. Evolução de Peso (kg) */}
                 <TouchableOpacity 
                   style={styles.statsCardItemButton}
                   onPress={() => setIsWeightChartModalOpen(true)}
@@ -2486,7 +2470,6 @@ export default function App() {
                   </Text>
                 </TouchableOpacity>
 
-                {/* 2. Modalidades Mais Praticadas */}
                 <TouchableOpacity 
                   style={styles.statsCardItemButton}
                   onPress={() => setIsModalityRadarModalOpen(true)}
@@ -2503,7 +2486,6 @@ export default function App() {
                   </Text>
                 </TouchableOpacity>
 
-                {/* 3. KM Total Percorrido */}
                 <TouchableOpacity 
                   style={styles.statsCardItemButton}
                   onPress={() => setIsKmChartModalOpen(true)}
@@ -2514,7 +2496,6 @@ export default function App() {
                   </Text>
                 </TouchableOpacity>
 
-                {/* 4. Tempo Total em Atividade (Minutos) */}
                 <TouchableOpacity 
                   style={styles.statsCardItemButton}
                   onPress={() => setIsTimeChartModalOpen(true)}
@@ -2928,7 +2909,6 @@ export default function App() {
         </View>
       </View>
 
-      {/* Modal: Janela Detalhada de Evolução de Peso */}
       <Modal visible={isWeightChartModalOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
@@ -2978,23 +2958,21 @@ export default function App() {
             </View>
 
             <View style={{ backgroundColor: '#ffffff', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 10 }}>
-              <View style={{ height: 160, justifyContent: 'center', alignItems: 'center', position: 'relative', borderBottomWidth: 1, borderBottomColor: '#cbd5e1', borderLeftWidth: 1, borderLeftColor: '#cbd5e1', marginLeft: 20, marginBottom: 15 }}>
+              <div style={{ height: '160px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', borderBottom: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', paddingBottom: '10px' }}>
                 {weightHistoryList.length === 0 ? (
                   <Text style={{ fontSize: 10, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center' }}>
                     Nenhum dado de peso inserido. Adicione o seu primeiro registo abaixo para visualizar o gráfico de linha.
                   </Text>
                 ) : (
-                  <div style={{ width: '100%', height: '100%', position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', paddingBottom: '10px' }}>
-                    {weightHistoryList.map((item) => (
-                      <div key={item.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', flex: 1 }}>
-                        <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#f97316', marginBottom: '4px' }}>{item.weight}</span>
-                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f97316', border: '2px solid #ffffff', boxShadow: '0 0 0 1px #f97316' }}></div>
-                        <span style={{ fontSize: '8px', color: '#64748b', position: 'absolute', bottom: '-16px' }}>{item.period}</span>
-                      </div>
-                    ))}
-                  </div>
+                  weightHistoryList.map((item) => (
+                    <div key={item.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', flex: 1 }}>
+                      <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#f97316', marginBottom: '4px' }}>{item.weight}</span>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f97316', border: '2px solid #ffffff', boxShadow: '0 0 0 1px #f97316' }}></div>
+                      <span style={{ fontSize: '8px', color: '#64748b', position: 'absolute', bottom: '-16px' }}>{item.period}</span>
+                    </div>
+                  ))
                 )}
-              </View>
+              </div>
               <Text style={{ fontSize: 9, color: '#64748b', textAlign: 'center', marginTop: 12, fontWeight: 'bold' }}>Mês / Ano</Text>
             </View>
 
@@ -3028,7 +3006,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* Modal: Resumo de Exercícios / Modalidades Mais Praticadas */}
       <Modal visible={isModalityRadarModalOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
@@ -3094,7 +3071,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* Modal: Distância Percorrida / KM Total */}
       <Modal visible={isKmChartModalOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
@@ -3201,7 +3177,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* Modal: Tempo Total em Atividade (Minutos) - Gráfico de Colunas e Seletor de Períodos */}
       <Modal visible={isTimeChartModalOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
@@ -3264,7 +3239,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* Modal para visualizar Story em Tela Cheia por 30 segundos */}
       <Modal visible={activeStoryView !== null} transparent animationType="fade">
         <View style={styles.storyModalOverlay}>
           <View style={styles.storyModalContainer}>
@@ -4472,7 +4446,7 @@ const styles = StyleSheet.create({
 
   sectionContainerBox: { backgroundColor: '#ffffff', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 10 },
 
-  storyAddBtnCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#f97316', justifyContent: 'center', alignItems: 'center', marginRight: 8 },
+  storyAddBtnCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#f97316', justifyContent: 'center', alignItems: 'center', marginRight: 4 },
   storyThumbnailCircle: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: '#1e3a8a', marginRight: 8 },
   storyDeleteBtn: { position: 'absolute', top: -2, right: 4, backgroundColor: '#dc2626', width: 14, height: 14, borderRadius: 7, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#ffffff' },
 
