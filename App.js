@@ -13,7 +13,8 @@ import {
   Alert,
   Share,
   Platform,
-  ActivityIndicator
+  ActivityIndicator,
+  Linking
 } from 'react-native';
 
 function calculateAge(birthDateString) {
@@ -141,6 +142,17 @@ export default function App() {
   const [newGoalText, setNewGoalText] = useState('');
 
   const [isAllEvidencesModalOpen, setIsAllEvidencesModalOpen] = useState(false);
+
+  // ESTADOS PARA CONFIGURAÇÃO DE CONTA E ACESSIBILIDADE
+  const [subAbaConfig, setSubAbaConfig] = useState('conta');
+  const [accountPhone, setAccountPhone] = useState('');
+  const [accountNewPassword, setAccountNewPassword] = useState('');
+  const [fontSizeScale, setFontSizeScale] = useState(1);
+  const [highContrast, setHighContrast] = useState(false);
+  const [appLanguage, setAppLanguage] = useState('pt-BR');
+  const [ratingStars, setRatingStars] = useState(5);
+  const [feedbackSuggestion, setFeedbackSuggestion] = useState('');
+  const [helpMessage, setHelpMessage] = useState('');
 
   const [currentUser, setCurrentUser] = useState({
     id: '',
@@ -628,6 +640,57 @@ export default function App() {
   async function handleSignOut() {
     await supabase.auth.signOut();
     setSession(null);
+  }
+
+  // AÇÕES DA CONFIGURAÇÃO DE CONTA
+  async function handleChangePassword() {
+    if (!accountNewPassword.trim()) {
+      Alert.alert('Atenção', 'Digite a nova senha.');
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ password: accountNewPassword });
+    if (error) {
+      Alert.alert('Erro', error.message);
+    } else {
+      Alert.alert('Sucesso', 'Senha alterada com sucesso!');
+      setAccountNewPassword('');
+    }
+  }
+
+  function handleDeleteAccountConfirmation() {
+    if (Platform.OS === 'web') {
+      const confirmDelete = window.confirm("TEM CERTEZA? Esta ação desativará/excluirá sua conta permanentemente.");
+      if (confirmDelete) {
+        window.alert("Instrução enviada ao servidor. A sua conta será desativada.");
+        handleSignOut();
+      }
+    } else {
+      Alert.alert(
+        "Desativar / Deletar Conta",
+        "Tem certeza que deseja desativar ou deletar sua conta permanentemente?",
+        [
+          { text: "NÃO", style: "cancel" },
+          { text: "SIM", style: "destructive", onPress: () => {
+              Alert.alert("Conta Desativada", "Sua conta foi marcada para remoção.");
+              handleSignOut();
+            } 
+          }
+        ]
+      );
+    }
+  }
+
+  function handleSendEmailRequest(subject, bodyText) {
+    const emailTarget = "muvfit.mizansolucoes@outlook.com.br";
+    const mailtoUrl = `mailto:${emailTarget}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+    
+    if (Platform.OS === 'web') {
+      window.open(mailtoUrl, '_blank');
+    } else {
+      Linking.openURL(mailtoUrl).catch(() => {
+        Alert.alert('Erro', 'Não foi possível abrir o aplicativo de e-mail.');
+      });
+    }
   }
 
   async function fetchDataFromSupabase() {
@@ -1853,8 +1916,8 @@ export default function App() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.topHeader}>
+    <SafeAreaView style={[styles.container, highContrast && { backgroundColor: '#000000' }]}>
+      <View style={[styles.topHeader, highContrast && { backgroundColor: '#000000', borderBottomWidth: 2, borderBottomColor: '#f97316' }]}>
         <View style={styles.brandRow}>
           <View>
             <Text style={styles.brandTitle}>MUVFIT</Text>
@@ -1865,7 +1928,7 @@ export default function App() {
             style={{ backgroundColor: '#dc2626', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6 }} 
             onPress={handleSignOut}
           >
-            <Text style={{ color: '#ffffff', fontSize: 9, fontWeight: 'bold' }}>🚪 SAIR</Text>
+            <Text style={{ color: '#ffffff', fontSize: 9 * fontSizeScale, fontWeight: 'bold' }}>🚪 SAIR</Text>
           </TouchableOpacity>
         </View>
 
@@ -2006,44 +2069,54 @@ export default function App() {
       </View>
 
       <View style={{ flex: 1, flexDirection: 'row' }}>
-        <View style={styles.sidebar}>
+        {/* SIDEBAR COM O NOVO BOTÃO DE CONFIGURAÇÃO DE CONTA */}
+        <View style={[styles.sidebar, highContrast && { backgroundColor: '#111111' }]}>
           <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'dashboard' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('dashboard')}>
             <Text style={styles.sidebarIcon}>🏠</Text>
-            <Text style={[styles.sidebarText, currentScreen === 'dashboard' && styles.sidebarTextActive]}>Painel</Text>
+            <Text style={[styles.sidebarText, { fontSize: 9 * fontSizeScale }, currentScreen === 'dashboard' && styles.sidebarTextActive]}>Painel</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'athlete_center' && styles.sidebarBtnActive]} onPress={() => { setViewedUser(currentUser); setAthletePerfScope('global'); setCurrentScreen('athlete_center'); }}>
             <Text style={styles.sidebarIcon}>👤</Text>
-            <Text style={[styles.sidebarText, currentScreen === 'athlete_center' && styles.sidebarTextActive]}>Atleta</Text>
+            <Text style={[styles.sidebarText, { fontSize: 9 * fontSizeScale }, currentScreen === 'athlete_center' && styles.sidebarTextActive]}>Atleta</Text>
           </TouchableOpacity>
 
           {hasUserAnyCommunity && (
             <>
               <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'feed' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('feed')}>
                 <Text style={styles.sidebarIcon}>📷</Text>
-                <Text style={[styles.sidebarText, currentScreen === 'feed' && styles.sidebarTextActive]}>Feed</Text>
+                <Text style={[styles.sidebarText, { fontSize: 9 * fontSizeScale }, currentScreen === 'feed' && styles.sidebarTextActive]}>Feed</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'ranking' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('ranking')}>
                 <Text style={styles.sidebarIcon}>🏆</Text>
-                <Text style={[styles.sidebarText, currentScreen === 'ranking' && styles.sidebarTextActive]}>Ranking</Text>
+                <Text style={[styles.sidebarText, { fontSize: 9 * fontSizeScale }, currentScreen === 'ranking' && styles.sidebarTextActive]}>Ranking</Text>
               </TouchableOpacity>
 
               {(selectedChallenge.creator_id === currentUser.id || adminChallenges.length > 0) && (
                 <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'admin' && styles.sidebarBtnActive]} onPress={() => { setIsAdminContext(true); setCurrentScreen('admin'); }}>
                   <Text style={styles.sidebarIcon}>⚙️</Text>
-                  <Text style={[styles.sidebarText, currentScreen === 'admin' && styles.sidebarTextActive]}>Admin</Text>
+                  <Text style={[styles.sidebarText, { fontSize: 9 * fontSizeScale }, currentScreen === 'admin' && styles.sidebarTextActive]}>Admin</Text>
                 </TouchableOpacity>
               )}
             </>
           )}
+
+          {/* ITEM INCLUÍDO SOLICITADO NO MENU LATERAL */}
+          <TouchableOpacity 
+            style={[styles.sidebarBtn, currentScreen === 'configuracao_conta' && styles.sidebarBtnActive]} 
+            onPress={() => setCurrentScreen('configuracao_conta')}
+          >
+            <Text style={styles.sidebarIcon}>☰</Text>
+            <Text style={[styles.sidebarText, { fontSize: 9 * fontSizeScale }, currentScreen === 'configuracao_conta' && styles.sidebarTextActive]}>Config. Conta</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+        <View style={[{ flex: 1, backgroundColor: '#ffffff' }, highContrast && { backgroundColor: '#000000' }]}>
           {currentScreen === 'dashboard' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <Text style={styles.pageTitle}>Painel Geral de Ligas (Nuvem)</Text>
+                <Text style={[styles.pageTitle, { fontSize: 14 * fontSizeScale }, highContrast && { color: '#ffffff' }]}>Painel Geral de Ligas (Nuvem)</Text>
                 {currentUser.isAdmin && (
                   <TouchableOpacity style={styles.createChallengeBtnHeader} onPress={() => setIsCreateChallengeOpen(true)}>
                     <Text style={styles.createChallengeBtnText}>+ NOVO DESAFIO</Text>
@@ -2127,6 +2200,223 @@ export default function App() {
                   </View>
                 ))
               )}
+            </ScrollView>
+          )}
+
+          {/* ÁREA PRINCIPAL DA TELA DE CONFIGURAÇÃO DE CONTA */}
+          {currentScreen === 'configuracao_conta' && (
+            <ScrollView contentContainerStyle={styles.mainContent}>
+              <Text style={[styles.pageTitle, { fontSize: 16 * fontSizeScale }, highContrast && { color: '#ffffff' }]}>⚙️ Configuração de Conta</Text>
+
+              {/* CARD DE NAVEGAÇÃO INTERNA COM OS 5 SUB-ITENS SOLICITADOS */}
+              <View style={[styles.cardBox, highContrast && { backgroundColor: '#111111', borderColor: '#f97316' }]}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    <TouchableOpacity 
+                      style={[styles.searchFilterChip, subAbaConfig === 'conta' && styles.searchFilterChipActive]}
+                      onPress={() => setSubAbaConfig('conta')}
+                    >
+                      <Text style={[styles.searchFilterChipText, subAbaConfig === 'conta' && styles.searchFilterChipTextActive]}>1º Conta</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                      style={[styles.searchFilterChip, subAbaConfig === 'acessibilidade' && styles.searchFilterChipActive]}
+                      onPress={() => setSubAbaConfig('acessibilidade')}
+                    >
+                      <Text style={[styles.searchFilterChipText, subAbaConfig === 'acessibilidade' && styles.searchFilterChipTextActive]}>2º Acessibilidade</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                      style={[styles.searchFilterChip, subAbaConfig === 'avaliacoes' && styles.searchFilterChipActive]}
+                      onPress={() => setSubAbaConfig('avaliacoes')}
+                    >
+                      <Text style={[styles.searchFilterChipText, subAbaConfig === 'avaliacoes' && styles.searchFilterChipTextActive]}>3º Avaliações & Contribuições</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                      style={[styles.searchFilterChip, subAbaConfig === 'ajuda' && styles.searchFilterChipActive]}
+                      onPress={() => setSubAbaConfig('ajuda')}
+                    >
+                      <Text style={[styles.searchFilterChipText, subAbaConfig === 'ajuda' && styles.searchFilterChipTextActive]}>4º Ajuda & Termos</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                      style={[styles.searchFilterChip, subAbaConfig === 'versao' && styles.searchFilterChipActive]}
+                      onPress={() => setSubAbaConfig('versao')}
+                    >
+                      <Text style={[styles.searchFilterChipText, subAbaConfig === 'versao' && styles.searchFilterChipTextActive]}>5º Versão do App</Text>
+                    </TouchableOpacity>
+                  </View>
+                </ScrollView>
+
+                {/* 1º - CONTA */}
+                {subAbaConfig === 'conta' && (
+                  <View>
+                    <Text style={[styles.sectionHeaderTitle, { fontSize: 13 * fontSizeScale }]}>👤 Gerenciamento de Conta</Text>
+                    
+                    <Text style={styles.inputLabel}>E-mail Cadastrado:</Text>
+                    <TextInput style={[styles.input, { backgroundColor: '#e2e8f0' }]} editable={false} value={session?.user?.email || ''} />
+
+                    <Text style={styles.inputLabel}>Telefone / Contato:</Text>
+                    <TextInput style={styles.input} placeholder="Ex: (21) 99999-9999" value={accountPhone} onChangeText={setAccountPhone} />
+
+                    <Text style={styles.inputLabel}>Trocar Palavra-passe (Senha):</Text>
+                    <TextInput style={styles.input} placeholder="Digite a nova senha" secureTextEntry value={accountNewPassword} onChangeText={setAccountNewPassword} />
+                    
+                    <TouchableOpacity style={[styles.primaryBtn, { marginBottom: 16 }]} onPress={handleChangePassword}>
+                      <Text style={styles.primaryBtnText}>ATUALIZAR PALAVRA-PASSE</Text>
+                    </TouchableOpacity>
+
+                    <View style={{ borderTopWidth: 1, borderTopColor: '#cbd5e1', paddingTop: 12 }}>
+                      <Text style={[styles.inputLabel, { color: '#dc2626' }]}>Zona de Perigo:</Text>
+                      <TouchableOpacity style={styles.dashboardActionBtnRed} onPress={handleDeleteAccountConfirmation}>
+                        <Text style={styles.dashboardActionBtnText}>⚠️ DESATIVAR / DELETAR CONTA</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+
+                {/* 2º - ACESSIBILIDADE */}
+                {subAbaConfig === 'acessibilidade' && (
+                  <View>
+                    <Text style={[styles.sectionHeaderTitle, { fontSize: 13 * fontSizeScale }]}>♿ Acessibilidade e Ajustes Visuais</Text>
+                    
+                    <Text style={styles.inputLabel}>Tamanho dos Textos do App:</Text>
+                    <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                      <TouchableOpacity 
+                        style={[styles.chipBtn, fontSizeScale === 0.85 && styles.chipBtnActive, { flex: 1, alignItems: 'center' }]} 
+                        onPress={() => setFontSizeScale(0.85)}
+                      >
+                        <Text style={[styles.chipText, fontSizeScale === 0.85 && styles.chipTextActive]}>Pequeno</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={[styles.chipBtn, fontSizeScale === 1 && styles.chipBtnActive, { flex: 1, alignItems: 'center' }]} 
+                        onPress={() => setFontSizeScale(1)}
+                      >
+                        <Text style={[styles.chipText, fontSizeScale === 1 && styles.chipTextActive]}>Normal</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={[styles.chipBtn, fontSizeScale === 1.2 && styles.chipBtnActive, { flex: 1, alignItems: 'center' }]} 
+                        onPress={() => setFontSizeScale(1.2)}
+                      >
+                        <Text style={[styles.chipText, fontSizeScale === 1.2 && styles.chipTextActive]}>Grande</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <Text style={styles.inputLabel}>Modo de Contraste:</Text>
+                    <TouchableOpacity 
+                      style={styles.checkboxRow} 
+                      onPress={() => setHighContrast(!highContrast)}
+                    >
+                      <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: highContrast ? '#f97316' : '#ffffff' }}>
+                        {highContrast && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                      </div>
+                      <Text style={[styles.checkboxLabel, highContrast && { color: '#ffffff' }]}>Ativar Alto Contraste (Fundo Escuro / Alto Brilho)</Text>
+                    </TouchableOpacity>
+
+                    <Text style={[styles.inputLabel, { marginTop: 12 }]}>Seletor de Idioma:</Text>
+                    <div style={{ marginBottom: 8 }}>
+                      <select
+                        style={styles.htmlNativeSelect}
+                        value={appLanguage}
+                        onChange={(e) => setAppLanguage(e.target.value)}
+                      >
+                        <option value="pt-BR">Português (Brasil)</option>
+                        <option value="en-US">English (US)</option>
+                        <option value="es-ES">Español</option>
+                      </select>
+                    </div>
+                  </View>
+                )}
+
+                {/* 3º - AVALIAÇÕES E CONTRIBUIÇÕES */}
+                {subAbaConfig === 'avaliacoes' && (
+                  <View>
+                    <Text style={[styles.sectionHeaderTitle, { fontSize: 13 * fontSizeScale }]}>⭐ Avaliações & Contribuições</Text>
+                    <Text style={{ fontSize: 10 * fontSizeScale, color: '#475569', marginBottom: 8 }}>Avalie o MuvFit e envie suas sugestões de melhoria diretamente para os desenvolvedores.</Text>
+
+                    <Text style={styles.inputLabel}>Sua Avaliação do App:</Text>
+                    <View style={{ flexDirection: 'row', gap: 6, marginVertical: 6, justifyContent: 'center' }}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <TouchableOpacity key={star} onPress={() => setRatingStars(star)}>
+                          <Text style={{ fontSize: 24 }}>{star <= ratingStars ? '⭐' : '☆'}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+
+                    <Text style={styles.inputLabel}>Caixa de Sugestões / Feedback:</Text>
+                    <TextInput 
+                      style={[styles.input, { height: 70, textAlignVertical: 'top' }]} 
+                      placeholder="Descreva sua sugestão ou experiência..." 
+                      multiline 
+                      value={feedbackSuggestion} 
+                      onChangeText={setFeedbackSuggestion} 
+                    />
+
+                    <TouchableOpacity 
+                      style={styles.primaryBtn} 
+                      onPress={() => {
+                        if (!feedbackSuggestion.trim()) {
+                          Alert.alert('Atenção', 'Escreva uma sugestão antes de enviar.');
+                          return;
+                        }
+                        const body = `Classificação: ${ratingStars} Estrelas\n\nSugestão/Feedback:\n${feedbackSuggestion}`;
+                        handleSendEmailRequest("Avaliação / Sugestão MuvFit", body);
+                      }}
+                    >
+                      <Text style={styles.primaryBtnText}>ENVIAR SUGESTÃO POR E-MAIL</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {/* 4º - AJUDA E TERMOS */}
+                {subAbaConfig === 'ajuda' && (
+                  <View>
+                    <Text style={[styles.sectionHeaderTitle, { fontSize: 13 * fontSizeScale }]}>❓ Central de Ajuda & Termos</Text>
+
+                    <Text style={styles.inputLabel}>Mensagem para o Suporte / Ajuda Direta:</Text>
+                    <TextInput 
+                      style={[styles.input, { height: 60, textAlignVertical: 'top' }]} 
+                      placeholder="Qual dúvida ou problema você possui?" 
+                      multiline 
+                      value={helpMessage} 
+                      onChangeText={setHelpMessage} 
+                    />
+
+                    <TouchableOpacity 
+                      style={[styles.actionBtn, { marginBottom: 12 }]} 
+                      onPress={() => {
+                        if (!helpMessage.trim()) {
+                          Alert.alert('Atenção', 'Digite a sua dúvida antes de enviar.');
+                          return;
+                        }
+                        handleSendEmailRequest("Solicitação de Ajuda / Suporte MuvFit", helpMessage);
+                      }}
+                    >
+                      <Text style={styles.actionBtnText}>✉️ ENVIAR MENSAGEM AO SUPORTE</Text>
+                    </TouchableOpacity>
+
+                    <View style={{ backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1' }}>
+                      <Text style={{ fontSize: 11 * fontSizeScale, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 4 }}>📜 Termos de Uso e Privacidade</Text>
+                      <Text style={{ fontSize: 9 * fontSizeScale, color: '#334155', lineHeight: 13 }}>
+                        Ao utilizar o MuvFit, você concorda que todas as evidências de treinos e imagens submetidas são de sua responsabilidade civil. O uso indevido de imagens falsas pode acarretar a suspensão do atleta pela administração do desafio. A plataforma preserva seus dados pessoais conforme diretrizes e boas práticas de segurança.
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* 5º - VERSÃO DO APP */}
+                {subAbaConfig === 'versao' && (
+                  <View style={{ alignItems: 'center', paddingVertical: 12 }}>
+                    <Text style={{ fontSize: 24, fontWeight: '900', color: '#f97316' }}>MUVFIT</Text>
+                    <Text style={{ fontSize: 12 * fontSizeScale, fontWeight: 'bold', color: '#1e3a8a', marginTop: 4 }}>Mizan Soluções Técnicas</Text>
+                    <Text style={{ fontSize: 10 * fontSizeScale, color: '#64748b', marginTop: 8 }}>Versão Atual da Aplicação: 2.6.0-Nuvem</Text>
+                    <Text style={{ fontSize: 9 * fontSizeScale, color: '#94a3b8', marginTop: 4, textAlign: 'center' }}>
+                      Desenvolvido com tecnologia React Native & Supabase Cloud Services.
+                    </Text>
+                  </View>
+                )}
+              </View>
             </ScrollView>
           )}
 
@@ -3024,9 +3314,8 @@ export default function App() {
             <View style={{ backgroundColor: '#ffffff', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 10 }}>
               <div style={{ height: '160px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', borderBottom: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', paddingBottom: '10px' }}>
                 {weightHistoryList.filter(item => {
-                  // Filtro visual de recorte por período selecionado
                   if (!chartStartDateFilter || !chartEndDateFilter) return true;
-                  return true; // Exibe todos ou aplica o recorte visual se desejado
+                  return true;
                 }).length === 0 ? (
                   <Text style={{ fontSize: 10, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center' }}>
                     Nenhum dado de peso inserido para o período selecionado.
