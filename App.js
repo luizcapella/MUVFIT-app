@@ -345,7 +345,6 @@ export default function App() {
 
         const computedAge = formattedDate ? calculateAge(formattedDate) : 0;
 
-        // Recuperar dados de peso salvos no perfil, se houver
         if (data.weight_history) {
           try {
             const parsedWeights = typeof data.weight_history === 'string' ? JSON.parse(data.weight_history) : data.weight_history;
@@ -394,7 +393,6 @@ export default function App() {
     }
   }
 
-  // Função para salvar o histórico de pesos e meta no Supabase
   async function saveWeightDataToSupabase(updatedList, newTarget) {
     if (!currentUser.id) return;
     try {
@@ -1583,7 +1581,6 @@ export default function App() {
     athleteStatusText: 'N/A'
   };
 
-  // Se o escopo for global ou específico da liga, calculamos o desempenho para exibir nos cards do item da Central do Atleta
   if (athletePerfScope === 'global') {
     displayedPerf.rankingPoints = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.rankingPoints || 0), 0);
     displayedPerf.bankPoints = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.bankPoints || 0), 0);
@@ -1613,7 +1610,6 @@ export default function App() {
     }
   }
 
-  // Dados globais do atleta para os gráficos e modais (independente do filtro de liga selecionado na caixa superior)
   const athleteFeedPostsAll = feedPosts.filter(p => p.user_id === viewedUser.id);
 
   const countInquebravel = athleteFeedPostsAll.filter(p => (p.caption || '').toLowerCase().includes('inquebrável')).length;
@@ -2892,7 +2888,6 @@ export default function App() {
         </View>
       </View>
 
-      {/* Modal de Evolução de Peso atualizado com campo de Peso Meta */}
       <Modal visible={isWeightChartModalOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
@@ -2941,7 +2936,7 @@ export default function App() {
               </View>
             </View>
 
-            {/* Caixa de preenchimento manual do Peso Meta */}
+            {/* Caixa de preenchimento manual do Peso Meta com correção aplicada */}
             <View style={{ borderWidth: 1.5, borderColor: '#1e3a8a', borderRadius: 8, padding: 8, backgroundColor: '#eff6ff', marginBottom: 10 }}>
               <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 2, textAlign: 'center' }}>🎯 Definir Peso Meta (kg)</Text>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
@@ -2952,8 +2947,11 @@ export default function App() {
                   placeholder="75.0"
                   value={targetWeightValue}
                   onChange={(e) => {
-                    setTargetWeightValue(e.target.value);
-                    saveWeightDataToSupabase(weightHistoryList, e.target.value);
+                    const val = e.target.value;
+                    setTargetWeightValue(val);
+                    if (val !== '') {
+                      saveWeightDataToSupabase(weightHistoryList, val);
+                    }
                   }}
                   style={{ width: '80px', border: 'none', background: 'transparent', fontSize: '14px', fontWeight: 'bold', color: '#1e3a8a', outline: 'none', textAlign: 'center' }}
                 />
