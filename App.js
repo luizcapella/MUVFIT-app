@@ -121,6 +121,7 @@ export default function App() {
   const [isWeightChartModalOpen, setIsWeightChartModalOpen] = useState(false);
   const [newWeightValueInput, setNewWeightValueInput] = useState('');
   const [newWeightDateInput, setNewWeightDateInput] = useState('Set/2026');
+  const [isDeleteModeActive, setIsDeleteModeActive] = useState(false); // Novo estado para o modo de apagar peso
 
   const [isModalityRadarModalOpen, setIsModalityRadarModalOpen] = useState(false);
   const [selectedModalityPeriod, setSelectedModalityPeriod] = useState('Todos');
@@ -2936,7 +2937,7 @@ export default function App() {
               </View>
             </View>
 
-            {/* Caixa de preenchimento manual do Peso Meta com correção aplicada */}
+            {/* Caixa de preenchimento manual do Peso Meta */}
             <View style={{ borderWidth: 1.5, borderColor: '#1e3a8a', borderRadius: 8, padding: 8, backgroundColor: '#eff6ff', marginBottom: 10 }}>
               <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 2, textAlign: 'center' }}>🎯 Definir Peso Meta (kg)</Text>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
@@ -2958,6 +2959,17 @@ export default function App() {
               </div>
             </View>
 
+            {/* Checkbox para ativar o modo de apagar dados de peso */}
+            <TouchableOpacity 
+              style={styles.checkboxRow} 
+              onPress={() => setIsDeleteModeActive(!isDeleteModeActive)}
+            >
+              <div style={{ width: '16px', height: '16px', border: '1.5px solid #dc2626', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: isDeleteModeActive ? '#dc2626' : '#ffffff' }}>
+                {isDeleteModeActive && <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold' }}>✓</Text>}
+              </div>
+              <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#dc2626' }}>Apagar dados de peso</Text>
+            </TouchableOpacity>
+
             <View style={{ backgroundColor: '#ffffff', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 10 }}>
               <div style={{ height: '160px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', borderBottom: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', paddingBottom: '10px' }}>
                 {weightHistoryList.length === 0 ? (
@@ -2967,6 +2979,30 @@ export default function App() {
                 ) : (
                   weightHistoryList.map((item) => (
                     <div key={item.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', flex: 1 }}>
+                      {/* Botão de "-" que aparece apenas se o modo de exclusão estiver ativo */}
+                      {isDeleteModeActive && (
+                        <TouchableOpacity
+                          style={{
+                            position: 'absolute',
+                            top: -22,
+                            backgroundColor: '#dc2626',
+                            width: 16,
+                            height: 16,
+                            borderRadius: 8,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 5
+                          }}
+                          onPress={() => {
+                            const updatedList = weightHistoryList.filter(w => w.id !== item.id);
+                            setWeightHistoryList(updatedList);
+                            saveWeightDataToSupabase(updatedList, targetWeightValue);
+                          }}
+                        >
+                          <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold', lineHeight: 10 }}>-</Text>
+                        </TouchableOpacity>
+                      )}
+
                       <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#f97316', marginBottom: '4px' }}>{item.weight}</span>
                       <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f97316', border: '2px solid #ffffff', boxShadow: '0 0 0 1px #f97316' }}></div>
                       <span style={{ fontSize: '8px', color: '#64748b', position: 'absolute', bottom: '-16px' }}>{item.period}</span>
