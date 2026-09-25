@@ -1664,9 +1664,6 @@ export default function App() {
 
   const athleteFeedPostsAll = feedPosts.filter(p => p.user_id === viewedUser.id);
 
-  const countInquebravel = athleteFeedPostsAll.filter(p => (p.caption || '').toLowerCase().includes('inquebrável')).length;
-  const countDesperta = athleteFeedPostsAll.filter(p => (p.caption || '').toLowerCase().includes('desperta')).length;
-
   const calculatedStepsPoints = Math.round(
     (parseFloat(dailyStepsConfig.manualStepsInput) || 0) * (parseFloat(dailyStepsConfig.multiplier) || 0)
   );
@@ -2628,18 +2625,6 @@ export default function App() {
                     <Text style={styles.scoreNumber}>{displayedPerf.totalSteps.toLocaleString()}</Text>
                     <Text style={styles.scoreLabel}>🚶 PASSOS</Text>
                   </View>
-                </View>
-              </View>
-
-              <View style={styles.sectionContainerBox}>
-                <Text style={styles.sectionHeaderTitle}>Insígnias de Bônus & Conquistas</Text>
-                <View style={{ flexDirection: 'row', gap: 12, marginTop: 4, flexWrap: 'wrap' }}>
-                  <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>
-                    🪨 O Inquebrável ({countInquebravel}x)
-                  </Text>
-                  <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>
-                    ⏰ O Desperta ({countDesperta}x)
-                  </Text>
                 </View>
               </View>
 
