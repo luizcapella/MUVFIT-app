@@ -1249,6 +1249,7 @@ export default function App() {
         points_to_ranking: workout.points_to_ranking || 0,
         points_to_bank: workout.points_to_bank || 0,
         duration_minutes: parsedDuration,
+        created_at: workout.workout_date ? `${workout.workout_date.split('-').reverse().join('/')}` : new Date().toLocaleDateString(),
         status: 'approved',
         likes: 0,
         comments: []
@@ -1406,17 +1407,50 @@ export default function App() {
     }
 
     let bonusAppliedMsg = '';
+
+    // LÓGICA DO BÔNUS "O INQUEBRÁVEL" (DIAS CONSECUTIVOS DE TREINOS APROVADOS)
+    if (bonusConfig.inquebravelEnabled) {
+      const requiredDays = parseInt(bonusConfig.inquebravelDays, 10) || 3;
+      
+      const userApprovedPosts = feedPosts.filter(p => p.challenge_id === activeChallengeId && p.user_id === currentUser.id);
+      
+      const uniqueDatesSet = new Set();
+      userApprovedPosts.forEach(p => {
+        if (p.created_at) {
+          const cleanDate = p.created_at.slice(0, 10);
+          uniqueDatesSet.add(cleanDate);
+        }
+      });
+      uniqueDatesSet.add(workoutDate);
+
+      const sortedDates = Array.from(uniqueDatesSet).sort((a, b) => new Date(b) - new Date(a));
+      
+      let consecutiveCount = 0;
+      let expectedDate = new Date(workoutDate);
+
+      for (let i = 0; i < sortedDates.length; i++) {
+        const expStr = expectedDate.toISOString().slice(0, 10);
+        if (sortedDates.includes(expStr)) {
+          consecutiveCount++;
+          expectedDate.setDate(expectedDate.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+
+      if (consecutiveCount >= requiredDays) {
+        calculatedPts += parseInt(bonusConfig.inquebravelPts, 10) || 5000;
+        bonusAppliedMsg += ` | 🪨 Bônus "O Inquebrável" (${consecutiveCount} dias seguidos)`;
+      }
+    }
+
+    // LÓGICA DO BÔNUS "O DESPERTA" (HORÁRIO LIMITE)
     if (bonusConfig.despertaEnabled) {
       const submissionCurrentTime = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
       if (submissionCurrentTime <= bonusConfig.despertaLimitTime) {
         calculatedPts += parseInt(bonusConfig.despertaPts, 10) || 3000;
-        bonusAppliedMsg += ' | ⏰ Bônus "O Desperta"';
+        bonusAppliedMsg += ` | ⏰ Bônus "O Desperta" (Postado às ${submissionCurrentTime})`;
       }
-    }
-
-    if (bonusConfig.inquebravelEnabled) {
-      calculatedPts += parseInt(bonusConfig.inquebravelPts, 10) || 5000;
-      bonusAppliedMsg += ' | 🪨 Bônus "O Inquebrável"';
     }
 
     let ptsRanking = calculatedPts;
@@ -1440,6 +1474,7 @@ export default function App() {
       photo_end: photoEnd || null,
       duration_minutes: dur,
       distance_km: kmValue,
+      workout_date: workoutDate,
       points_to_ranking: ptsRanking,
       points_to_bank: ptsBank
     };
@@ -1565,18 +1600,37 @@ export default function App() {
 
   const getDynamicActiveRulesText = () => {
     const ruleLines = [];
-    ruleLines.push(`• ${selectedActivity}: Modalidade Selecionada`);
+    const config = modalitySettings[selectedActivity];
+    
+    if (selectedActivity === '🚶‍♂️ Passos Diários') {
+      ruleLines.push(`• Passos Diários: ${dailyStepsConfig.manualStepsInput || '0'} passos (multiplicador ${dailyStepsConfig.multiplier || '0'})`);
+    } else if (config) {
+      const mode = config.scoringMode || 'simple';
+      if (mode === 'simple') {
+        ruleLines.push(`• ${selectedActivity}: ${config.simplePts || '0'} pts a cada ${config.simplePerMin || '0'} minutos mínimos`);
+      } else if (mode === 'timeSteps') {
+        const stepsDesc = (config.timeSteps || []).map(st => `${st.minTime}-${st.maxTime}min: ${st.pts}pts`).join(', ');
+        ruleLines.push(`• ${selectedActivity}: Por faixa de tempo [ ${stepsDesc} ]`);
+      } else if (mode === 'kmSimple') {
+        ruleLines.push(`• ${selectedActivity}: ${config.kmSimplePts || '0'} pts a cada ${config.kmPerX || '0'} km mínimos`);
+      } else if (mode === 'kmSteps') {
+        const stepsDesc = (config.kmSteps || []).map(st => `${st.minKm}-${st.maxKm}km: ${st.pts}pts`).join(', ');
+        ruleLines.push(`• ${selectedActivity}: Por faixa de distância [ ${stepsDesc} ]`);
+      }
+    } else {
+      ruleLines.push(`• ${selectedActivity}: Modalidade Selecionada`);
+    }
 
     if (selectedChallenge?.has_daily_cap && selectedChallenge?.daily_cap) {
       ruleLines.push(`• Teto Diário de Pontos: Máximo ${selectedChallenge.daily_cap.toLocaleString()} pts/dia`);
     }
 
     if (bonusConfig.inquebravelEnabled) {
-      ruleLines.push(`• Bônus Óleo/Rocha (O Inquebrável): +${bonusConfig.inquebravelPts} pts (${bonusConfig.inquebravelDays} dias seguidos)`);
+      ruleLines.push(`• Bônus O Inquebrável: +${bonusConfig.inquebravelPts} pts (${bonusConfig.inquebravelDays} dias seguidos)`);
     }
 
     if (bonusConfig.despertaEnabled) {
-      ruleLines.push(`• Bônus Relógio (O Desperta): +${bonusConfig.despertaPts} pts (Postar até ${bonusConfig.despertaLimitTime})`);
+      ruleLines.push(`• Bônus O Desperta: +${bonusConfig.despertaPts} pts (Postar até ${bonusConfig.despertaLimitTime})`);
     }
 
     ruleLines.push('• Trava: Máximo 1 envio por modalidade ao dia');
