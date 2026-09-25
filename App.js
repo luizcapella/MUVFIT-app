@@ -1187,7 +1187,6 @@ export default function App() {
     if (!workout) return;
 
     try {
-      // 1. Apagar da tabela de pendentes primeiro
       const { error: deleteErr } = await supabase.from('pending_workouts').delete().eq('id', workoutId);
       if (deleteErr) {
         console.error('Erro ao remover treino pendente:', deleteErr);
@@ -1198,7 +1197,6 @@ export default function App() {
       const parsedKm = parseFloat(workout.distance_km) || 0;
       const parsedDuration = parseInt(workout.duration_minutes, 10) || 0;
 
-      // 2. Buscar o membership atual para somar os pontos corretamente
       const { data: currentMem, error: fetchMemErr } = await supabase.from('memberships')
         .select('ranking_points, bank_points, total_steps, total_km, active_days')
         .eq('challenge_id', workout.challenge_id || workout.challengeId)
@@ -1232,7 +1230,6 @@ export default function App() {
         }
       }
 
-      // 3. Preparar e inserir no Feed (removido ID customizado para evitar conflito 400)
       const imagesList = [];
       if (workout.photo_start) imagesList.push(workout.photo_start);
       if (workout.photo_evidence) imagesList.push(workout.photo_evidence);
@@ -1429,7 +1426,6 @@ export default function App() {
       ptsBank = Math.max(0, calculatedPts - selectedChallenge.daily_cap);
     }
 
-    // Objeto limpo e blindado para inserir em pending_workouts
     const newPendingWorkout = {
       challenge_id: activeChallengeId,
       user_id: currentUser.id,
@@ -1465,7 +1461,6 @@ export default function App() {
     setPhotoEnd(null);
     
     Alert.alert('Sucesso', 'Treino enviado com sucesso! Aguardando aprovação do Administrador.');
-  }
   }
 
   async function handleSaveAdvancedRules() {
