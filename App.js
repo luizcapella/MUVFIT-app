@@ -1153,7 +1153,6 @@ export default function App() {
     if (checkBonusDesperta) captionExtras.push('Bônus O Desperta');
 
     const newPost = {
-      id: `p_man_${Date.now()}`,
       challenge_id: selectedChallenge.id,
       user_id: member.userId,
       user_name: member.name,
@@ -1166,7 +1165,6 @@ export default function App() {
       points_to_ranking: rPts + bonusTotal,
       points_to_bank: bPts,
       status: 'approved',
-      created_at: 'Agora',
       likes: 0,
       comments: []
     };
@@ -1188,61 +1186,91 @@ export default function App() {
     const workout = pendingWorkouts.find(w => w.id === workoutId);
     if (!workout) return;
 
-    await supabase.from('pending_workouts').delete().eq('id', workoutId);
+    try {
+      // 1. Apagar da tabela de pendentes primeiro
+      const { error: deleteErr } = await supabase.from('pending_workouts').delete().eq('id', workoutId);
+      if (deleteErr) {
+        console.error('Erro ao remover treino pendente:', deleteErr);
+        Alert.alert('Erro', 'Não foi possível remover o treino pendente: ' + deleteErr.message);
+        return;
+      }
 
-    const parsedKm = parseFloat(workout.distance_km) || 0;
-    const parsedDuration = parseInt(workout.duration_minutes, 10) || 0;
+      const parsedKm = parseFloat(workout.distance_km) || 0;
+      const parsedDuration = parseInt(workout.duration_minutes, 10) || 0;
 
-    const { data: currentMem } = await supabase.from('memberships')
-      .select('ranking_points, bank_points, total_steps, total_km, active_days')
-      .eq('challenge_id', workout.challengeId)
-      .eq('user_id', workout.user_id)
-      .single();
+      // 2. Buscar o membership atual para somar os pontos corretamente
+      const { data: currentMem, error: fetchMemErr } = await supabase.from('memberships')
+        .select('ranking_points, bank_points, total_steps, total_km, active_days')
+        .eq('challenge_id', workout.challenge_id || workout.challengeId)
+        .eq('user_id', workout.user_id)
+        .maybeSingle();
 
-    if (currentMem) {
-      let updatedObj = {
-        ranking_points: (currentMem.ranking_points || 0) + (workout.points_to_ranking || 0),
-        bank_points: (currentMem.bank_points || 0) + (workout.points_to_bank || 0)
+      if (fetchMemErr) {
+        console.error('Erro ao buscar membership:', fetchMemErr);
+      }
+
+      if (currentMem) {
+        let updatedObj = {
+          ranking_points: (currentMem.ranking_points || 0) + (workout.points_to_ranking || 0),
+          bank_points: (currentMem.bank_points || 0) + (workout.points_to_bank || 0)
+        };
+
+        if (parsedKm > 0) {
+          updatedObj.total_km = (currentMem.total_km || 0) + parsedKm;
+        }
+        if (parsedDuration > 0) {
+          updatedObj.active_days = (currentMem.active_days || 0) + parsedDuration;
+        }
+
+        const { error: updateMemErr } = await supabase.from('memberships')
+          .update(updatedObj)
+          .eq('challenge_id', workout.challenge_id || workout.challengeId)
+          .eq('user_id', workout.user_id);
+
+        if (updateMemErr) {
+          console.error('Erro ao atualizar pontos do membro:', updateMemErr);
+        }
+      }
+
+      // 3. Preparar e inserir no Feed (removido ID customizado para evitar conflito 400)
+      const imagesList = [];
+      if (workout.photo_start) imagesList.push(workout.photo_start);
+      if (workout.photo_evidence) imagesList.push(workout.photo_evidence);
+      if (workout.photo_end) imagesList.push(workout.photo_end);
+
+      const newPost = {
+        challenge_id: workout.challenge_id || workout.challengeId,
+        user_id: workout.user_id,
+        user_name: workout.user_name,
+        user_nickname: workout.user_nickname,
+        user_avatar: workout.user_avatar,
+        activity_type: workout.activity_type,
+        caption: workout.caption,
+        photo_evidence: workout.photo_evidence,
+        all_photos: imagesList.length > 0 ? imagesList : [workout.photo_evidence],
+        points_to_ranking: workout.points_to_ranking || 0,
+        points_to_bank: workout.points_to_bank || 0,
+        duration_minutes: parsedDuration,
+        status: 'approved',
+        likes: 0,
+        comments: []
       };
 
-      if (parsedKm > 0) {
-        updatedObj.total_km = (currentMem.total_km || 0) + parsedKm;
-      }
-      if (parsedDuration > 0) {
-        updatedObj.active_days = (currentMem.active_days || 0) + parsedDuration;
+      const { error: insertFeedErr } = await supabase.from('feed_posts').insert([newPost]);
+      
+      if (insertFeedErr) {
+        console.error('Erro detalhado ao inserir no feed_posts:', insertFeedErr);
+        Alert.alert('Erro ao Publicar no Feed', insertFeedErr.message);
+        return;
       }
 
-      await supabase.from('memberships').update(updatedObj).eq('challenge_id', workout.challengeId).eq('user_id', workout.user_id);
+      await fetchDataFromSupabase();
+      Alert.alert('Treino Aprovado!', 'O treino foi aprovado, pontuação somada e publicado no Feed com sucesso!');
+
+    } catch (err) {
+      console.error('Erro inesperado em handleApproveWorkout:', err);
+      Alert.alert('Erro Inesperado', err.message || 'Ocorreu um erro ao processar a aprovação.');
     }
-
-    const imagesList = [];
-    if (workout.photo_start) imagesList.push(workout.photo_start);
-    if (workout.photo_evidence) imagesList.push(workout.photo_evidence);
-    if (workout.photo_end) imagesList.push(workout.photo_end);
-
-    const newPost = {
-      id: `p_${Date.now()}`,
-      challenge_id: workout.challengeId,
-      user_id: workout.user_id,
-      user_name: workout.user_name,
-      user_nickname: workout.user_nickname,
-      user_avatar: workout.user_avatar,
-      activity_type: workout.activity_type,
-      caption: workout.caption,
-      photo_evidence: workout.photo_evidence,
-      all_photos: imagesList.length > 0 ? imagesList : [workout.photo_evidence],
-      points_to_ranking: workout.points_to_ranking,
-      points_to_bank: workout.points_to_bank,
-      duration_minutes: parsedDuration,
-      status: 'approved',
-      created_at: workout.created_at || 'Agora',
-      likes: 0,
-      comments: []
-    };
-
-    await supabase.from('feed_posts').insert([newPost]);
-    fetchDataFromSupabase();
-    Alert.alert('Treino Aprovado!', 'O treino foi aprovado, pontuação somada e publicado no Feed!');
   }
 
   async function handleRejectWorkout(workoutId) {
@@ -1412,7 +1440,6 @@ export default function App() {
     const timeWindowStr = !isSteps ? `${startHour}:${startMinute} às ${endHour}:${endMinute}` : '';
 
     const newPendingWorkout = {
-      id: `pw_${Date.now()}`,
       challenge_id: activeChallengeId,
       user_id: currentUser.id,
       user_name: currentUser.name,
