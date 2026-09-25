@@ -113,9 +113,6 @@ export default function App() {
   const [savingProfile, setSavingProfile] = useState(false);
 
   const [athletePerfScope, setAthletePerfScope] = useState('global');
-  
-  const [athleteStories, setAthleteStories] = useState([]);
-  const [activeStoryView, setActiveStoryView] = useState(null);
 
   const [weightHistoryList, setWeightHistoryList] = useState([]);
   const [targetWeightValue, setTargetWeightValue] = useState('75.0');
@@ -143,7 +140,6 @@ export default function App() {
 
   const [isAllEvidencesModalOpen, setIsAllEvidencesModalOpen] = useState(false);
 
-  // ESTADOS PARA CONFIGURAÇÃO DE CONTA E ACESSIBILIDADE
   const [subAbaConfig, setSubAbaConfig] = useState('conta');
   const [accountPhone, setAccountPhone] = useState('');
   const [accountNewPassword, setAccountNewPassword] = useState('');
@@ -324,25 +320,6 @@ export default function App() {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const twentyFourHours = 24 * 60 * 60 * 1000;
-      setAthleteStories(prev => prev.filter(st => now - st.createdAt < twentyFourHours));
-    }, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    let timer;
-    if (activeStoryView) {
-      timer = setTimeout(() => {
-        setActiveStoryView(null);
-      }, 30000);
-    }
-    return () => clearTimeout(timer);
-  }, [activeStoryView]);
 
   async function fetchUserProfile(userId, userEmail) {
     try {
@@ -642,7 +619,6 @@ export default function App() {
     setSession(null);
   }
 
-  // AÇÕES DA CONFIGURAÇÃO DE CONTA
   async function handleChangePassword() {
     if (!accountNewPassword.trim()) {
       Alert.alert('Atenção', 'Digite a nova senha.');
@@ -2069,7 +2045,6 @@ export default function App() {
       </View>
 
       <View style={{ flex: 1, flexDirection: 'row' }}>
-        {/* SIDEBAR COM O NOVO BOTÃO DE CONFIGURAÇÃO DE CONTA */}
         <View style={[styles.sidebar, highContrast && { backgroundColor: '#111111' }]}>
           <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'dashboard' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('dashboard')}>
             <Text style={styles.sidebarIcon}>🏠</Text>
@@ -2102,7 +2077,6 @@ export default function App() {
             </>
           )}
 
-          {/* ITEM INCLUÍDO SOLICITADO NO MENU LATERAL */}
           <TouchableOpacity 
             style={[styles.sidebarBtn, currentScreen === 'configuracao_conta' && styles.sidebarBtnActive]} 
             onPress={() => setCurrentScreen('configuracao_conta')}
@@ -2203,12 +2177,10 @@ export default function App() {
             </ScrollView>
           )}
 
-          {/* ÁREA PRINCIPAL DA TELA DE CONFIGURAÇÃO DE CONTA */}
           {currentScreen === 'configuracao_conta' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <Text style={[styles.pageTitle, { fontSize: 16 * fontSizeScale }, highContrast && { color: '#ffffff' }]}>⚙️ Configuração de Conta</Text>
 
-              {/* CARD DE NAVEGAÇÃO INTERNA COM OS 5 SUB-ITENS SOLICITADOS */}
               <View style={[styles.cardBox, highContrast && { backgroundColor: '#111111', borderColor: '#f97316' }]}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
                   <View style={{ flexDirection: 'row', gap: 6 }}>
@@ -2249,7 +2221,6 @@ export default function App() {
                   </View>
                 </ScrollView>
 
-                {/* 1º - CONTA */}
                 {subAbaConfig === 'conta' && (
                   <View>
                     <Text style={[styles.sectionHeaderTitle, { fontSize: 13 * fontSizeScale }]}>👤 Gerenciamento de Conta</Text>
@@ -2276,7 +2247,6 @@ export default function App() {
                   </View>
                 )}
 
-                {/* 2º - ACESSIBILIDADE */}
                 {subAbaConfig === 'acessibilidade' && (
                   <View>
                     <Text style={[styles.sectionHeaderTitle, { fontSize: 13 * fontSizeScale }]}>♿ Acessibilidade e Ajustes Visuais</Text>
@@ -2329,7 +2299,6 @@ export default function App() {
                   </View>
                 )}
 
-                {/* 3º - AVALIAÇÕES E CONTRIBUIÇÕES */}
                 {subAbaConfig === 'avaliacoes' && (
                   <View>
                     <Text style={[styles.sectionHeaderTitle, { fontSize: 13 * fontSizeScale }]}>⭐ Avaliações & Contribuições</Text>
@@ -2369,7 +2338,6 @@ export default function App() {
                   </View>
                 )}
 
-                {/* 4º - AJUDA E TERMOS */}
                 {subAbaConfig === 'ajuda' && (
                   <View>
                     <Text style={[styles.sectionHeaderTitle, { fontSize: 13 * fontSizeScale }]}>❓ Central de Ajuda & Termos</Text>
@@ -2405,7 +2373,6 @@ export default function App() {
                   </View>
                 )}
 
-                {/* 5º - VERSÃO DO APP */}
                 {subAbaConfig === 'versao' && (
                   <View style={{ alignItems: 'center', paddingVertical: 12 }}>
                     <Text style={{ fontSize: 24, fontWeight: '900', color: '#f97316' }}>MUVFIT</Text>
@@ -2662,67 +2629,6 @@ export default function App() {
                     <Text style={styles.scoreLabel}>🚶 PASSOS</Text>
                   </View>
                 </View>
-              </View>
-
-              <View style={styles.sectionContainerBox}>
-                <Text style={styles.sectionHeaderTitle}>Histórias de Atleta (24h)</Text>
-                
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', gap: 8, marginVertical: 4 }}>
-                  {viewedUser.id === currentUser.id && (
-                    <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-                      <TouchableOpacity 
-                        style={styles.storyAddBtnCircle} 
-                        onPress={() => handleTriggerPhoto('camera', (base64Img) => {
-                          if (base64Img) {
-                            setAthleteStories(prev => [...prev, { id: `st_${Date.now()}`, uri: base64Img, createdAt: Date.now() }]);
-                            Alert.alert('Story Publicado!', 'Capturado com a câmara.');
-                          }
-                        })}
-                        title="Tirar Foto para o Story"
-                      >
-                        <Text style={{ fontSize: 14, color: '#ffffff', fontWeight: 'bold' }}>📷+</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity 
-                        style={[styles.storyAddBtnCircle, { backgroundColor: '#1e3a8a' }]} 
-                        onPress={() => handleTriggerPhoto('gallery', (base64Img) => {
-                          if (base64Img) {
-                            setAthleteStories(prev => [...prev, { id: `st_${Date.now()}`, uri: base64Img, createdAt: Date.now() }]);
-                            Alert.alert('Story Publicado!', 'Adicionado da galeria.');
-                          }
-                        })}
-                        title="Escolher da Galeria para o Story"
-                      >
-                        <Text style={{ fontSize: 14, color: '#ffffff', fontWeight: 'bold' }}>🖼️+</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-
-                  {athleteStories.length === 0 ? (
-                    <Text style={{ fontSize: 10, color: '#94a3b8', fontStyle: 'italic', alignSelf: 'center', marginLeft: 6 }}>
-                      Nenhum story ativo. Clique em 📷+ ou 🖼️+.
-                    </Text>
-                  ) : (
-                    athleteStories.map(st => (
-                      <View key={st.id} style={{ position: 'relative', marginRight: 8 }}>
-                        <TouchableOpacity onPress={() => setActiveStoryView(st)}>
-                          <Image source={{ uri: st.uri }} style={styles.storyThumbnailCircle} />
-                        </TouchableOpacity>
-                        
-                        {viewedUser.id === currentUser.id && (
-                          <TouchableOpacity 
-                            style={styles.storyDeleteBtn}
-                            onPress={() => {
-                              setAthleteStories(prev => prev.filter(item => item.id !== st.id));
-                            }}
-                          >
-                            <Text style={{ fontSize: 8, color: '#ffffff', fontWeight: 'bold' }}>✕</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    ))
-                  )}
-                </ScrollView>
               </View>
 
               <View style={styles.sectionContainerBox}>
@@ -3258,7 +3164,6 @@ export default function App() {
               </div>
             </View>
 
-            {/* SELETORES DO PERÍODO DE VISUALIZAÇÃO DO GRÁFICO */}
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
               <View style={{ flex: 1, borderWidth: 1.5, borderColor: '#3b82f6', borderRadius: 8, padding: 8, backgroundColor: '#f0f9ff' }}>
                 <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1d4ed8', marginBottom: 2, textAlign: 'center' }}>📅 Período Inicial (Visualização)</Text>
@@ -3620,29 +3525,6 @@ export default function App() {
 
             <TouchableOpacity style={styles.primaryBtn} onPress={() => setIsTimeChartModalOpen(false)}>
               <Text style={styles.primaryBtnText}>FECHAR</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal visible={activeStoryView !== null} transparent animationType="fade">
-        <View style={styles.storyModalOverlay}>
-          <View style={styles.storyModalContainer}>
-            <View style={styles.storyProgressBar}>
-              <div style={{ width: '100%', height: '4px', backgroundColor: '#e2e8f0', borderRadius: '2px', overflow: 'hidden' }}>
-                <div style={{ width: '100%', height: '100%', backgroundColor: '#f97316', animation: 'shrink 30s linear forwards' }}></div>
-              </div>
-            </View>
-
-            {activeStoryView && (
-              <Image source={{ uri: activeStoryView.uri }} style={styles.storyFullscreenImage} />
-            )}
-
-            <TouchableOpacity 
-              style={styles.storyCloseBtn}
-              onPress={() => setActiveStoryView(null)}
-            >
-              <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: 'bold' }}>✕ Fechar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -4831,16 +4713,6 @@ const styles = StyleSheet.create({
   scoreLabel: { fontSize: 8, fontWeight: 'bold', color: '#1e3a8a', marginTop: 2 },
 
   sectionContainerBox: { backgroundColor: '#ffffff', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 10 },
-
-  storyAddBtnCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#f97316', justifyContent: 'center', alignItems: 'center', marginRight: 4 },
-  storyThumbnailCircle: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: '#1e3a8a', marginRight: 8 },
-  storyDeleteBtn: { position: 'absolute', top: -2, right: 4, backgroundColor: '#dc2626', width: 14, height: 14, borderRadius: 7, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#ffffff' },
-
-  storyModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' },
-  storyModalContainer: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', position: 'relative' },
-  storyProgressBar: { position: 'absolute', top: 40, left: 16, right: 16, zIndex: 10 },
-  storyFullscreenImage: { width: '100%', height: '80%', resizeMode: 'contain' },
-  storyCloseBtn: { position: 'absolute', top: 60, right: 20, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, zIndex: 15 },
 
   statsCardItemButton: { backgroundColor: '#f8fafc', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 6 },
 
