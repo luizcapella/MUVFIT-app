@@ -2514,7 +2514,7 @@ export default function App() {
                     <Text style={styles.btnMiniText}>SOLICITAR PARTICIPAÇÃO - {selectedChallenge.title}</Text>
                   </TouchableOpacity>
                 )}
-              </View>
+              endView>
               
               <View style={styles.topWinnersBannerBox}>
                 <Text style={styles.topWinnersBannerTitle}>👑 HALL DA FAMA - {selectedChallenge.title.toUpperCase()}</Text>
@@ -2600,18 +2600,25 @@ export default function App() {
 
                 <View style={{ width: '100%', marginTop: 10 }}>
                   <Text style={styles.inputLabelMini}>Visualizar Desempenho Por:</Text>
-                  <div style={{ marginBottom: 2 }}>
-                    <select
-                      style={styles.htmlNativeSelect}
-                      value={athletePerfScope}
-                      onChange={(e) => setAthletePerfScope(e.target.value)}
-                    >
-                      <option value="global">🌐 Somatório Geral (As suas Ligas)</option>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 4 }}>
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      <TouchableOpacity
+                        style={[styles.chipBtn, athletePerfScope === 'global' && styles.chipBtnActive]}
+                        onPress={() => setAthletePerfScope('global')}
+                      >
+                        <Text style={[styles.chipText, athletePerfScope === 'global' && styles.chipTextActive]}>🌐 Somatório Geral</Text>
+                      </TouchableOpacity>
                       {athleteChallengesList.map(ch => (
-                        <option key={ch.id} value={ch.id}>🏆 {ch.title}</option>
+                        <TouchableOpacity
+                          key={ch.id}
+                          style={[styles.chipBtn, String(athletePerfScope) === String(ch.id) && styles.chipBtnActive]}
+                          onPress={() => setAthletePerfScope(ch.id)}
+                        >
+                          <Text style={[styles.chipText, String(athletePerfScope) === String(ch.id) && styles.chipTextActive]}>🏆 {ch.title}</Text>
+                        </TouchableOpacity>
                       ))}
-                    </select>
-                  </div>
+                    </View>
+                  </ScrollView>
                 </View>
 
                 <View style={styles.scoreRowContainer}>
