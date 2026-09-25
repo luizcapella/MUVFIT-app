@@ -2514,7 +2514,7 @@ export default function App() {
                     <Text style={styles.btnMiniText}>SOLICITAR PARTICIPAÇÃO - {selectedChallenge.title}</Text>
                   </TouchableOpacity>
                 )}
-              endView>
+              </View>
               
               <View style={styles.topWinnersBannerBox}>
                 <Text style={styles.topWinnersBannerTitle}>👑 HALL DA FAMA - {selectedChallenge.title.toUpperCase()}</Text>
