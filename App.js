@@ -297,6 +297,16 @@ export default function App() {
   };
 
   useEffect(() => {
+    // Captura parâmetro de convite na URL (se houver) na versão Web
+    if (Platform.OS === 'web' && window.location.search) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const inviteCodeParam = urlParams.get('convite');
+      if (inviteCodeParam) {
+        setSearchQuery(inviteCodeParam);
+        setIsSearchOpen(true);
+      }
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) {
@@ -745,7 +755,7 @@ export default function App() {
   const hasUserAnyCommunity = userMembershipsAll.length > 0 || adminChallenges.length > 0;
 
   const handleShareInvite = async (challenge) => {
-    const inviteUrl = `https://muvfit.vercel.app/convite?codigo=${challenge.invite_code}`;
+    const inviteUrl = `https://muvfit.vercel.app/?convite=${challenge.invite_code}`;
     const message = 
       `🏃‍♂️ *Convite MuvFit* 🏃‍♀️\n\n` +
       `Você foi convidado para participar da *${challenge.title}*!\n\n` +
