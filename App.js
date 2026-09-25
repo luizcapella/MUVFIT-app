@@ -1382,14 +1382,6 @@ export default function App() {
 
     const cleanActType = selectedActivity.trim().toUpperCase();
     
-    let formattedDateStr = new Date().toLocaleDateString('pt-BR');
-    if (workoutDate) {
-      const parts = workoutDate.split('-');
-      if (parts.length === 3) {
-        formattedDateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
-      }
-    }
-
     let dur = 0;
     let kmValue = 0;
 
@@ -1437,8 +1429,7 @@ export default function App() {
       ptsBank = Math.max(0, calculatedPts - selectedChallenge.daily_cap);
     }
 
-    const timeWindowStr = !isSteps ? `${startHour}:${startMinute} às ${endHour}:${endMinute}` : '';
-
+    // Objeto limpo e blindado para inserir em pending_workouts
     const newPendingWorkout = {
       challenge_id: activeChallengeId,
       user_id: currentUser.id,
@@ -1447,19 +1438,24 @@ export default function App() {
       user_avatar: currentUser.avatar,
       activity_type: cleanActType,
       caption: (workoutCaption || `Atividade de ${selectedActivity}`) + bonusAppliedMsg,
-      photo_start: photoStart,
-      photo_evidence: photoEvidence,
-      photo_end: photoEnd,
+      photo_start: photoStart || null,
+      photo_evidence: photoEvidence || null,
+      photo_end: photoEnd || null,
       duration_minutes: dur,
       distance_km: kmValue,
-      workout_date: formattedDateStr,
       points_to_ranking: ptsRanking,
-      points_to_bank: ptsBank,
-      created_at: `${formattedDateStr} ${timeWindowStr ? `(${timeWindowStr})` : ''}`
+      points_to_bank: ptsBank
     };
 
-    await supabase.from('pending_workouts').insert([newPendingWorkout]);
-    fetchDataFromSupabase();
+    const { error: insertPendingErr } = await supabase.from('pending_workouts').insert([newPendingWorkout]);
+    
+    if (insertPendingErr) {
+      console.error('Erro detalhado ao inserir em pending_workouts:', insertPendingErr);
+      Alert.alert('Erro ao Enviar Treino', insertPendingErr.message);
+      return;
+    }
+
+    await fetchDataFromSupabase();
     
     setIsWorkoutModalOpen(false);
     setKmInput('');
@@ -1469,6 +1465,7 @@ export default function App() {
     setPhotoEnd(null);
     
     Alert.alert('Sucesso', 'Treino enviado com sucesso! Aguardando aprovação do Administrador.');
+  }
   }
 
   async function handleSaveAdvancedRules() {
