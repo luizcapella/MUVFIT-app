@@ -218,7 +218,6 @@ export default function App() {
   const [expandedSec2, setExpandedSec2] = useState(false);
   const [expandedSec3, setExpandedSec3] = useState(false);
   const [expandedSec4, setExpandedSec4] = useState(false);
-  const [expandedSec5, setExpandedSec5] = useState(false);
 
   const [manualSelectedAthleteId, setManualSelectedAthleteId] = useState('');
   const [manualActivity, setManualActivity] = useState('💪 Musculação');
@@ -2595,21 +2594,6 @@ export default function App() {
                   </div>
                 </View>
 
-                <View style={styles.medalsRowContainer}>
-                  <View style={styles.medalBadgeItem}>
-                    <Text style={{ fontSize: 16 }}>🥇</Text>
-                    <Text style={styles.medalBadgeCount}>{displayedPerf.goldMedals}x Ouro</Text>
-                  </View>
-                  <View style={styles.medalBadgeItem}>
-                    <Text style={{ fontSize: 16 }}>🥈</Text>
-                    <Text style={styles.medalBadgeCount}>{displayedPerf.silverMedals}x Prata</Text>
-                  </View>
-                  <View style={styles.medalBadgeItem}>
-                    <Text style={{ fontSize: 16 }}>🥉</Text>
-                    <Text style={styles.medalBadgeCount}>{displayedPerf.bronzeMedals}x Bronze</Text>
-                  </View>
-                </View>
-
                 <View style={styles.scoreRowContainer}>
                   <View style={styles.scoreBoxItem}>
                     <Text style={styles.scoreNumber}>{displayedPerf.rankingPoints.toLocaleString()}</Text>
@@ -2834,24 +2818,57 @@ export default function App() {
 
               <View style={styles.accordionCard}>
                 <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec2(!expandedSec2)}>
-                  <Text style={styles.accordionTitle}>2. CONTROLE DE INSCRIÇÃO ({pendingAthleteMembers.length + activeMembersInChallenge.length})</Text>
+                  <Text style={styles.accordionTitle}>2. GERENCIAMENTO DA COMUNIDADE ({currentChallengeMembers.length})</Text>
                   <Text style={styles.accordionArrow}>{expandedSec2 ? '▲' : '▼'}</Text>
                 </TouchableOpacity>
 
                 {expandedSec2 && (
                   <View style={styles.accordionBody}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1' }}>
                       <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>
-                        Status das Inscrições: {selectedChallenge.registrations_closed ? '🔒 FECHADO' : '🟢 ABERTO'}
+                        Status da Inscrição:
                       </Text>
-                      <TouchableOpacity style={styles.lockBtn} onPress={toggleChallengeRegistrations}>
+                      <TouchableOpacity 
+                        style={[
+                          styles.lockBtn, 
+                          { backgroundColor: selectedChallenge.registrations_closed ? '#dc2626' : '#16a34a', paddingHorizontal: 12, paddingVertical: 6 }
+                        ]} 
+                        onPress={toggleChallengeRegistrations}
+                      >
                         <Text style={styles.btnMiniText}>
-                          {selectedChallenge.registrations_closed ? '🔓 INICIAR CANDIDATURAS' : '🔒 ENCERRAR CANDIDATURAS'}
+                          {selectedChallenge.registrations_closed ? '🔴 FECHADO' : '🟢 ABERTO'}
                         </Text>
                       </TouchableOpacity>
                     </View>
 
-                    <Text style={[styles.inputLabel, { marginTop: 4, color: '#d97706' }]}>Solicitações para Atleta Ativo ({pendingAthleteMembers.length}):</Text>
+                    <Text style={[styles.inputLabel, { color: '#d97706', marginTop: 4 }]}>
+                      a) Entradas Pendentes na Comunidade ({pendingCommunityMembers.length}):
+                    </Text>
+                    {pendingCommunityMembers.length === 0 ? (
+                      <Text style={styles.emptyNoticeText}>Nenhum pedido de entrada na comunidade pendente.</Text>
+                    ) : (
+                      pendingCommunityMembers.map((p) => (
+                        <View key={p.id} style={styles.participantRow}>
+                          <Image source={{ uri: p.avatar }} style={styles.avatarMini} />
+                          <View style={{ flex: 1, marginLeft: 8 }}>
+                            <Text style={styles.participantName}>{p.nickname || p.name}</Text>
+                            <Text style={{ fontSize: 8, color: '#64748b' }}>Solicitou entrar na comunidade da liga</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', gap: 4 }}>
+                            <TouchableOpacity style={styles.approveBtn} onPress={() => handleApproveCommunityMember(p.id)}>
+                              <Text style={styles.btnMiniText}>✅ ACEITAR</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.banBtn} onPress={() => handleRejectCommunityMember(p.id)}>
+                              <Text style={styles.btnMiniText}>❌ RECUSAR</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ))
+                    )}
+
+                    <Text style={[styles.inputLabel, { color: '#f97316', marginTop: 12 }]}>
+                      b) Solicitações Para Atletas Ativos ({pendingAthleteMembers.length}):
+                    </Text>
                     {pendingAthleteMembers.length === 0 ? (
                       <Text style={styles.emptyNoticeText}>Nenhuma solicitação de Atleta Ativo pendente.</Text>
                     ) : (
@@ -2877,25 +2894,32 @@ export default function App() {
                       ))
                     )}
 
-                    <Text style={[styles.inputLabel, { marginTop: 12, color: '#16a34a' }]}>
-                      ⚡ Atletas Ativos na Liga ({activeMembersInChallenge.length}):
+                    <Text style={[styles.inputLabel, { color: '#1e3a8a', marginTop: 14 }]}>
+                      c) Membros ({currentChallengeMembers.length}):
                     </Text>
-                    {activeMembersInChallenge.length === 0 ? (
-                      <Text style={styles.emptyNoticeText}>Nenhum atleta ativo cadastrado nesta liga.</Text>
+                    {currentChallengeMembers.length === 0 ? (
+                      <Text style={styles.emptyNoticeText}>Nenhum membro na comunidade.</Text>
                     ) : (
-                      activeMembersInChallenge.map((m) => (
+                      currentChallengeMembers.map((m) => (
                         <View key={m.id} style={styles.participantRow}>
                           <Image source={{ uri: m.avatar }} style={styles.avatarMini} />
                           <View style={{ flex: 1, marginLeft: 8 }}>
                             <Text style={styles.participantName}>{m.nickname || m.name}</Text>
-                            <Text style={styles.tagActiveText}>⚡ Atleta Ativo</Text>
+                            <Text style={m.role === 'active' ? styles.tagActiveText : styles.participantSub}>
+                              {m.role === 'active' ? '⚡ ATLETA ATIVO' : m.role === 'pending_athlete' ? '⏳ ATLETA PENDENTE' : '👀 TORCEDOR'}
+                            </Text>
                           </View>
-                          <TouchableOpacity 
-                            style={styles.spectatorBtn} 
-                            onPress={() => handleUpdateAthleteStatus(m.id, 'spectator')}
-                          >
-                            <Text style={styles.btnMiniText}>👀 TORNAR TORCEDOR</Text>
-                          </TouchableOpacity>
+
+                          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                            {m.role === 'active' && (
+                              <TouchableOpacity style={styles.spectatorBtn} onPress={() => handleUpdateAthleteStatus(m.id, 'spectator')}>
+                                <Text style={styles.btnMiniText}>👀 TORNAR TORCEDOR</Text>
+                              </TouchableOpacity>
+                            )}
+                            <TouchableOpacity style={styles.banBtn} onPress={() => handleRemoveMemberFromCommunity(m.id)}>
+                              <Text style={styles.btnMiniText}>🗑️ REMOVER</Text>
+                            </TouchableOpacity>
+                          </div>
                         </View>
                       ))
                     )}
@@ -3008,64 +3032,11 @@ export default function App() {
 
               <View style={styles.accordionCard}>
                 <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec4(!expandedSec4)}>
-                  <Text style={styles.accordionTitle}>4. GERENCIAMENTO DE MEMBROS DA COMUNIDADE ({currentChallengeMembers.length})</Text>
+                  <Text style={styles.accordionTitle}>4. CONFIGURAÇÃO AVANÇADA DE PONTOS</Text>
                   <Text style={styles.accordionArrow}>{expandedSec4 ? '▲' : '▼'}</Text>
                 </TouchableOpacity>
 
                 {expandedSec4 && (
-                  <View style={styles.accordionBody}>
-                    <Text style={[styles.inputLabel, { color: '#d97706' }]}>
-                      📩 Entradas Pendentes na Comunidade ({pendingCommunityMembers.length}):
-                    </Text>
-                    
-                    {pendingCommunityMembers.length === 0 ? (
-                      <Text style={styles.emptyNoticeText}>Nenhum pedido de entrada na comunidade pendente.</Text>
-                    ) : (
-                      pendingCommunityMembers.map((p) => (
-                        <View key={p.id} style={styles.participantRow}>
-                          <Image source={{ uri: p.avatar }} style={styles.avatarMini} />
-                          <View style={{ flex: 1, marginLeft: 8 }}>
-                            <Text style={styles.participantName}>{p.nickname || p.name}</Text>
-                            <Text style={{ fontSize: 8, color: '#64748b' }}>Solicitou entrar na comunidade da liga</Text>
-                          </View>
-                          <View style={{ flexDirection: 'row', gap: 4 }}>
-                            <TouchableOpacity style={styles.approveBtn} onPress={() => handleApproveCommunityMember(p.id)}>
-                              <Text style={styles.btnMiniText}>✅ ACEITAR</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.banBtn} onPress={() => handleRejectCommunityMember(p.id)}>
-                              <Text style={styles.btnMiniText}>❌ RECUSAR</Text>
-                            </TouchableOpacity>
-                          </View>
-                        </View>
-                      ))
-                    )}
-
-                    <Text style={[styles.inputLabel, { marginTop: 10 }]}>Membros Atuais da Comunidade:</Text>
-                    {currentChallengeMembers.filter(m => m.role !== 'pending_community').map((m) => (
-                      <View key={m.id} style={styles.participantRow}>
-                        <Image source={{ uri: m.avatar }} style={styles.avatarMini} />
-                        <View style={{ flex: 1, marginLeft: 8 }}>
-                          <Text style={styles.participantName}>{m.nickname || m.name}</Text>
-                          <Text style={m.role === 'active' ? styles.tagActiveText : styles.participantSub}>
-                            {m.role === 'active' ? '⚡ ATLETA ATIVO' : m.role === 'pending_athlete' ? '⏳ ATLETA PENDENTE' : '👀 TORCEDOR'}
-                          </Text>
-                        </View>
-                        <TouchableOpacity style={styles.banBtn} onPress={() => handleRemoveMemberFromCommunity(m.id)}>
-                          <Text style={styles.btnMiniText}>🗑️ REMOVER</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-
-              <View style={styles.accordionCard}>
-                <TouchableOpacity style={styles.accordionHeader} onPress={() => setExpandedSec5(!expandedSec5)}>
-                  <Text style={styles.accordionTitle}>5. CONFIGURAÇÃO AVANÇADA DE PONTOS</Text>
-                  <Text style={styles.accordionArrow}>{expandedSec5 ? '▲' : '▼'}</Text>
-                </TouchableOpacity>
-
-                {expandedSec5 && (
                   <View style={styles.accordionBody}>
                     <Text style={{ fontSize: 10, color: '#475569', marginBottom: 8 }}>
                       Configurar limites de classificação, critérios de desempate (incluindo Tempo em Atividade) e regras específicas para os atletas.
