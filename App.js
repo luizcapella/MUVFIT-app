@@ -1196,10 +1196,11 @@ export default function App() {
 
       const parsedKm = parseFloat(workout.distance_km) || 0;
       const parsedDuration = parseInt(workout.duration_minutes, 10) || 0;
+      const targetChallengeId = workout.challenge_id;
 
       const { data: currentMem, error: fetchMemErr } = await supabase.from('memberships')
         .select('ranking_points, bank_points, total_steps, total_km, active_days')
-        .eq('challenge_id', workout.challenge_id || workout.challengeId)
+        .eq('challenge_id', targetChallengeId)
         .eq('user_id', workout.user_id)
         .maybeSingle();
 
@@ -1222,7 +1223,7 @@ export default function App() {
 
         const { error: updateMemErr } = await supabase.from('memberships')
           .update(updatedObj)
-          .eq('challenge_id', workout.challenge_id || workout.challengeId)
+          .eq('challenge_id', targetChallengeId)
           .eq('user_id', workout.user_id);
 
         if (updateMemErr) {
@@ -1236,15 +1237,15 @@ export default function App() {
       if (workout.photo_end) imagesList.push(workout.photo_end);
 
       const newPost = {
-        challenge_id: workout.challenge_id || workout.challengeId,
+        challenge_id: targetChallengeId,
         user_id: workout.user_id,
         user_name: workout.user_name,
         user_nickname: workout.user_nickname,
         user_avatar: workout.user_avatar,
         activity_type: workout.activity_type,
         caption: workout.caption,
-        photo_evidence: workout.photo_evidence,
-        all_photos: imagesList.length > 0 ? imagesList : [workout.photo_evidence],
+        photo_evidence: workout.photo_evidence || 'https://picsum.photos/seed/evid/400/300',
+        all_photos: imagesList.length > 0 ? imagesList : [workout.photo_evidence || 'https://picsum.photos/seed/evid/400/300'],
         points_to_ranking: workout.points_to_ranking || 0,
         points_to_bank: workout.points_to_bank || 0,
         duration_minutes: parsedDuration,
