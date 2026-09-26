@@ -1470,8 +1470,23 @@ export default function App() {
     let ptsBank = 0;
 
     if (selectedChallenge?.has_daily_cap && selectedChallenge?.daily_cap) {
-      ptsRanking = Math.min(calculatedPts, selectedChallenge.daily_cap);
-      ptsBank = Math.max(0, calculatedPts - selectedChallenge.daily_cap);
+      const dailyLimit = parseInt(selectedChallenge.daily_cap, 10) || 22000;
+
+      const userExistingWorkoutsToday = [
+        ...feedPosts.filter(p => p.challenge_id === activeChallengeId && p.user_id === currentUser.id && (p.created_at || '').slice(0, 10) === workoutDate),
+        ...pendingWorkouts.filter(w => w.challenge_id === activeChallengeId && w.user_id === currentUser.id && w.workout_date === workoutDate)
+      ];
+
+      const alreadyEarnedToday = userExistingWorkoutsToday.reduce((sum, item) => sum + (item.points_to_ranking || 0), 0);
+      const availableSpaceToday = Math.max(0, dailyLimit - alreadyEarnedToday);
+
+      if (calculatedPts <= availableSpaceToday) {
+        ptsRanking = calculatedPts;
+        ptsBank = 0;
+      } else {
+        ptsRanking = availableSpaceToday;
+        ptsBank = calculatedPts - availableSpaceToday;
+      }
     }
 
     const newPendingWorkout = {
