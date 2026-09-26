@@ -760,7 +760,7 @@ export default function App() {
   const hasUserAnyCommunity = userMembershipsAll.length > 0 || adminChallenges.length > 0;
 
   const handleShareInvite = async (challenge) => {
-    const inviteUrl = `https://muvfit.vercel.app/?convite=${challenge.invite_code}`;
+    const inviteUrl = `https://muvfit-app.vercel.app/?convite=${challenge.invite_code}`;
     const message = 
       `🏃‍♂️ *Convite MuvFit* 🏃‍♀️\n\n` +
       `Você foi convidado para participar da *${challenge.title}*!\n\n` +
