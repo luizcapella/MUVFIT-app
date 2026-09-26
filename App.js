@@ -304,6 +304,43 @@ export default function App() {
         if (inviteCodeParam) {
           setSearchQuery(inviteCodeParam);
           setIsSearchOpen(true);
+          
+          if (session?.user?.id) {
+            supabase
+              .from('challenges')
+              .select('id, title')
+              .eq('invite_code', inviteCodeParam.toUpperCase())
+              .maybeSingle()
+              .then(async ({ data: foundCh }) => {
+                if (foundCh) {
+                  const { data: existingMem } = await supabase
+                    .from('memberships')
+                    .select('id')
+                    .eq('challenge_id', foundCh.id)
+                    .eq('user_id', session.user.id)
+                    .maybeSingle();
+
+                  if (!existingMem) {
+                    await supabase.from('memberships').insert([{
+                      challenge_id: foundCh.id,
+                      user_id: session.user.id,
+                      name: currentUser.name || session.user.email.split('@')[0],
+                      nickname: currentUser.nickname || session.user.email.split('@')[0],
+                      role: 'pending_community',
+                      ranking_points: 0,
+                      bank_points: 0,
+                      total_steps: 0,
+                      avatar: currentUser.avatar || `https://picsum.photos/seed/${session.user.id}/200/200`
+                    }]);
+                    
+                    fetchDataFromSupabase();
+                    if (Platform.OS === 'web') {
+                      window.alert(`📩 Convite detetado! Solicitação enviada para a liga "${foundCh.title}". O Administrador já pode aceitá-la.`);
+                    }
+                  }
+                }
+              });
+          }
         }
       } catch (e) {
         console.log('Erro ao ler parâmetros da URL:', e);
@@ -337,7 +374,7 @@ export default function App() {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [session?.user?.id]);
 
   async function fetchUserProfile(userId, userEmail) {
     try {
