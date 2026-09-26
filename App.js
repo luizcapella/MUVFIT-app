@@ -297,12 +297,16 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (Platform.OS === 'web' && window.location.search) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const inviteCodeParam = urlParams.get('convite');
-      if (inviteCodeParam) {
-        setSearchQuery(inviteCodeParam);
-        setIsSearchOpen(true);
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.search) {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const inviteCodeParam = urlParams.get('convite');
+        if (inviteCodeParam) {
+          setSearchQuery(inviteCodeParam);
+          setIsSearchOpen(true);
+        }
+      } catch (e) {
+        console.log('Erro ao ler parâmetros da URL:', e);
       }
     }
 
