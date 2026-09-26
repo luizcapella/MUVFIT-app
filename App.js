@@ -471,7 +471,6 @@ export default function App() {
       if (isSignUp) {
         if (!fullNameInput.trim()) {
           Alert.alert('Campo Obrigatório', 'Por favor, preencha o seu Nome Completo.');
-          setAuthSubmitting(false);
           return;
         }
 
@@ -491,7 +490,6 @@ export default function App() {
 
         if (authError) {
           Alert.alert('Erro no Cadastro', authError.message);
-          setAuthSubmitting(false);
           return;
         }
 
@@ -499,7 +497,6 @@ export default function App() {
           setSession(authData.session);
           await fetchUserProfile(authData.session.user.id, authData.session.user.email);
           await fetchDataFromSupabase();
-          setAuthSubmitting(false);
           return;
         }
 
