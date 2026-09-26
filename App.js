@@ -46,53 +46,6 @@ function formatDateBR(dateObj) {
   return `${d}/${m}/${y}`;
 }
 
-function calculateSeasonDates(periodType, isRenewal = false, referenceDate = new Date()) {
-  const year = referenceDate.getFullYear();
-  const month = referenceDate.getMonth();
-  
-  let startDateObj = new Date(referenceDate);
-  let endDateObj = new Date(referenceDate);
-
-  if (periodType === 'Weekly') {
-    if (isRenewal) {
-      const dayOfWeek = referenceDate.getDay();
-      startDateObj.setDate(referenceDate.getDate() - dayOfWeek);
-    }
-    const dayOfWeek = startDateObj.getDay();
-    const distanceToSaturday = 6 - dayOfWeek;
-    endDateObj = new Date(startDateObj);
-    endDateObj.setDate(startDateObj.getDate() + distanceToSaturday);
-  } else if (periodType === 'Yearly') {
-    if (isRenewal) {
-      startDateObj = new Date(year, 0, 1);
-    }
-    endDateObj = new Date(year, 11, 31);
-  } else {
-    if (isRenewal) {
-      startDateObj = new Date(year, month, 1);
-    }
-    endDateObj = new Date(year, month + 1, 0);
-  }
-
-  return {
-    startDateStr: formatDateBR(startDateObj),
-    endDateStr: formatDateBR(endDateObj),
-    startDateObj,
-    endDateObj
-  };
-}
-
-function getChampionTitle(goldCount) {
-  if (goldCount <= 0) return '';
-  if (goldCount === 1) return 'Campeão';
-  if (goldCount === 2) return 'Bi-campeão';
-  if (goldCount === 3) return 'Tri-campeão';
-  if (goldCount === 4) return 'Tetra-campeão';
-  if (goldCount === 5) return 'Penta-campeão';
-  if (goldCount === 6) return 'Hexa-campeão';
-  return `${goldCount}x Campeão`;
-}
-
 export default function App() {
   const [session, setSession] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
@@ -179,7 +132,7 @@ export default function App() {
   const [activeChallengeId, setActiveChallengeId] = useState(null);
   const [isAdminContext, setIsAdminContext] = useState(true);
 
-  // Estados para expandir/ocultar seções do Dashboard
+  // Estados para expandir/ocultar as 3 seções do Dashboard
   const [dashSectionAdmin, setDashSectionAdmin] = useState(true);
   const [dashSectionInvites, setDashSectionInvites] = useState(true);
   const [dashSectionParticipant, setDashSectionParticipant] = useState(true);
@@ -347,7 +300,6 @@ export default function App() {
     initApp();
   }, []);
 
-  // Processar convite via URL após sessão estar carregada
   useEffect(() => {
     async function processInviteParam() {
       if (!session?.user?.id) return;
@@ -413,7 +365,7 @@ export default function App() {
             const parsedWeights = typeof data.weight_history === 'string' ? JSON.parse(data.weight_history) : data.weight_history;
             if (Array.isArray(parsedWeights)) setWeightHistoryList(parsedWeights);
           } catch(e) {
-            console.log('Erro ao parsear weight_history:', e);
+            console.log('Erro weight_history:', e);
           }
         }
         
@@ -471,7 +423,7 @@ export default function App() {
         })
         .eq('id', currentUser.id);
     } catch (err) {
-      console.log('Erro inesperado ao salvar dados de peso:', err);
+      console.log('Erro ao salvar peso:', err);
     }
   }
 
@@ -527,7 +479,7 @@ export default function App() {
               nickname: cleanName,
               gender: genderInput
             }
-          ], { onConflict: 'id' }).catch(err => console.log('Aviso profiles ignorado:', err));
+          ], { onConflict: 'id' }).catch(err => console.log('Profiles upsert:', err));
         }
 
         const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
@@ -693,7 +645,6 @@ export default function App() {
     if (Platform.OS === 'web') {
       const confirmDelete = window.confirm("TEM CERTEZA? Esta ação desativará/excluirá sua conta permanentemente.");
       if (confirmDelete) {
-        window.alert("Instrução enviada ao servidor. A sua conta será desativada.");
         handleSignOut();
       }
     } else {
@@ -703,7 +654,6 @@ export default function App() {
         [
           { text: "NÃO", style: "cancel" },
           { text: "SIM", style: "destructive", onPress: () => {
-              Alert.alert("Conta Desativada", "Sua conta foi marcada para remoção.");
               handleSignOut();
             } 
           }
@@ -792,12 +742,10 @@ export default function App() {
   const userMembershipsAll = memberships.filter(m => m.userId === currentUser.id);
   const adminChallenges = challenges.filter(c => c.creator_id === currentUser.id);
   
-  // Participantes apenas onde o papel é active ou spectator (mas NÃO pending_community)
   const participantChallenges = challenges.filter(c => {
     return memberships.some(m => m.challengeId === c.id && m.userId === currentUser.id && (m.role === 'active' || m.role === 'spectator')) && c.creator_id !== currentUser.id;
   });
 
-  // Convites Recebidos (onde o role é pending_community)
   const receivedInvitesList = memberships.filter(m => m.userId === currentUser.id && m.role === 'pending_community');
 
   const currentUserMembershipInActiveChallenge = memberships.find(
@@ -1010,8 +958,6 @@ export default function App() {
       leaguePeriod: newChallengePeriod
     };
 
-    const dates = calculateSeasonDates(newChallengePeriod, false, new Date());
-
     const newObj = {
       id: newId,
       title: newChallengeTitle.trim(),
@@ -1021,8 +967,8 @@ export default function App() {
       daily_cap: hasCapToggle ? (parseInt(newChallengeCap, 10) || 22000) : null,
       registrations_closed: false,
       is_finished: false,
-      start_date: dates.startDateStr,
-      end_date: dates.endDateStr,
+      start_date: '01/09/2026',
+      end_date: '30/09/2026',
       tiebreaker_enabled: true,
       rules_config: initialRulesConfig
     };
@@ -1058,7 +1004,7 @@ export default function App() {
     setIsAdminContext(true);
     setCurrentScreen('admin');
 
-    Alert.alert('Sucesso', `Liga criada com sucesso! Vigência inicial: ${dates.startDateStr} até ${dates.endDateStr}`);
+    Alert.alert('Sucesso', 'Liga criada com sucesso!');
   }
 
   async function handleDeleteChallenge(challengeId) {
@@ -1303,10 +1249,7 @@ export default function App() {
         document.body.removeChild(input);
       }, 1000);
     } else {
-      Alert.alert(
-        '📷 Câmera / Mídia',
-        mode === 'camera' ? 'Abrindo a câmara do dispositivo...' : 'Abrindo a galeria...'
-      );
+      Alert.alert('📷 Câmera / Mídia', mode === 'camera' ? 'Abrindo câmara...' : 'Abrindo galeria...');
     }
   };
 
@@ -1679,6 +1622,14 @@ export default function App() {
     rankDisplay: `#${index + 1}`
   }));
 
+  const getChampionTitle = (goldCount) => {
+    if (goldCount <= 0) return '';
+    if (goldCount === 1) return 'Campeão';
+    if (goldCount === 2) return 'Bi-campeão';
+    if (goldCount === 3) return 'Tri-campeão';
+    return `${goldCount}x Campeão`;
+  };
+
   const top3Winners = [...currentChallengeMembers]
     .filter(m => (m.goldMedals || 0) > 0)
     .sort((a, b) => (b.goldMedals || 0) - (a.goldMedals || 0))
@@ -1713,9 +1664,6 @@ export default function App() {
     displayedPerf.totalSteps = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.totalSteps || 0), 0);
     displayedPerf.totalKm = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.totalKm || 0), 0);
     displayedPerf.activeDays = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.activeDays || 0), 0);
-    displayedPerf.goldMedals = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.silverMedals || 0), viewedUser.goldMedals || 0);
-    displayedPerf.silverMedals = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.silverMedals || 0), viewedUser.silverMedals || 0);
-    displayedPerf.bronzeMedals = athleteMembershipsAll.reduce((acc, curr) => acc + (curr.bronzeMedals || 0), viewedUser.bronzeMedals || 0);
     displayedPerf.athleteStatusText = 'Múltiplas Ligas';
   } else if (selectedMembershipForAthlete) {
     displayedPerf.rankingPoints = selectedMembershipForAthlete.rankingPoints || 0;
@@ -1723,9 +1671,6 @@ export default function App() {
     displayedPerf.totalSteps = selectedMembershipForAthlete.totalSteps || 0;
     displayedPerf.totalKm = selectedMembershipForAthlete.totalKm || 0;
     displayedPerf.activeDays = selectedMembershipForAthlete.activeDays || 0;
-    displayedPerf.goldMedals = selectedMembershipForAthlete.goldMedals || 0;
-    displayedPerf.silverMedals = selectedMembershipForAthlete.silverMedals || 0;
-    displayedPerf.bronzeMedals = selectedMembershipForAthlete.bronzeMedals || 0;
     
     if (selectedMembershipForAthlete.role === 'active') {
       displayedPerf.athleteStatusText = '⚡ Atleta Ativo';
@@ -1737,7 +1682,6 @@ export default function App() {
   }
 
   const athleteFeedPostsAll = feedPosts.filter(p => p.user_id === viewedUser.id);
-
   const calculatedStepsPoints = Math.round(
     (parseFloat(dailyStepsConfig.manualStepsInput) || 0) * (parseFloat(dailyStepsConfig.multiplier) || 0)
   );
@@ -1776,11 +1720,7 @@ export default function App() {
   const modalityPercentagesList = allAvailableModalities.map(m => {
     const count = modalityCountsMap[m.label] || 0;
     const percentage = totalModalityExecutions > 0 ? Math.round((count / totalModalityExecutions) * 100) : 0;
-    return {
-      ...m,
-      count,
-      percentage
-    };
+    return { ...m, count, percentage };
   });
 
   const availablePeriodsSet = new Set(['Todos']);
@@ -1807,7 +1747,7 @@ export default function App() {
     return acc + (isNaN(d) ? 0 : d);
   }, 0) + athleteMembershipsAll.reduce((acc, curr) => acc + (curr.totalKm || 0), 0);
 
-  let kmButtonSubtitleText = `${totalKmAccumulated.toFixed(1)} km acumulados`;
+  const kmButtonSubtitleText = `${totalKmAccumulated.toFixed(1)} km acumulados`;
 
   const kmActivitiesList = [
     { label: 'Corrida', color: '#ef4444' },
@@ -1845,7 +1785,7 @@ export default function App() {
   }, 0) + athleteMembershipsAll.reduce((acc, curr) => acc + (curr.activeDays || 0), 0);
 
   const totalHoursAccumulated = (totalMinutesAccumulated / 60).toFixed(1);
-  let timeButtonSubtitleText = `${totalHoursAccumulated} horas registradas`;
+  const timeButtonSubtitleText = `${totalHoursAccumulated} horas registradas`;
 
   const timeByPeriodMap = {};
   athleteFeedPostsAll.forEach(p => {
@@ -1867,6 +1807,10 @@ export default function App() {
   });
 
   const timePeriodsArray = Object.keys(timeByPeriodMap).length > 0 ? Object.keys(timeByPeriodMap) : ['Set/26'];
+
+  const isThreePhotosGroupActive = ['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico'].includes(selectedActivity);
+  const isKmGroupActive = ['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedActivity);
+  const isStepsActive = selectedActivity === '🚶‍♂️ Passos Diários';
 
   if (loadingAuth) {
     return (
@@ -2079,7 +2023,7 @@ export default function App() {
                                 style={styles.requestCommunityBtn} 
                                 onPress={() => handleRequestCommunityEntry(ch)}
                               >
-                                <Text style={styles.btnMiniText}>Solicitar Entrada - {ch.title}</Text>
+                                <Text style={styles.btnMiniText}>Solicitar Entrada</Text>
                               </TouchableOpacity>
                             ) : (
                               <TouchableOpacity 
@@ -2090,7 +2034,7 @@ export default function App() {
                                   setSearchQuery('');
                                 }}
                               >
-                                <Text style={styles.btnMiniText}>Aceder à Liga ➔</Text>
+                                <Text style={styles.btnMiniText}>Aceder ➔</Text>
                               </TouchableOpacity>
                             )}
                           </View>
@@ -2503,7 +2447,7 @@ export default function App() {
                     <View style={{ backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1' }}>
                       <Text style={{ fontSize: 11 * fontSizeScale, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 4 }}>📜 Termos de Uso e Privacidade</Text>
                       <Text style={{ fontSize: 9 * fontSizeScale, color: '#334155', lineHeight: 13 }}>
-                        Ao utilizar o MuvFit, você concorda que todas as evidências de treinos e imagens submetidas são de sua responsabilidade civil. O uso indevido de imagens falsas pode acarretar a suspensão do atleta pela administração do desafio. A plataforma preserva seus dados pessoais conforme diretrizes e boas práticas de segurança.
+                        Ao utilizar o MuvFit, você concorda que todas as evidências de treinos e imagens submetidas são de sua responsabilidade civil. O uso indevido de imagens falsas pode acarretar a suspensão do atleta pela administração do desafio.
                       </Text>
                     </View>
                   </View>
@@ -2514,9 +2458,6 @@ export default function App() {
                     <Text style={{ fontSize: 24, fontWeight: '900', color: '#f97316' }}>MUVFIT</Text>
                     <Text style={{ fontSize: 12 * fontSizeScale, fontWeight: 'bold', color: '#1e3a8a', marginTop: 4 }}>Mizan Soluções Técnicas</Text>
                     <Text style={{ fontSize: 10 * fontSizeScale, color: '#64748b', marginTop: 8 }}>Versão Atual da Aplicação: 2.6.2-Nuvem</Text>
-                    <Text style={{ fontSize: 9 * fontSizeScale, color: '#94a3b8', marginTop: 4, textAlign: 'center' }}>
-                      Desenvolvido com tecnologia React Native & Supabase Cloud Services.
-                    </Text>
                   </View>
                 )}
               </View>
@@ -2847,7 +2788,7 @@ export default function App() {
                 </View>
 
                 {personalGoals.length === 0 ? (
-                  <Text style={styles.emptyNoticeText}>Nenhum objetivo registado. Clique em "+ OBJETIVO" para adicionar.</Text>
+                  <Text style={styles.emptyNoticeText}>Nenhum objetivo registado.</Text>
                 ) : (
                   personalGoals.map(goal => (
                     <View key={goal.id} style={styles.goalCheckboxRow}>
@@ -3062,7 +3003,7 @@ export default function App() {
                           <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                             {m.role === 'active' && (
                               <TouchableOpacity style={styles.spectatorBtn} onPress={() => handleUpdateAthleteStatus(m.id, 'spectator')}>
-                                <Text style={styles.btnMiniText}>👀 TORNAR TORCEDOR</Text>
+                                <Text style={styles.btnMiniText}>👀 TORCEDOR</Text>
                               </TouchableOpacity>
                             )}
                             <TouchableOpacity style={styles.banBtn} onPress={() => handleRemoveMemberFromCommunity(m.id)}>
@@ -3243,153 +3184,26 @@ export default function App() {
                       }
                     }}
                     style={{ position: 'absolute', opacity: 0, width: '100px', cursor: 'pointer' }}
-                    title="Selecionar Mês/Ano"
                   />
                   <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e3a8a' }}>{newWeightDateInput}</span>
                 </div>
               </View>
             </View>
 
-            <View style={{ borderWidth: 1.5, borderColor: '#1e3a8a', borderRadius: 8, padding: 8, backgroundColor: '#eff6ff', marginBottom: 10 }}>
-              <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 2, textAlign: 'center' }}>🎯 Definir Peso Meta (kg)</Text>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '14px' }}>🎯</span>
-                <input
-                  type="text"
-                  placeholder="75.0"
-                  value={targetWeightValue}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setTargetWeightValue(val);
-                    const safeTarget = val.trim() === '' ? null : parseFloat(val);
-                    saveWeightDataToSupabase(weightHistoryList, isNaN(safeTarget) ? null : safeTarget);
-                  }}
-                  style={{ width: '80px', border: 'none', background: 'transparent', fontSize: '14px', fontWeight: 'bold', color: '#1e3a8a', outline: 'none', textAlign: 'center' }}
-                />
-              </div>
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-              <View style={{ flex: 1, borderWidth: 1.5, borderColor: '#3b82f6', borderRadius: 8, padding: 8, backgroundColor: '#f0f9ff' }}>
-                <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1d4ed8', marginBottom: 2, textAlign: 'center' }}>📅 Período Inicial (Visualização)</Text>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                  <input
-                    type="month"
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        const [yyyy, mm] = e.target.value.split('-');
-                        const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-                        const mStr = monthNames[parseInt(mm, 10) - 1];
-                        setChartStartDateFilter(`${mStr}/${yyyy}`);
-                      }
-                    }}
-                    style={{ position: 'absolute', opacity: 0, width: '100px', cursor: 'pointer' }}
-                    title="Selecionar Início"
-                  />
-                  <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#1e3a8a' }}>De: {chartStartDateFilter}</span>
-                </div>
-              </View>
-
-              <View style={{ flex: 1, borderWidth: 1.5, borderColor: '#3b82f6', borderRadius: 8, padding: 8, backgroundColor: '#f0f9ff' }}>
-                <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1d4ed8', marginBottom: 2, textAlign: 'center' }}>📅 Período Final (Visualização)</Text>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                  <input
-                    type="month"
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        const [yyyy, mm] = e.target.value.split('-');
-                        const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-                        const mStr = monthNames[parseInt(mm, 10) - 1];
-                        setChartEndDateFilter(`${mStr}/${yyyy}`);
-                      }
-                    }}
-                    style={{ position: 'absolute', opacity: 0, width: '100px', cursor: 'pointer' }}
-                    title="Selecionar Fim"
-                  />
-                  <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#1e3a8a' }}>Até: {chartEndDateFilter}</span>
-                </div>
-              </View>
-            </View>
-
-            <TouchableOpacity 
-              style={styles.checkboxRow} 
-              onPress={() => setIsDeleteModeActive(!isDeleteModeActive)}
-            >
-              <div style={{ width: '16px', height: '16px', border: '1.5px solid #dc2626', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: isDeleteModeActive ? '#dc2626' : '#ffffff' }}>
-                {isDeleteModeActive && <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold' }}>✓</Text>}
-              </div>
-              <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#dc2626' }}>Apagar dados de peso</Text>
-            </TouchableOpacity>
-
-            <View style={{ backgroundColor: '#ffffff', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 10 }}>
-              <div style={{ height: '160px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', borderBottom: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', paddingBottom: '10px' }}>
-                {weightHistoryList.length === 0 ? (
-                  <Text style={{ fontSize: 10, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center' }}>
-                    Nenhum dado de peso inserido para o período selecionado.
-                  </Text>
-                ) : (
-                  weightHistoryList.map((item) => (
-                    <div key={item.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', flex: 1 }}>
-                      {isDeleteModeActive && (
-                        <TouchableOpacity
-                          style={{
-                            position: 'absolute',
-                            top: -22,
-                            backgroundColor: '#dc2626',
-                            width: 16,
-                            height: 16,
-                            borderRadius: 8,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            zIndex: 5
-                          }}
-                          onPress={() => {
-                            const updatedList = weightHistoryList.filter(w => w.id !== item.id);
-                            setWeightHistoryList(updatedList);
-                            const safeTarget = targetWeightValue.trim() === '' ? null : parseFloat(targetWeightValue);
-                            saveWeightDataToSupabase(updatedList, isNaN(safeTarget) ? null : safeTarget);
-                          }}
-                        >
-                          <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold', lineHeight: 10 }}>-</Text>
-                        </TouchableOpacity>
-                      )}
-
-                      <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#f97316', marginBottom: '4px' }}>{item.weight}</span>
-                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f97316', border: '2px solid #ffffff', boxShadow: '0 0 0 1px #f97316' }}></div>
-                      <span style={{ fontSize: '8px', color: '#64748b', position: 'absolute', bottom: '-16px' }}>{item.period}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-              <Text style={{ fontSize: 9, color: '#64748b', textAlign: 'center', marginTop: 12, fontWeight: 'bold' }}>Período de Visualização: De {chartStartDateFilter} até {chartEndDateFilter}</Text>
-            </View>
-
-            <View style={{ flexDirection: 'row', justifyContent: 'space-around', backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, marginBottom: 10, borderWidth: 1, borderColor: '#e2e8f0' }}>
-              <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e3a8a' }}>Meta: {targetWeightValue || '0.0'} kg</Text>
-              <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#16a34a' }}>
-                Atual: {weightHistoryList.length > 0 ? `${weightHistoryList[weightHistoryList.length - 1].weight} kg` : '0.0 kg'}
-              </Text>
-            </View>
-
-            <TouchableOpacity 
-              style={styles.primaryBtn} 
-              onPress={async () => {
-                if (newWeightValueInput.trim()) {
-                  const wNum = parseFloat(newWeightValueInput) || 0;
-                  const updatedList = [...weightHistoryList, { id: `w_${Date.now()}`, period: newWeightDateInput, weight: wNum }];
-                  setWeightHistoryList(updatedList);
-                  setNewWeightValueInput('');
-                  
-                  const safeTarget = targetWeightValue.trim() === '' ? null : parseFloat(targetWeightValue);
-                  await saveWeightDataToSupabase(updatedList, isNaN(safeTarget) ? null : safeTarget);
-                  
-                  Alert.alert('Sucesso', 'Registo de peso adicionado e salvo com sucesso!');
-                } else {
-                  Alert.alert('Atenção', 'Insira o valor do peso.');
-                }
-              }}
-            >
-              <Text style={styles.primaryBtnText}>ADICIONAR REGISTO AO GRÁFICO</Text>
+            <TouchableOpacity style={styles.primaryBtn} onPress={async () => {
+              if (newWeightValueInput.trim()) {
+                const wNum = parseFloat(newWeightValueInput) || 0;
+                const updatedList = [...weightHistoryList, { id: `w_${Date.now()}`, period: newWeightDateInput, weight: wNum }];
+                setWeightHistoryList(updatedList);
+                setNewWeightValueInput('');
+                const safeTarget = targetWeightValue.trim() === '' ? null : parseFloat(targetWeightValue);
+                await saveWeightDataToSupabase(updatedList, isNaN(safeTarget) ? null : safeTarget);
+                Alert.alert('Sucesso', 'Registo de peso adicionado!');
+              } else {
+                Alert.alert('Atenção', 'Insira o valor do peso.');
+              }
+            }}>
+              <Text style={styles.primaryBtnText}>ADICIONAR REGISTO</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.cancelBtn, { marginTop: 6 }]} onPress={() => setIsWeightChartModalOpen(false)}>
@@ -3408,55 +3222,6 @@ export default function App() {
                 <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1e3a8a' }}>✕</Text>
               </TouchableOpacity>
             </View>
-
-            <View style={{ marginBottom: 12 }}>
-              <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#c2410c', marginBottom: 4 }}>Selecione o Período</Text>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1.5px solid #f97316', borderRadius: '8px', padding: '10px 12px', backgroundColor: '#fff7ed', cursor: 'pointer' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '16px' }}>📅</span>
-                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e3a8a' }}>Período: {selectedModalityPeriod}</span>
-                </div>
-                <select
-                  style={{ position: 'absolute', opacity: 0, width: '90%', cursor: 'pointer', height: '35px' }}
-                  value={selectedModalityPeriod}
-                  onChange={(e) => setSelectedModalityPeriod(e.target.value)}
-                >
-                  {availablePeriodsList.map(periodOpt => (
-                    <option key={periodOpt} value={periodOpt}>
-                      {periodOpt === 'Todos' ? '🌐 Todos (Somatório Geral)' : periodOpt}
-                    </option>
-                  ))}
-                </select>
-                <span style={{ fontSize: '12px', color: '#f97316', fontWeight: 'bold' }}>▼</span>
-              </div>
-            </View>
-
-            <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center', marginBottom: 8 }}>Distribuição de Práticas</Text>
-
-            <View style={{ backgroundColor: '#ffffff', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#cbd5e1', alignItems: 'center', marginBottom: 10 }}>
-              <div style={{ width: '150px', height: '150px', borderRadius: '50%', background: totalModalityExecutions === 0 ? '#e2e8f0' : `conic-gradient(${modalityPercentagesList.reduce((acc, curr, idx, arr) => {
-                const prevSum = arr.slice(0, idx).reduce((s, prev) => s + prev.percentage, 0);
-                const startAngle = prevSum;
-                const endAngle = prevSum + curr.percentage;
-                return `${acc} ${curr.color} ${startAngle}% ${endAngle}%,`;
-              }, '').slice(0, -1)})`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', position: 'relative', marginBottom: '12px' }}>
-                {totalModalityExecutions === 0 && (
-                  <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 'bold', textAlign: 'center', padding: '10px' }}>0% (Sem treinos)</span>
-                )}
-              </div>
-
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 4 }}>
-                {modalityPercentagesList.map((modItem) => (
-                  <View key={modItem.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, width: '46%' }}>
-                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: modItem.color }}></div>
-                    <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#334155' }} numberOfLines={1}>
-                      {modItem.label} ({modItem.percentage}%)
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-
             <TouchableOpacity style={styles.primaryBtn} onPress={() => setIsModalityRadarModalOpen(false)}>
               <Text style={styles.primaryBtnText}>FECHAR</Text>
             </TouchableOpacity>
@@ -3473,96 +3238,6 @@ export default function App() {
                 <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1e3a8a' }}>✕</Text>
               </TouchableOpacity>
             </View>
-
-            <View style={{ marginBottom: 10 }}>
-              <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#c2410c', marginBottom: 4 }}>Filtrar Atividade</Text>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1.5px solid #f97316', borderRadius: '8px', padding: '8px 12px', backgroundColor: '#fff7ed', cursor: 'pointer' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '14px' }}>🏃</span>
-                  <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#1e3a8a' }}>Atividade: {selectedKmFilterActivity}</span>
-                </div>
-                <select
-                  style={{ position: 'absolute', opacity: 0, width: '90%', cursor: 'pointer', height: '32px' }}
-                  value={selectedKmFilterActivity}
-                  onChange={(e) => setSelectedKmFilterActivity(e.target.value)}
-                >
-                  <option value="Todos">👥 Todos</option>
-                  <option value="Corrida">🏃 Corrida</option>
-                  <option value="Caminhada">🚶 Caminhada</option>
-                  <option value="Bike">🚴 Bike</option>
-                </select>
-                <span style={{ fontSize: '12px', color: '#f97316', fontWeight: 'bold' }}>▼</span>
-              </div>
-            </View>
-
-            <View style={{ marginBottom: 12 }}>
-              <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#c2410c', marginBottom: 4 }}>Selecione o Período</Text>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1.5px solid #f97316', borderRadius: '8px', padding: '8px 12px', backgroundColor: '#fff7ed', cursor: 'pointer' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '14px' }}>📅</span>
-                  <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#1e3a8a' }}>Período: {selectedKmPeriod}</span>
-                </div>
-                <select
-                  style={{ position: 'absolute', opacity: 0, width: '90%', cursor: 'pointer', height: '32px' }}
-                  value={selectedKmPeriod}
-                  onChange={(e) => setSelectedKmPeriod(e.target.value)}
-                >
-                  <option value="Todos">🌐 Todos</option>
-                  {kmPeriodsArray.map(per => (
-                    <option key={per} value={per}>{per}</option>
-                  ))}
-                </select>
-                <span style={{ fontSize: '12px', color: '#f97316', fontWeight: 'bold' }}>▼</span>
-              </div>
-            </View>
-
-            <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center', marginBottom: 8 }}>Progresso (km)</Text>
-
-            <View style={{ backgroundColor: '#ffffff', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 10 }}>
-              <div style={{ height: '180px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', borderBottom: '1.5px solid #cbd5e1', borderLeft: '1.5px solid #cbd5e1', paddingBottom: '8px', paddingLeft: '8px' }}>
-                {kmPeriodsArray.filter(per => selectedKmPeriod === 'Todos' || per === selectedKmPeriod).map(periodKey => {
-                  const dataForPeriod = kmByPeriodMap[periodKey] || { 'Corrida': 0, 'Caminhada': 0, 'Bike': 0 };
-                  
-                  return (
-                    <div key={periodKey} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, height: '100%', justifyContent: 'flex-end' }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '140px' }}>
-                        {(selectedKmFilterActivity === 'Todos' || selectedKmFilterActivity === 'Corrida') && (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <span style={{ fontSize: '8px', fontWeight: 'bold', color: '#ef4444' }}>{dataForPeriod['Corrida']}</span>
-                            <div style={{ width: '12px', height: `${Math.max(4, dataForPeriod['Corrida'] * 2)}px`, backgroundColor: '#ef4444', borderTopLeftRadius: '3px', borderTopRightRadius: '3px' }}></div>
-                          </div>
-                        )}
-                        {(selectedKmFilterActivity === 'Todos' || selectedKmFilterActivity === 'Caminhada') && (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <span style={{ fontSize: '8px', fontWeight: 'bold', color: '#f97316' }}>{dataForPeriod['Caminhada']}</span>
-                            <div style={{ width: '12px', height: `${Math.max(4, dataForPeriod['Caminhada'] * 2)}px`, backgroundColor: '#f97316', borderTopLeftRadius: '3px', borderTopRightRadius: '3px' }}></div>
-                          </div>
-                        )}
-                        {(selectedKmFilterActivity === 'Todos' || selectedKmFilterActivity === 'Bike') && (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <span style={{ fontSize: '8px', fontWeight: 'bold', color: '#a855f7' }}>{dataForPeriod['Bike']}</span>
-                            <div style={{ width: '12px', height: `${Math.max(4, dataForPeriod['Bike'] * 2)}px`, backgroundColor: '#a855f7', borderTopLeftRadius: '3px', borderTopRightRadius: '3px' }}></div>
-                          </div>
-                        )}
-                      </div>
-                      <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#475569', marginTop: '6px' }}>{periodKey}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, marginTop: 10 }}>
-                {kmActivitiesList.map(act => (
-                  (selectedKmFilterActivity === 'Todos' || selectedKmFilterActivity === act.label) && (
-                    <View key={act.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: act.color }}></div>
-                      <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#334155' }}>{act.label}</Text>
-                    </View>
-                  )
-                ))}
-              </View>
-            </View>
-
             <TouchableOpacity style={styles.primaryBtn} onPress={() => setIsKmChartModalOpen(false)}>
               <Text style={styles.primaryBtnText}>FECHAR</Text>
             </TouchableOpacity>
@@ -3579,52 +3254,6 @@ export default function App() {
                 <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1e3a8a' }}>✕</Text>
               </TouchableOpacity>
             </View>
-
-            <View style={{ backgroundColor: '#e0f2fe', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#38bdf8', marginBottom: 10, alignItems: 'center' }}>
-              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0369a1' }}>Tempo total registrado: {totalHoursAccumulated} horas ({totalMinutesAccumulated} minutos)</Text>
-            </View>
-
-            <View style={{ marginBottom: 12 }}>
-              <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#c2410c', marginBottom: 4 }}>Selecione o Período</Text>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1.5px solid #f97316', borderRadius: '8px', padding: '8px 12px', backgroundColor: '#fff7ed', cursor: 'pointer' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '14px' }}>📅</span>
-                  <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#1e3a8a' }}>Período: {selectedTimePeriod}</span>
-                </div>
-                <select
-                  style={{ position: 'absolute', opacity: 0, width: '90%', cursor: 'pointer', height: '32px' }}
-                  value={selectedTimePeriod}
-                  onChange={(e) => setSelectedTimePeriod(e.target.value)}
-                >
-                  <option value="Todos">🌐 Todos</option>
-                  {timePeriodsArray.map(per => (
-                    <option key={per} value={per}>{per}</option>
-                  ))}
-                </select>
-                <span style={{ fontSize: '12px', color: '#f97316', fontWeight: 'bold' }}>▼</span>
-              </div>
-            </View>
-
-            <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center', marginBottom: 8 }}>Progresso Mensal (min)</Text>
-
-            <View style={{ backgroundColor: '#ffffff', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 10 }}>
-              <div style={{ height: '180px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', borderBottom: '1.5px solid #cbd5e1', borderLeft: '1.5px solid #cbd5e1', paddingBottom: '8px', paddingLeft: '8px' }}>
-                {timePeriodsArray.filter(per => selectedTimePeriod === 'Todos' || per === selectedTimePeriod).map(periodKey => {
-                  const minsForPeriod = timeByPeriodMap[periodKey] || 0;
-                  
-                  return (
-                    <div key={periodKey} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, height: '100%', justifyContent: 'flex-end' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '140px', justifyContent: 'flex-end' }}>
-                        <span style={{ fontSize: '8px', fontWeight: 'bold', color: '#22c55e', marginBottom: '2px' }}>{minsForPeriod}</span>
-                        <div style={{ width: '22px', height: `${Math.max(4, minsForPeriod * 0.5)}px`, backgroundColor: '#22c55e', borderTopLeftRadius: '3px', borderTopRightRadius: '3px' }}></div>
-                      </div>
-                      <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#475569', marginTop: '6px' }}>{periodKey}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </View>
-
             <TouchableOpacity style={styles.primaryBtn} onPress={() => setIsTimeChartModalOpen(false)}>
               <Text style={styles.primaryBtnText}>FECHAR</Text>
             </TouchableOpacity>
@@ -3638,16 +3267,15 @@ export default function App() {
             <Text style={styles.modalTitle}>🎯 Novo Objetivo Pessoal</Text>
             <TextInput 
               style={styles.input} 
-              placeholder="Ex: Fazer 100 flexões seguidas" 
+              placeholder="Ex: Fazer 100 flexões" 
               value={newGoalText} 
-              onChangeText={newGoalText => setNewGoalText(newGoalText)} 
+              onChangeText={setNewGoalText} 
             />
             <TouchableOpacity style={styles.primaryBtn} onPress={() => {
               if (newGoalText.trim()) {
                 setPersonalGoals([...personalGoals, { id: `g_${Date.now()}`, text: newGoalText.trim(), completed: false }]);
                 setIsGoalModalOpen(false);
                 setNewGoalText('');
-                Alert.alert('Adicionado!', 'O seu objetivo foi incluído na lista.');
               }
             }}>
               <Text style={styles.primaryBtnText}>ADICIONAR</Text>
@@ -3663,20 +3291,6 @@ export default function App() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
             <Text style={styles.modalTitle}>📸 Histórico Completo de Evidências</Text>
-            <ScrollView style={{ maxHeight: 400 }}>
-              {athleteFeedPostsAll.length === 0 ? (
-                <Text style={styles.emptyNoticeText}>Nenhuma evidência registada.</Text>
-              ) : (
-                athleteFeedPostsAll.map(post => (
-                  <View key={post.id} style={{ marginBottom: 12, backgroundColor: '#f8fafc', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1' }}>
-                    <Image source={{ uri: post.photo_evidence }} style={{ width: '100%', height: 180, borderRadius: 6, marginBottom: 4 }} />
-                    <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>{post.activity_type}</Text>
-                    <Text style={{ fontSize: 10, color: '#334155' }}>{post.caption}</Text>
-                    <Text style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>{post.created_at}</Text>
-                  </View>
-                ))
-              )}
-            </ScrollView>
             <TouchableOpacity style={[styles.primaryBtn, { marginTop: 10 }]} onPress={() => setIsAllEvidencesModalOpen(false)}>
               <Text style={styles.primaryBtnText}>FECHAR</Text>
             </TouchableOpacity>
@@ -3688,622 +3302,12 @@ export default function App() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
             <Text style={styles.modalTitle}>⚙️ Configuração Avançada de Pontos</Text>
-
-            <ScrollView style={{ maxHeight: 520 }} keyboardShouldPersistTaps="handled">
-              
-              <Text style={styles.inputLabel}>1 - Selecione o Desafio Para Configurar:</Text>
-              <div style={{ marginBottom: 8 }}>
-                <select
-                  style={styles.htmlNativeSelect}
-                  value={selectedConfigChallengeId || ''}
-                  onChange={(e) => setSelectedConfigChallengeId(e.target.value)}
-                >
-                  {adminChallenges.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <Text style={styles.inputLabel}>2 - Selecione a Categoria para Configurar:</Text>
-              <div style={{ marginBottom: 8 }}>
-                <select
-                  style={styles.htmlNativeSelect}
-                  value={selectedConfigActivity}
-                  onChange={(e) => setSelectedConfigActivity(e.target.value)}
-                >
-                  {modalitiesList.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {selectedConfigActivity === '🏛️ Base da Liga' && (
-                <View style={styles.scoringModeBoxContainer}>
-                  <Text style={styles.sectionHeaderTitle}>🏛️ Configurações Gerais da Liga</Text>
-
-                  <Text style={styles.inputLabel}>Nome da Liga:</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={selectedChallenge?.title || ''}
-                    onChangeText={(txt) => {
-                      setChallenges(challenges.map(c => c.id === selectedConfigChallengeId ? { ...c, title: txt } : c));
-                    }}
-                  />
-
-                  <Text style={[styles.inputLabel, { marginTop: 6 }]}>Período de Duração da Liga:</Text>
-                  
-                  <ScrollView horizontal showsHorizontalScrollIndicator={true} style={{ marginVertical: 4 }}>
-                    <View style={{ minWidth: 260, gap: 8 }}>
-                      <TouchableOpacity 
-                        style={styles.checkboxRow} 
-                        onPress={() => setLeaguePeriod('Weekly')}
-                      >
-                        <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: leaguePeriod === 'Weekly' ? '#f97316' : '#ffffff' }}>
-                          {leaguePeriod === 'Weekly' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                        </div>
-                        <Text style={styles.checkboxLabel}>Semanal (semana vigente)</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity 
-                        style={styles.checkboxRow} 
-                        onPress={() => setLeaguePeriod('Monthly')}
-                      >
-                        <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: leaguePeriod === 'Monthly' ? '#f97316' : '#ffffff' }}>
-                          {leaguePeriod === 'Monthly' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                        </div>
-                        <Text style={styles.checkboxLabel}>Mensal (mês vigente)</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity 
-                        style={styles.checkboxRow} 
-                        onPress={() => setLeaguePeriod('Yearly')}
-                      >
-                        <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: leaguePeriod === 'Yearly' ? '#f97316' : '#ffffff' }}>
-                          {leaguePeriod === 'Yearly' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                        </div>
-                        <Text style={styles.checkboxLabel}>Anual</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </ScrollView>
-
-                  <TouchableOpacity 
-                    style={[styles.checkboxRow, { marginTop: 8 }]} 
-                    onPress={() => {
-                      const currentVal = selectedChallenge?.has_daily_cap;
-                      setChallenges(challenges.map(c => c.id === selectedConfigChallengeId ? { ...c, has_daily_cap: !currentVal } : c));
-                    }}
-                  >
-                    <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: selectedChallenge?.has_daily_cap ? '#f97316' : '#ffffff' }}>
-                      {selectedChallenge?.has_daily_cap && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                    </div>
-                    <Text style={styles.checkboxLabel}>Ativar Limite de Teto Diário de Pontos?</Text>
-                  </TouchableOpacity>
-
-                  {selectedChallenge?.has_daily_cap && (
-                    <View style={{ marginTop: 4, marginBottom: 8 }}>
-                      <Text style={styles.inputLabel}>Valor Exato do Teto Diário (Pts):</Text>
-                      <TextInput
-                        style={styles.input}
-                        keyboardType="numeric"
-                        value={String(selectedChallenge?.daily_cap || '22000')}
-                        onChangeText={(txt) => {
-                          const num = parseInt(txt, 10) || 0;
-                          setChallenges(challenges.map(c => c.id === selectedConfigChallengeId ? { ...c, daily_cap: num } : c));
-                        }}
-                      />
-                    </View>
-                  )}
-                </View>
-              )}
-
-              {selectedConfigActivity === '🚶‍♂️ Passos Diários' && (
-                <View style={styles.scoringModeBoxContainer}>
-                  <Text style={styles.sectionHeaderTitle}>🚶‍♂️ Configuração de Passos Diários</Text>
-
-                  <TouchableOpacity 
-                    style={styles.checkboxRow} 
-                    onPress={() => setDailyStepsConfig({ ...dailyStepsConfig, enabled: !dailyStepsConfig.enabled })}
-                  >
-                    <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: dailyStepsConfig.enabled ? '#f97316' : '#ffffff' }}>
-                      {dailyStepsConfig.enabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                    </div>
-                    <Text style={[styles.checkboxLabel, { color: dailyStepsConfig.enabled ? '#16a34a' : '#dc2626' }]}>
-                      {dailyStepsConfig.enabled ? 'Modalidade Válida no Desafio' : 'Modalidade Desabilitada'}
-                    </Text>
-                  </TouchableOpacity>
-
-                  {dailyStepsConfig.enabled && (
-                    <>
-                      <TouchableOpacity 
-                        style={[styles.checkboxRow, { marginTop: 10 }]} 
-                        onPress={() => setDailyStepsConfig({ ...dailyStepsConfig, enableRankingScore: !dailyStepsConfig.enableRankingScore })}
-                      >
-                        <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: dailyStepsConfig.enableRankingScore ? '#f97316' : '#ffffff' }}>
-                          {dailyStepsConfig.enableRankingScore && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                        </div>
-                        <Text style={styles.checkboxLabel}>Usar pontos da modalidade no Placar Geral (Ranking)</Text>
-                      </TouchableOpacity>
-
-                      {dailyStepsConfig.enableRankingScore && (
-                        <View style={{ backgroundColor: '#ffffff', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#cbd5e1', marginTop: 10 }}>
-                          <Text style={[styles.inputLabel, { color: '#1e3a8a', fontWeight: 'bold' }]}>Inserção Manual de Passos Diários:</Text>
-                          <TextInput
-                            style={styles.input}
-                            placeholder="Ex: 10000"
-                            keyboardType="numeric"
-                            value={dailyStepsConfig.manualStepsInput}
-                            onChangeText={(txt) => setDailyStepsConfig({ ...dailyStepsConfig, manualStepsInput: txt })}
-                          />
-
-                          <Text style={[styles.inputLabel, { color: '#1e3a8a', fontWeight: 'bold', marginTop: 6 }]}>
-                            Multiplicador de Passos (de 0,1 a 1,0):
-                          </Text>
-                          <TextInput
-                            style={styles.input}
-                            placeholder="Ex: 0.5"
-                            keyboardType="decimal-pad"
-                            value={dailyStepsConfig.multiplier}
-                            onChangeText={(txt) => setDailyStepsConfig({ ...dailyStepsConfig, multiplier: txt })}
-                          />
-
-                          <View style={{ backgroundColor: '#fff7ed', borderRadius: 6, padding: 8, borderWidth: 1, borderColor: '#f97316', marginTop: 8 }}>
-                            <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#c2410c' }}>
-                              🧮 Cálculo Resultante para o Ranking:
-                            </Text>
-                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a', marginTop: 2 }}>
-                              {dailyStepsConfig.manualStepsInput || '0'} passos × {dailyStepsConfig.multiplier || '0'} = {calculatedStepsPoints.toLocaleString()} Pontos no Placar Geral
-                            </Text>
-                          </View>
-                        </View>
-                      )}
-                    </>
-                  )}
-                </View>
-              )}
-
-              {['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico', '⚽ Esportes Coletivos', '🥋 Lutas / Esportes Individuais'].includes(selectedConfigActivity) && (() => {
-                const currentMod = modalitySettings[selectedConfigActivity] || {};
-                const isEnabled = currentMod.enabled !== false;
-                const scoringMode = currentMod.scoringMode || 'simple';
-
-                return (
-                  <View style={styles.scoringModeBoxContainer}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <Text style={styles.sectionHeaderTitle}>{selectedConfigActivity}</Text>
-                      <TouchableOpacity 
-                        style={styles.checkboxRow} 
-                        onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'enabled', !isEnabled)}
-                      >
-                        <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: isEnabled ? '#f97316' : '#ffffff' }}>
-                          {isEnabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                        </div>
-                        <Text style={[styles.checkboxLabel, { color: isEnabled ? '#16a34a' : '#dc2626' }]}>
-                          {isEnabled ? 'Habilitada' : 'Desabilitada'}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    {isEnabled && (
-                      <>
-                        <TouchableOpacity 
-                          style={styles.checkboxRow} 
-                          onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'simple')}
-                        >
-                          <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: scoringMode === 'simple' ? '#f97316' : '#ffffff' }}>
-                            {scoringMode === 'simple' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                          </div>
-                          <Text style={styles.checkboxLabel}>Opção 1: Por Taxa Simples (Tempo Mínimo em minutos)</Text>
-                        </TouchableOpacity>
-
-                        {scoringMode === 'simple' && (
-                          <View style={{ paddingLeft: 24, marginBottom: 10 }}>
-                            <Text style={styles.inputLabel}>Pontos Concedidos:</Text>
-                            <TextInput 
-                              style={styles.input} 
-                              keyboardType="numeric" 
-                              value={currentMod.simplePts || ''} 
-                              onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'simplePts', v)} 
-                            />
-                            <Text style={styles.inputLabel}>A cada Quantos Minutos (em minutos):</Text>
-                            <TextInput 
-                              style={styles.input} 
-                              keyboardType="numeric" 
-                              value={currentMod.simplePerMin || ''} 
-                              onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'simplePerMin', v)} 
-                            />
-                          </View>
-                        )}
-
-                        <TouchableOpacity 
-                          style={styles.checkboxRow} 
-                          onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'timeSteps')}
-                        >
-                          <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: scoringMode === 'timeSteps' ? '#f97316' : '#ffffff' }}>
-                            {scoringMode === 'timeSteps' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                          </div>
-                          <Text style={styles.checkboxLabel}>Opção 2: Por Step de tempo (em minutos)</Text>
-                        </TouchableOpacity>
-
-                        {scoringMode === 'timeSteps' && (
-                          <View style={{ paddingLeft: 24, marginBottom: 10 }}>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={true} style={{ paddingBottom: 6 }}>
-                              <View style={{ minWidth: 280 }}>
-                                {(currentMod.timeSteps || []).map((st, idx) => {
-                                  const isAcima = st.modeType === 'Acima';
-                                  return (
-                                    <View key={idx} style={{ backgroundColor: '#f1f5f9', padding: 8, borderRadius: 6, marginBottom: 6, borderWidth: 1, borderColor: '#cbd5e1' }}>
-                                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1e3a8a' }}>Step {idx + 1}</Text>
-                                        <TouchableOpacity onPress={() => handleRemoveTimeStep(selectedConfigActivity, idx)}>
-                                          <Text style={{ color: '#dc2626', fontSize: 10, fontWeight: 'bold' }}>Remover Step ✕</Text>
-                                        </TouchableOpacity>
-                                      </View>
-
-                                      <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center', marginBottom: 4 }}>
-                                        <div style={{ width: '60px' }}>
-                                          <select
-                                            style={styles.htmlNativeSelectSmall}
-                                            value={st.modeType || 'De'}
-                                            onChange={(e) => {
-                                              const newArr = [...currentMod.timeSteps];
-                                              newArr[idx].modeType = e.target.value;
-                                              handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
-                                            }}
-                                          >
-                                            <option value="De">De</option>
-                                            <option value="Acima">Acima</option>
-                                          </select>
-                                        </div>
-
-                                        <TextInput 
-                                          style={styles.stepMiniInput} 
-                                          placeholder="Min" 
-                                          keyboardType="numeric" 
-                                          value={st.minTime} 
-                                          onChangeText={(v) => {
-                                            const newArr = [...currentMod.timeSteps];
-                                            newArr[idx].minTime = v;
-                                            handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
-                                          }} 
-                                        />
-                                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#64748b' }}>até</Text>
-                                        <TextInput 
-                                          style={[styles.stepMiniInput, { backgroundColor: isAcima ? '#e2e8f0' : '#ffffff' }]} 
-                                          placeholder="Até" 
-                                          keyboardType="numeric" 
-                                          editable={!isAcima}
-                                          value={isAcima ? '' : st.maxTime} 
-                                          onChangeText={(v) => {
-                                            const newArr = [...currentMod.timeSteps];
-                                            newArr[idx].maxTime = v;
-                                            handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
-                                          }} 
-                                        />
-                                      </View>
-
-                                      <Text style={styles.inputLabelMini}>Pontos deste Step:</Text>
-                                      <TextInput 
-                                        style={[styles.input, { marginBottom: 0 }]} 
-                                        placeholder="Quanto valerá o Step (pts)" 
-                                        keyboardType="numeric" 
-                                        value={st.pts} 
-                                        onChangeText={(v) => {
-                                          const newArr = [...currentMod.timeSteps];
-                                          newArr[idx].pts = v;
-                                          handleUpdateModalityProp(selectedConfigActivity, 'timeSteps', newArr);
-                                        }} 
-                                      />
-                                    </View>
-                                  );
-                                })}
-                              </View>
-                            </ScrollView>
-                            <TouchableOpacity style={[styles.primaryBtn, { paddingVertical: 6, marginTop: 4, backgroundColor: '#16a34a' }]} onPress={() => handleAddTimeStep(selectedConfigActivity)}>
-                              <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold' }}>+ Step</Text>
-                            </TouchableOpacity>
-                          </View>
-                        )}
-                      </>
-                    )}
-                  </View>
-                );
-              })()}
-
-              {['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedConfigActivity) && (() => {
-                const currentMod = modalitySettings[selectedConfigActivity] || {};
-                const isEnabled = currentMod.enabled !== false;
-                const scoringMode = currentMod.scoringMode || 'kmSimple';
-
-                return (
-                  <View style={styles.scoringModeBoxContainer}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <Text style={styles.sectionHeaderTitle}>{selectedConfigActivity}</Text>
-                      <TouchableOpacity 
-                        style={styles.checkboxRow} 
-                        onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'enabled', !isEnabled)}
-                      >
-                        <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: isEnabled ? '#f97316' : '#ffffff' }}>
-                          {isEnabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                        </div>
-                        <Text style={[styles.checkboxLabel, { color: isEnabled ? '#16a34a' : '#dc2626' }]}>
-                          {isEnabled ? 'Habilitada' : 'Desabilitada'}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    {isEnabled && (
-                      <>
-                        <TouchableOpacity 
-                          style={styles.checkboxRow} 
-                          onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'kmSimple')}
-                        >
-                          <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: scoringMode === 'kmSimple' ? '#f97316' : '#ffffff' }}>
-                            {scoringMode === 'kmSimple' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                          </div>
-                          <Text style={styles.checkboxLabel}>Opção 1: Por Distância mínima percorrida (em Km)</Text>
-                        </TouchableOpacity>
-
-                        {scoringMode === 'kmSimple' && (
-                          <View style={{ paddingLeft: 24, marginBottom: 10 }}>
-                            <Text style={styles.inputLabel}>Pontos Concedidos:</Text>
-                            <TextInput 
-                              style={styles.input} 
-                              keyboardType="numeric" 
-                              value={currentMod.kmSimplePts || ''} 
-                              onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'kmSimplePts', v)} 
-                            />
-                            <Text style={styles.inputLabel}>A cada X Distância (em KM):</Text>
-                            <TextInput 
-                              style={styles.input} 
-                              keyboardType="numeric" 
-                              value={currentMod.kmPerX || ''} 
-                              onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'kmPerX', v)} 
-                            />
-                          </View>
-                        )}
-
-                        <TouchableOpacity 
-                          style={styles.checkboxRow} 
-                          onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'simple')}
-                        >
-                          <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: scoringMode === 'simple' ? '#f97316' : '#ffffff' }}>
-                            {scoringMode === 'simple' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                          </div>
-                          <Text style={styles.checkboxLabel}>Opção 2: Por Taxa Simples (Tempo Mínimo em minutos)</Text>
-                        </TouchableOpacity>
-
-                        {scoringMode === 'simple' && (
-                          <View style={{ paddingLeft: 24, marginBottom: 10 }}>
-                            <Text style={styles.inputLabel}>Pontos Concedidos:</Text>
-                            <TextInput 
-                              style={styles.input} 
-                              keyboardType="numeric" 
-                              value={currentMod.simplePts || ''} 
-                              onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'simplePts', v)} 
-                            />
-                            <Text style={styles.inputLabel}>A cada Quantos Minutos (em minutos):</Text>
-                            <TextInput 
-                              style={styles.input} 
-                              keyboardType="numeric" 
-                              value={currentMod.simplePerMin || ''} 
-                              onChangeText={(v) => handleUpdateModalityProp(selectedConfigActivity, 'simplePerMin', v)} 
-                            />
-                          </View>
-                        )}
-
-                        <TouchableOpacity 
-                          style={styles.checkboxRow} 
-                          onPress={() => handleUpdateModalityProp(selectedConfigActivity, 'scoringMode', 'kmSteps')}
-                        >
-                          <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: scoringMode === 'kmSteps' ? '#f97316' : '#ffffff' }}>
-                            {scoringMode === 'kmSteps' && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                          </div>
-                          <Text style={styles.checkboxLabel}>Opção 3: Por Step de Distância Percorrida (em KM)</Text>
-                        </TouchableOpacity>
-
-                        {scoringMode === 'kmSteps' && (
-                          <View style={{ paddingLeft: 24, marginBottom: 10 }}>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={true} style={{ paddingBottom: 6 }}>
-                              <View style={{ minWidth: 280 }}>
-                                {(currentMod.kmSteps || []).map((st, idx) => {
-                                  const isAcima = st.modeType === 'Acima';
-                                  return (
-                                    <View key={idx} style={{ backgroundColor: '#f1f5f9', padding: 8, borderRadius: 6, marginBottom: 6, borderWidth: 1, borderColor: '#cbd5e1' }}>
-                                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1e3a8a' }}>Step KM {idx + 1}</Text>
-                                        <TouchableOpacity onPress={() => handleRemoveKmStep(selectedConfigActivity, idx)}>
-                                          <Text style={{ color: '#dc2626', fontSize: 10, fontWeight: 'bold' }}>Remover Step ✕</Text>
-                                        </TouchableOpacity>
-                                      </View>
-
-                                      <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center', marginBottom: 4 }}>
-                                        <div style={{ width: '60px' }}>
-                                          <select
-                                            style={styles.htmlNativeSelectSmall}
-                                            value={st.modeType || 'De'}
-                                            onChange={(e) => {
-                                              const newArr = [...currentMod.kmSteps];
-                                              newArr[idx].modeType = e.target.value;
-                                              handleUpdateModalityProp(selectedConfigActivity, 'kmSteps', newArr);
-                                            }}
-                                          >
-                                            <option value="De">De</option>
-                                            <option value="Acima">Acima</option>
-                                          </select>
-                                        </div>
-
-                                        <TextInput 
-                                          style={styles.stepMiniInput} 
-                                          placeholder="KM" 
-                                          keyboardType="numeric" 
-                                          value={st.minKm} 
-                                          onChangeText={(v) => {
-                                            const newArr = [...currentMod.kmSteps];
-                                            newArr[idx].minKm = v;
-                                            handleUpdateModalityProp(selectedConfigActivity, 'kmSteps', newArr);
-                                          }} 
-                                        />
-                                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#64748b' }}>até</Text>
-                                        <TextInput 
-                                          style={[styles.stepMiniInput, { backgroundColor: isAcima ? '#e2e8f0' : '#ffffff' }]} 
-                                          placeholder="Até" 
-                                          keyboardType="numeric" 
-                                          editable={!isAcima}
-                                          value={isAcima ? '' : st.maxKm} 
-                                          onChangeText={(v) => {
-                                            const newArr = [...currentMod.kmSteps];
-                                            newArr[idx].maxKm = v;
-                                            handleUpdateModalityProp(selectedConfigActivity, 'kmSteps', newArr);
-                                          }} 
-                                        />
-                                      </View>
-
-                                      <Text style={styles.inputLabelMini}>Pontos deste Step:</Text>
-                                      <TextInput 
-                                        style={[styles.input, { marginBottom: 0 }]} 
-                                        placeholder="Quanto valerá o Step (pts)" 
-                                        keyboardType="numeric" 
-                                        value={st.pts} 
-                                        onChangeText={(v) => {
-                                          const newArr = [...currentMod.kmSteps];
-                                          newArr[idx].pts = v;
-                                          handleUpdateModalityProp(selectedConfigActivity, 'kmSteps', newArr);
-                                        }} 
-                                      />
-                                    </View>
-                                  );
-                                })}
-                              </View>
-                            </ScrollView>
-                            <TouchableOpacity style={[styles.primaryBtn, { paddingVertical: 6, marginTop: 4, backgroundColor: '#16a34a' }]} onPress={() => handleAddKmStep(selectedConfigActivity)}>
-                              <Text style={{ color: '#ffffff', fontSize: 10, fontWeight: 'bold' }}>+ Step</Text>
-                            </TouchableOpacity>
-                          </View>
-                        )}
-                      </>
-                    )}
-                  </View>
-                );
-              })()}
-
-              {selectedConfigActivity === '🎁 Bônus e Critérios de Desempate' && (
-                <View style={styles.scoringModeBoxContainer}>
-                  <Text style={styles.sectionHeaderTitle}>🎁 Bônus e Critérios de Desempate</Text>
-
-                  <TouchableOpacity 
-                    style={styles.checkboxRow} 
-                    onPress={() => setBonusConfig({ ...bonusConfig, inquebravelEnabled: !bonusConfig.inquebravelEnabled })}
-                  >
-                    <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: bonusConfig.inquebravelEnabled ? '#f97316' : '#ffffff' }}>
-                      {bonusConfig.inquebravelEnabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                    </div>
-                    <Text style={styles.checkboxLabel}>Bônus "🪨 O Inquebrável"</Text>
-                  </TouchableOpacity>
-
-                  {bonusConfig.inquebravelEnabled && (
-                    <View style={{ paddingLeft: 24, marginBottom: 10 }}>
-                      <Text style={styles.inputLabel}>Dias consecutivos exigidos para o bônus:</Text>
-                      <TextInput 
-                        style={styles.input} 
-                        keyboardType="numeric" 
-                        value={bonusConfig.inquebravelDays} 
-                        onChangeText={(v) => setBonusConfig({ ...bonusConfig, inquebravelDays: v })} 
-                      />
-                      <Text style={styles.inputLabel}>Pontos concedidos (Bônus O Inquebrável):</Text>
-                      <TextInput 
-                        style={styles.input} 
-                        keyboardType="numeric" 
-                        value={bonusConfig.inquebravelPts} 
-                        onChangeText={(v) => setBonusConfig({ ...bonusConfig, inquebravelPts: v })} 
-                      />
-                    </View>
-                  )}
-
-                  <TouchableOpacity 
-                    style={styles.checkboxRow} 
-                    onPress={() => setBonusConfig({ ...bonusConfig, despertaEnabled: !bonusConfig.despertaEnabled })}
-                  >
-                    <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: bonusConfig.despertaEnabled ? '#f97316' : '#ffffff' }}>
-                      {bonusConfig.despertaEnabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                    </div>
-                    <Text style={styles.checkboxLabel}>Bônus "⏰ O Desperta"</Text>
-                  </TouchableOpacity>
-
-                  {bonusConfig.despertaEnabled && (
-                    <View style={{ paddingLeft: 24, marginBottom: 10 }}>
-                      <Text style={styles.inputLabel}>Horário limite para postar o treino (formato 24h, ex: 08:00):</Text>
-                      <TextInput 
-                        style={styles.input} 
-                        placeholder="08:00"
-                        value={bonusConfig.despertaLimitTime} 
-                        onChangeText={(v) => setBonusConfig({ ...bonusConfig, despertaLimitTime: v })} 
-                      />
-                      <Text style={styles.inputLabel}>Pontos concedidos (Bônus O Desperta):</Text>
-                      <TextInput 
-                        style={styles.input} 
-                        keyboardType="numeric" 
-                        value={bonusConfig.despertaPts} 
-                        onChangeText={(v) => setBonusConfig({ ...bonusConfig, despertaPts: v })} 
-                      />
-                    </View>
-                  )}
-
-                  <Text style={[styles.sectionHeaderTitle, { marginTop: 12 }]}>Selecione os Critérios de Desempate (incluindo Tempo em Atividade):</Text>
-                  <Text style={{ fontSize: 9, color: '#64748b', marginBottom: 6 }}>Marque para habilitar e defina a ordem de preferência:</Text>
-
-                  {tiebreakers.map((tb, index) => (
-                    <View key={tb.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#ffffff', padding: 8, borderRadius: 6, marginBottom: 6, borderWidth: 1, borderColor: '#cbd5e1' }}>
-                      <TouchableOpacity 
-                        style={styles.checkboxRow} 
-                        onPress={() => {
-                          const updated = [...tiebreakers];
-                          updated[index].enabled = !updated[index].enabled;
-                          setTiebreakers(updated);
-                        }}
-                      >
-                        <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: tb.enabled ? '#f97316' : '#ffffff' }}>
-                          {tb.enabled && <Text style={styles.checkboxCheckmark}>✓</Text>}
-                        </div>
-                        <Text style={styles.checkboxLabel}>{tb.label}</Text>
-                      </TouchableOpacity>
-
-                      <div style={{ width: '90px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#1e3a8a' }}>Ordem:</span>
-                        <select
-                          style={{ width: '45px', padding: '4px', fontSize: '10px', fontWeight: 'bold', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                          value={tb.order}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value, 10);
-                            const updated = [...tiebreakers];
-                            updated[index].order = val;
-                            setTiebreakers(updated);
-                          }}
-                        >
-                          <option value={1}>1º</option>
-                          <option value={2}>2º</option>
-                          <option value={3}>3º</option>
-                          <option value={4}>4º</option>
-                        </select>
-                      </div>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-            </ScrollView>
-
-            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-              <TouchableOpacity style={[styles.primaryBtn, { flex: 1 }]} onPress={handleSaveAdvancedRules}>
-                <Text style={styles.primaryBtnText}>SALVAR REGRAS</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.cancelBtn, { flex: 1, justifyContent: 'center' }]} onPress={() => setIsAdvancedRulesModalOpen(false)}>
-                <Text style={styles.cancelBtnText}>CANCELAR</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity style={[styles.primaryBtn, { marginTop: 12 }]} onPress={handleSaveAdvancedRules}>
+              <Text style={styles.primaryBtnText}>SALVAR REGRAS</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.cancelBtn, { marginTop: 6 }]} onPress={() => setIsAdvancedRulesModalOpen(false)}>
+              <Text style={styles.cancelBtnText}>CANCELAR</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -4313,43 +3317,11 @@ export default function App() {
           <ScrollView contentContainerStyle={styles.modalContent}>
             <Text style={styles.modalTitle}>✏️ Editar Perfil do Atleta</Text>
 
-            <Text style={styles.inputLabel}>Foto do Perfil:</Text>
-            <View style={{ alignItems: 'center', marginBottom: 10 }}>
-              <Image source={{ uri: editAvatar || currentUser.avatar }} style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: '#f97316', marginBottom: 8 }} />
-              <View style={{ flexDirection: 'row', gap: 6, justifyContent: 'center' }}>
-                <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setEditAvatar)}>
-                  <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setEditAvatar)}>
-                  <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
             <Text style={styles.inputLabel}>Nome Completo:</Text>
             <TextInput style={styles.input} placeholder="Digite seu nome completo" value={editFullName} onChangeText={setEditFullName} />
 
-            <Text style={styles.inputLabel}>Apelido (exibido na Central, Ranking e Hall da Fama):</Text>
-            <TextInput style={styles.input} placeholder="Digite seu apelido público" value={editNickname} onChangeText={setEditNickname} />
-
-            <Text style={styles.inputLabel}>Dados de Nascimento (DD/MM/AAAA):</Text>
-            <TextInput style={styles.input} placeholder="Ex: 08/11/1997" keyboardType="numeric" maxLength={10} value={editBirthDate} onChangeText={(text) => setEditBirthDate(formatBirthDateMask(text))} />
-
-            <Text style={styles.inputLabel}>Gênero:</Text>
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-              <TouchableOpacity
-                style={[styles.chipBtn, editGender === 'Masculino' && styles.chipBtnActive, { flex: 1, alignItems: 'center' }]}
-                onPress={() => setEditGender('Masculino')}
-              >
-                <Text style={[styles.chipText, editGender === 'Masculino' && styles.chipTextActive]}>masculino</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.chipBtn, editGender === 'Feminino' && styles.chipBtnActive, { flex: 1, alignItems: 'center' }]}
-                onPress={() => setEditGender('Feminino')}
-              >
-                <Text style={[styles.chipText, editGender === 'Feminino' && styles.chipTextActive]}>feminina</Text>
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.inputLabel}>Apelido:</Text>
+            <TextInput style={styles.input} placeholder="Digite seu apelido" value={editNickname} onChangeText={setEditNickname} />
 
             <TouchableOpacity style={styles.primaryBtn} onPress={handleSaveProfile} disabled={savingProfile}>
               {savingProfile ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.primaryBtnText}>SALVAR ALTERAÇÕES</Text>}
@@ -4368,40 +3340,13 @@ export default function App() {
             <Text style={styles.modalTitle}>🏆 Criar Novo Desafio / Liga</Text>
 
             <Text style={styles.inputLabel}>Nome do Desafio:</Text>
-            <TextInput style={styles.input} placeholder="Ex: Desafio Verão 2026" value={newChallengeTitle} onChangeText={setNewChallengeTitle} />
+            <TextInput style={styles.input} placeholder="Ex: Desafio Verão" value={newChallengeTitle} onChangeText={setNewChallengeTitle} />
 
             <Text style={styles.inputLabel}>Código de Acesso / Convite:</Text>
             <TextInput style={styles.input} placeholder="Ex: MUV2026" autoCapitalize="characters" value={newChallengeCode} onChangeText={setNewChallengeCode} />
 
-            <Text style={styles.inputLabel}>Periodicidade da Temporada:</Text>
-            <div style={{ marginBottom: 8 }}>
-              <select
-                style={styles.htmlNativeSelect}
-                value={newChallengePeriod}
-                onChange={(e) => setNewChallengePeriod(e.target.value)}
-              >
-                <option value="Weekly">Semanal (Até o sábado da semana)</option>
-                <option value="Monthly">Mensal (Até o último dia do mês)</option>
-                <option value="Yearly">Anual (Até 31/12 do ano corrente)</option>
-              </select>
-            </div>
-
-            <TouchableOpacity style={styles.checkboxRow} onPress={() => setHasCapToggle(!hasCapToggle)}>
-              <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: hasCapToggle ? '#f97316' : '#ffffff' }}>
-                {hasCapToggle && <Text style={styles.checkboxCheckmark}>✓</Text>}
-              </div>
-              <Text style={styles.checkboxLabel}>Ativar Teto Diário de Pontos?</Text>
-            </TouchableOpacity>
-
-            {hasCapToggle && (
-              <View style={{ marginTop: 2, marginBottom: 8 }}>
-                <Text style={styles.inputLabel}>Limite Diário (Pts):</Text>
-                <TextInput style={styles.input} placeholder="Ex: 22000" keyboardType="numeric" value={newChallengeCap} onChangeText={setNewChallengeCap} />
-              </View>
-            )}
-
             <TouchableOpacity style={styles.primaryBtn} onPress={handleCreateChallenge}>
-              <Text style={styles.primaryBtnText}>CRIAR E SALVAR NA NUVEM</Text>
+              <Text style={styles.primaryBtnText}>CRIAR E SALVAR</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsCreateChallengeOpen(false)}>
@@ -4416,14 +3361,7 @@ export default function App() {
           <View style={styles.modalContent}>
             <ScrollView style={{ width: '100%', maxHeight: 540 }} keyboardShouldPersistTaps="handled">
               
-              <Text style={styles.modalTitle}>Registar Treino ({selectedChallenge?.title || 'MuvFit'})</Text>
-
-              <View style={styles.rulesCardBox}>
-                <Text style={styles.rulesCardTitle}>📜 Regras Ativas da Modalidade:</Text>
-                {getDynamicActiveRulesText().map((ruleText, idx) => (
-                  <Text key={idx} style={styles.rulesCardItem}>{ruleText}</Text>
-                ))}
-              </View>
+              <Text style={styles.modalTitle}>Registar Treino</Text>
 
               <Text style={styles.inputLabel}>Selecione a Modalidade:</Text>
               <div style={{ marginBottom: 8 }}>
@@ -4438,91 +3376,30 @@ export default function App() {
                 </select>
               </div>
 
-              <div style={{ margin: '6px 0' }}>
-                <Text style={styles.inputLabel}>📅 Data do Treino:</Text>
-                <input
-                  type="date"
-                  value={workoutDate}
-                  onChange={(e) => setWorkoutDate(e.target.value)}
-                  style={{
-                    backgroundColor: '#ffffff',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '6px',
-                    padding: '8px',
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                    color: '#0f172a',
-                    width: '100%',
-                    cursor: 'pointer'
-                  }}
-                />
-              </div>
-
               {!isStepsActive && (
                 <View style={{ backgroundColor: '#f8fafc', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1', marginVertical: 6 }}>
-                  <Text style={[styles.inputLabel, { color: '#1e3a8a', fontWeight: 'bold' }]}>⏱️ Horário de Início e Fim da Atividade:</Text>
+                  <Text style={[styles.inputLabel, { color: '#1e3a8a', fontWeight: 'bold' }]}>⏱️ Horário de Início e Fim:</Text>
                   
-                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
                     <div style={{ flex: 1 }}>
-                      <Text style={styles.inputLabelMini}>Horário Início:</Text>
-                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                        <select
-                          style={styles.timeSelectNative}
-                          value={startHour}
-                          onChange={(e) => setStartHour(e.target.value)}
-                        >
-                          {hoursArray.map(h => <option key={h} value={h}>{h} h</option>)}
-                        </select>
-                        <span style={{ fontWeight: 'bold', color: '#1e3a8a' }}>:</span>
-                        <select
-                          style={styles.timeSelectNative}
-                          value={startMinute}
-                          onChange={(e) => setStartMinute(e.target.value)}
-                        >
-                          {minutesArray.map(m => <option key={m} value={m}>{m} min</option>)}
-                        </select>
-                      </div>
+                      <Text style={styles.inputLabelMini}>Início:</Text>
+                      <select style={styles.timeSelectNative} value={startHour} onChange={(e) => setStartHour(e.target.value)}>
+                        {hoursArray.map(h => <option key={h} value={h}>{h} h</option>)}
+                      </select>
                     </div>
-
                     <div style={{ flex: 1 }}>
-                      <Text style={styles.inputLabelMini}>Horário Término:</Text>
-                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                        <select
-                          style={styles.timeSelectNative}
-                          value={endHour}
-                          onChange={(e) => setEndHour(e.target.value)}
-                        >
-                          {hoursArray.map(h => <option key={h} value={h}>{h} h</option>)}
-                        </select>
-                        <span style={{ fontWeight: 'bold', color: '#1e3a8a' }}>:</span>
-                        <select
-                          style={styles.timeSelectNative}
-                          value={endMinute}
-                          onChange={(e) => setEndMinute(e.target.value)}
-                        >
-                          {minutesArray.map(m => <option key={m} value={m}>{m} min</option>)}
-                        </select>
-                      </div>
+                      <Text style={styles.inputLabelMini}>Término:</Text>
+                      <select style={styles.timeSelectNative} value={endHour} onChange={(e) => setEndHour(e.target.value)}>
+                        {hoursArray.map(h => <option key={h} value={h}>{h} h</option>)}
+                      </select>
                     </div>
                   </View>
-
-                  {(() => {
-                    const startM = (parseInt(startHour, 10) * 60) + parseInt(startMinute, 10);
-                    const endM = (parseInt(endHour, 10) * 60) + parseInt(endMinute, 10);
-                    let diff = endM - startM;
-                    if (diff <= 0) diff += 1440;
-                    return (
-                      <Text style={{ fontSize: 9.5, fontWeight: 'bold', color: '#16a34a', marginTop: 6 }}>
-                        ⏳ Tempo Total Calculado: {diff} minutos
-                      </Text>
-                    );
-                  })()}
                 </View>
               )}
 
               {isKmGroupActive && (
                 <View style={{ marginVertical: 4 }}>
-                  <Text style={styles.inputLabel}>🏃 Distância Percorrida (em KM):</Text>
+                  <Text style={styles.inputLabel}>🏃 Distância (KM):</Text>
                   <TextInput
                     style={styles.input}
                     placeholder="Ex: 5.5"
@@ -4533,97 +3410,30 @@ export default function App() {
                 </View>
               )}
 
-              <Text style={styles.inputLabel}>Legenda / Comentário (Opcional):</Text>
+              <Text style={styles.inputLabel}>Comentário (Opcional):</Text>
               <TextInput 
                 style={[styles.input, { height: 60, textAlignVertical: 'top' }]} 
-                placeholder="Escreva algo sobre o treino..." 
+                placeholder="Escreva algo..." 
                 multiline 
                 value={workoutCaption} 
                 onChangeText={setWorkoutCaption} 
               />
 
-              <View style={{ marginVertical: 8 }}>
-                <Text style={[styles.inputLabel, { color: '#1e3a8a' }]}>📷 Comprovante(s) em Foto da Atividade:</Text>
-
-                {isThreePhotosGroupActive ? (
-                  <View style={{ gap: 10 }}>
-                    <View style={styles.photoUploadBox}>
-                      <Text style={styles.inputLabelMini}>1. Foto Horário Inicial (Obrigatória):</Text>
-                      {photoStart && <Image source={{ uri: photoStart }} style={styles.photoPreviewMini} />}
-                      <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-                        <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setPhotoStart)}>
-                          <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setPhotoStart)}>
-                          <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
-                        </TouchableOpacity>
-                        {photoStart && (
-                          <TouchableOpacity style={styles.removePhotoBtn} onPress={() => setPhotoStart(null)}>
-                            <Text style={styles.removePhotoBtnText}>🗑️ REMOVER</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    </View>
-
-                    <View style={styles.photoUploadBox}>
-                      <Text style={styles.inputLabelMini}>2. Foto Evidência do Treino (Obrigatória):</Text>
-                      {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
-                      <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-                        <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setPhotoEvidence)}>
-                          <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setPhotoEvidence)}>
-                          <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
-                        </TouchableOpacity>
-                        {photoEvidence && (
-                          <TouchableOpacity style={styles.removePhotoBtn} onPress={() => setPhotoEvidence(null)}>
-                            <Text style={styles.removePhotoBtnText}>🗑️ REMOVER</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    </View>
-
-                    <View style={styles.photoUploadBox}>
-                      <Text style={styles.inputLabelMini}>3. Foto Horário Final (Obrigatória):</Text>
-                      {photoEnd && <Image source={{ uri: photoEnd }} style={styles.photoPreviewMini} />}
-                      <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-                        <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setPhotoEnd)}>
-                          <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setPhotoEnd)}>
-                          <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
-                        </TouchableOpacity>
-                        {photoEnd && (
-                          <TouchableOpacity style={styles.removePhotoBtn} onPress={() => setPhotoEnd(null)}>
-                            <Text style={styles.removePhotoBtnText}>🗑️ REMOVER</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    </View>
-                  </View>
-                ) : (
-                  <View style={styles.photoUploadBox}>
-                    <Text style={styles.inputLabelMini}>Foto / Print de Comprovação (Obrigatória):</Text>
-                    {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
-                    <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-                      <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setPhotoEvidence)}>
-                        <Text style={styles.photoBtnText}>📷 TIRAR FOTO</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setPhotoEvidence)}>
-                        <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
-                      </TouchableOpacity>
-                      {photoEvidence && (
-                        <TouchableOpacity style={styles.removePhotoBtn} onPress={() => setPhotoEvidence(null)}>
-                          <Text style={styles.removePhotoBtnText}>🗑️ REMOVER</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  </View>
-                )}
+              <View style={styles.photoUploadBox}>
+                <Text style={styles.inputLabelMini}>Foto de Comprovação:</Text>
+                {photoEvidence && <Image source={{ uri: photoEvidence }} style={styles.photoPreviewMini} />}
+                <View style={{ flexDirection: 'row', gap: 6, justifyContent: 'center' }}>
+                  <TouchableOpacity style={styles.photoBtn} onPress={() => handleTriggerPhoto('camera', setPhotoEvidence)}>
+                    <Text style={styles.photoBtnText}>📷 CÂMARA</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.photoBtnSecondary} onPress={() => handleTriggerPhoto('gallery', setPhotoEvidence)}>
+                    <Text style={styles.photoBtnTextSecondary}>🖼️ GALERIA</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <TouchableOpacity style={styles.primaryBtn} onPress={handleSubmitWorkout}>
-                <Text style={styles.primaryBtnText}>ENVIAR PARA APROVAÇÃO</Text>
+                <Text style={styles.primaryBtnText}>ENVIAR TREINO</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsWorkoutModalOpen(false)}>
@@ -4647,13 +3457,10 @@ const styles = StyleSheet.create({
   
   activeChallengeSelectorBar: { backgroundColor: '#172554', padding: 6, borderRadius: 6, marginBottom: 6 },
   activeChallengeSelectorLabel: { fontSize: 9, color: '#f97316', fontWeight: 'bold', marginBottom: 2 },
-
   htmlHeaderSelect: { width: '100%', padding: 8, fontSize: 10, fontWeight: 'bold', color: '#1e3a8a', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer' },
-
   timeSelectNative: { backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '6px', fontSize: '11px', fontWeight: 'bold', color: '#0f172a', width: '100%' },
 
   searchInput: { backgroundColor: '#ffffff', borderRadius: 6, paddingHorizontal: 10, paddingVertical: Platform.OS === 'ios' ? 8 : 4, fontSize: 11, color: '#0f172a', borderWidth: 1, borderColor: '#cbd5e1' },
-  
   searchResultsDropdown: { position: 'absolute', top: 40, left: 0, right: 0, backgroundColor: '#ffffff', borderRadius: 8, padding: 10, borderWidth: 2, borderColor: '#f97316', elevation: 10, zIndex: 9999 },
   searchHeaderTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, borderBottomWidth: 1, borderBottomColor: '#e2e8f0', paddingBottom: 4 },
   searchHeaderTitle: { fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' },
@@ -4673,7 +3480,6 @@ const styles = StyleSheet.create({
 
   requestCommunityBtn: { backgroundColor: '#16a34a', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4 },
   alreadyMemberBtn: { backgroundColor: '#1e3a8a', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 4 },
-
   blueRequestAthleteBtn: { backgroundColor: '#1e3a8a', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
 
   topWinnersBannerBox: { backgroundColor: '#fef3c7', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: '#d97706', marginBottom: 10 },
@@ -4722,10 +3528,6 @@ const styles = StyleSheet.create({
 
   workoutPendingCard: { backgroundColor: '#f8fafc', borderRadius: 6, padding: 8, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 8 },
 
-  rulesCardBox: { backgroundColor: '#fff7ed', borderWidth: 1.5, borderColor: '#f97316', borderRadius: 8, padding: 10, marginBottom: 10 },
-  rulesCardTitle: { fontSize: 11, fontWeight: '900', color: '#c2410c', marginBottom: 4 },
-  rulesCardItem: { fontSize: 9.5, fontWeight: '600', color: '#431407', marginBottom: 2 },
-
   modalityGridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginVertical: 6 },
   modalityChipBtn: { backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#cbd5e1', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 6, width: '48%' },
   modalityChipBtnActive: { backgroundColor: '#f97316', borderColor: '#c2410c' },
@@ -4738,13 +3540,8 @@ const styles = StyleSheet.create({
   photoBtnText: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
   photoBtnSecondary: { backgroundColor: '#1e3a8a', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 4 },
   photoBtnTextSecondary: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
-  removePhotoBtn: { backgroundColor: '#dc2626', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 4 },
-  removePhotoBtnText: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
 
   htmlNativeSelect: { width: '100%', padding: 10, fontSize: 11, fontWeight: 'bold', color: '#0f172a', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer' },
-  htmlNativeSelectSmall: { width: '100%', padding: 5, fontSize: 9, fontWeight: 'bold', color: '#0f172a', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' },
-
-  stepMiniInput: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 4, padding: 5, fontSize: 10, width: 55, textAlign: 'center', marginBottom: 0 },
 
   participantRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#fed7aa', marginTop: 6 },
   participantName: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
@@ -4814,7 +3611,6 @@ const styles = StyleSheet.create({
   scoreLabel: { fontSize: 8, fontWeight: 'bold', color: '#1e3a8a', marginTop: 2 },
 
   sectionContainerBox: { backgroundColor: '#ffffff', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 10 },
-
   statsCardItemButton: { backgroundColor: '#f8fafc', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 6 },
 
   goalAddHeaderBtn: { backgroundColor: '#f97316', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 },
@@ -4828,8 +3624,6 @@ const styles = StyleSheet.create({
   inputLabel: { fontSize: 10, fontWeight: 'bold', color: '#475569', marginVertical: 4 },
   inputLabelMini: { fontSize: 9, fontWeight: 'bold', color: '#475569', marginVertical: 2 },
   input: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 6, fontSize: 11, marginBottom: 6 },
-
-  scoringModeBoxContainer: { backgroundColor: '#f8fafc', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1', marginTop: 10 },
 
   chipBtn: { backgroundColor: '#f1f5f9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
   chipBtnActive: { backgroundColor: '#f97316' },
