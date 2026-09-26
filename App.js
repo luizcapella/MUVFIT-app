@@ -168,7 +168,6 @@ export default function App() {
   const [activeChallengeId, setActiveChallengeId] = useState(null);
   const [isAdminContext, setIsAdminContext] = useState(true);
 
-  // Estados de controle para expandir/ocultar as seções do Dashboard
   const [dashSectionAdmin, setDashSectionAdmin] = useState(true);
   const [dashSectionInvites, setDashSectionInvites] = useState(true);
   const [dashSectionParticipant, setDashSectionParticipant] = useState(true);
@@ -780,7 +779,6 @@ export default function App() {
     return memberships.some(m => m.challengeId === c.id && m.userId === currentUser.id && m.role !== 'pending_community') && c.creator_id !== currentUser.id;
   });
 
-  // Convites Recebidos (pendentes de aprovação pelo usuário)
   const receivedInvitesList = memberships.filter(m => m.userId === currentUser.id && m.role === 'pending_community');
 
   const currentUserMembershipInActiveChallenge = memberships.find(
@@ -866,7 +864,6 @@ export default function App() {
     );
   }
 
-  // Funções para aceitar/recusar convites recebidos na nova seção do Dashboard
   async function handleAcceptInvite(membershipId) {
     await supabase.from('memberships').update({ role: 'spectator' }).eq('id', membershipId);
     fetchDataFromSupabase();
@@ -1008,7 +1005,11 @@ export default function App() {
       rules_config: initialRulesConfig
     };
 
-    await supabase.from('challenges').insert([newObj]);
+    const { error: chError } = await supabase.from('challenges').insert([newObj]);
+    if (chError) {
+      Alert.alert('Erro ao Criar', chError.message);
+      return;
+    }
 
     const newMembership = {
       challenge_id: newId,
@@ -1029,7 +1030,7 @@ export default function App() {
 
     await supabase.from('memberships').insert([newMembership]);
 
-    fetchDataFromSupabase();
+    await fetchDataFromSupabase();
     setIsCreateChallengeOpen(false);
     setNewChallengeTitle('');
     setNewChallengeCode('');
@@ -1078,9 +1079,14 @@ export default function App() {
   }
 
   async function toggleChallengeRegistrations() {
+    if (!selectedChallenge?.id) return;
     const newStatus = !selectedChallenge.registrations_closed;
-    await supabase.from('challenges').update({ registrations_closed: newStatus }).eq('id', selectedChallenge.id);
-    fetchDataFromSupabase();
+    const { error } = await supabase.from('challenges').update({ registrations_closed: newStatus }).eq('id', selectedChallenge.id);
+    if (error) {
+      Alert.alert('Erro', error.message);
+      return;
+    }
+    await fetchDataFromSupabase();
     Alert.alert('Status Atualizado', newStatus ? 'Inscrições/Candidaturas ENCERRADAS!' : 'Inscrições/Candidaturas ABERTAS!');
   }
 
@@ -1470,7 +1476,11 @@ export default function App() {
     };
 
     try {
-      await supabase.from('pending_workouts').insert([newPendingWorkout]);
+      const { error: insErr } = await supabase.from('pending_workouts').insert([newPendingWorkout]);
+      if (insErr) {
+        Alert.alert('Erro ao enviar', insErr.message);
+        return;
+      }
       await fetchDataFromSupabase();
 
       setIsWorkoutModalOpen(false);
@@ -2152,7 +2162,6 @@ export default function App() {
                 </View>
               )}
 
-              {/* SEÇÃO 1: Ligas que Administra (Com cabeçalho clicável para expandir/ocultar) */}
               <View style={{ marginBottom: 12 }}>
                 <TouchableOpacity style={styles.sectionToggleHeader} onPress={() => setDashSectionAdmin(!dashSectionAdmin)}>
                   <Text style={styles.sectionHeaderTitle}>🔑 Ligas que Administra ({adminChallenges.length})</Text>
@@ -2194,7 +2203,6 @@ export default function App() {
                 )}
               </View>
 
-              {/* SEÇÃO 2: Convites Recebidos (Com cabeçalho clicável para expandir/ocultar) */}
               <View style={{ marginBottom: 12 }}>
                 <TouchableOpacity style={styles.sectionToggleHeader} onPress={() => setDashSectionInvites(!dashSectionInvites)}>
                   <Text style={[styles.sectionHeaderTitle, { color: '#d97706' }]}>📩 Convites Recebidos ({receivedInvitesList.length})</Text>
@@ -2227,7 +2235,6 @@ export default function App() {
                 )}
               </View>
 
-              {/* SEÇÃO 3: Ligas em que é Participante / Comunidade (Com cabeçalho clicável para expandir/ocultar) */}
               <View style={{ marginBottom: 12 }}>
                 <TouchableOpacity style={styles.sectionToggleHeader} onPress={() => setDashSectionParticipant(!dashSectionParticipant)}>
                   <Text style={styles.sectionHeaderTitle}>⚡ Ligas em que é Participante / Comunidade ({participantChallenges.length})</Text>
@@ -2841,7 +2848,7 @@ export default function App() {
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.adminControlCard}>
                 <Text style={styles.adminCardTitle}>🎯 Central do Administrador: {selectedChallenge?.title || 'Liga'}</Text>
-                <Text style={styles.adminCardSub}>Gerencie aprovações, inscrições de atletas ativos, lançamento manual, membros e configurações avançadas.</Text>
+                <Text style={styles.adminCardSub}>Gerencie aprovações, inscrições de atividades ativas, lançamento manual, membros e configurações avançadas.</Text>
               </View>
 
               <View style={styles.accordionCard}>
@@ -2927,7 +2934,7 @@ export default function App() {
                   <View style={styles.accordionBody}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1' }}>
                       <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1e3a8a' }}>
-                        Status da Inscrição:
+                        Status da Liga:
                       </Text>
                       <TouchableOpacity
                         style={[
