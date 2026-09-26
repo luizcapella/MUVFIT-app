@@ -297,7 +297,6 @@ export default function App() {
   };
 
   useEffect(() => {
-    // Captura parâmetro de convite na URL (se houver) na versão Web
     if (Platform.OS === 'web' && window.location.search) {
       const urlParams = new URLSearchParams(window.location.search);
       const inviteCodeParam = urlParams.get('convite');
@@ -305,6 +304,12 @@ export default function App() {
         setSearchQuery(inviteCodeParam);
         setIsSearchOpen(true);
       }
+    }
+
+    if (!supabase || !supabase.auth) {
+      console.error("Erro: O cliente Supabase não foi inicializado corretamente.");
+      setLoadingAuth(false);
+      return;
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -1418,7 +1423,6 @@ export default function App() {
 
     let bonusAppliedMsg = '';
 
-    // LÓGICA DO BÔNUS "O INQUEBRÁVEL" (DIAS CONSECUTIVOS DE TREINOS APROVADOS)
     if (bonusConfig.inquebravelEnabled) {
       const requiredDays = parseInt(bonusConfig.inquebravelDays, 10) || 3;
       
@@ -1454,7 +1458,6 @@ export default function App() {
       }
     }
 
-    // LÓGICA DO BÔNUS "O DESPERTA" (HORÁRIO LIMITE)
     if (bonusConfig.despertaEnabled) {
       const submissionCurrentTime = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
       if (submissionCurrentTime <= bonusConfig.despertaLimitTime) {
