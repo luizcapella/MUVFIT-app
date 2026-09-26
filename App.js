@@ -179,6 +179,11 @@ export default function App() {
   const [activeChallengeId, setActiveChallengeId] = useState(null);
   const [isAdminContext, setIsAdminContext] = useState(true);
 
+  // Estados para expandir/ocultar seções do Dashboard
+  const [dashSectionAdmin, setDashSectionAdmin] = useState(true);
+  const [dashSectionInvites, setDashSectionInvites] = useState(true);
+  const [dashSectionParticipant, setDashSectionParticipant] = useState(true);
+
   const selectedChallenge = challenges.find(c => c.id === activeChallengeId) || challenges[0] || {};
 
   const [commentInputs, setCommentInputs] = useState({});
@@ -301,46 +306,6 @@ export default function App() {
 
     async function initApp() {
       try {
-        if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.search) {
-          const urlParams = new URLSearchParams(window.location.search);
-          const inviteCodeParam = urlParams.get('convite');
-          if (inviteCodeParam) {
-            setSearchQuery(inviteCodeParam);
-            setIsSearchOpen(true);
-            
-            supabase
-              .from('challenges')
-              .select('id, title')
-              .eq('invite_code', inviteCodeParam.toUpperCase())
-              .maybeSingle()
-              .then(async ({ data: foundCh }) => {
-                if (foundCh && isMounted) {
-                  const { data: existingMem } = await supabase
-                    .from('memberships')
-                    .select('id')
-                    .eq('challenge_id', foundCh.id)
-                    .maybeSingle();
-
-                  if (!existingMem && session?.user?.id) {
-                    await supabase.from('memberships').insert([{
-                      challenge_id: foundCh.id,
-                      user_id: session.user.id,
-                      name: currentUser.name || session.user.email.split('@')[0],
-                      nickname: currentUser.nickname || session.user.email.split('@')[0],
-                      role: 'pending_community',
-                      ranking_points: 0,
-                      bank_points: 0,
-                      total_steps: 0,
-                      avatar: currentUser.avatar || `https://picsum.photos/seed/${session.user.id}/200/200`
-                    }]);
-                    
-                    fetchDataFromSupabase();
-                  }
-                }
-              });
-          }
-        }
-
         if (!supabase || !supabase.auth) {
           if (isMounted) setLoadingAuth(false);
           return;
@@ -351,7 +316,7 @@ export default function App() {
           setSession(currentSession);
           if (currentSession) {
             await fetchUserProfile(currentSession.user.id, currentSession.user.email);
-            await fetchDataFromSupabase();
+            await fetchDataFromSupabase(currentSession.user.id);
           }
           setLoadingAuth(false);
         }
@@ -361,7 +326,7 @@ export default function App() {
             setSession(newSession);
             if (newSession) {
               await fetchUserProfile(newSession.user.id, newSession.user.email);
-              await fetchDataFromSupabase();
+              await fetchDataFromSupabase(newSession.user.id);
             } else {
               setCurrentUser({ id: '', name: '', nickname: '' });
             }
@@ -381,6 +346,50 @@ export default function App() {
 
     initApp();
   }, []);
+
+  // Processar convite via URL após sessão estar carregada
+  useEffect(() => {
+    async function processInviteParam() {
+      if (!session?.user?.id) return;
+      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.search) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const inviteCodeParam = urlParams.get('convite');
+        if (inviteCodeParam) {
+          const { data: foundCh } = await supabase
+            .from('challenges')
+            .select('id, title')
+            .eq('invite_code', inviteCodeParam.toUpperCase())
+            .maybeSingle();
+
+          if (foundCh) {
+            const { data: existingMem } = await supabase
+              .from('memberships')
+              .select('id')
+              .eq('challenge_id', foundCh.id)
+              .eq('user_id', session.user.id)
+              .maybeSingle();
+
+            if (!existingMem) {
+              await supabase.from('memberships').insert([{
+                challenge_id: foundCh.id,
+                user_id: session.user.id,
+                name: currentUser.name || session.user.email.split('@')[0],
+                nickname: currentUser.nickname || session.user.email.split('@')[0],
+                role: 'pending_community',
+                ranking_points: 0,
+                bank_points: 0,
+                total_steps: 0,
+                avatar: currentUser.avatar || `https://picsum.photos/seed/${session.user.id}/200/200`
+              }]);
+              
+              await fetchDataFromSupabase(session.user.id);
+            }
+          }
+        }
+      }
+    }
+    processInviteParam();
+  }, [session]);
 
   async function fetchUserProfile(userId, userEmail) {
     try {
@@ -505,7 +514,7 @@ export default function App() {
         if (authData?.session) {
           setSession(authData.session);
           await fetchUserProfile(authData.session.user.id, authData.session.user.email);
-          await fetchDataFromSupabase();
+          await fetchDataFromSupabase(authData.session.user.id);
           setAuthSubmitting(false);
           return;
         }
@@ -532,7 +541,7 @@ export default function App() {
         } else if (loginData.session) {
           setSession(loginData.session);
           await fetchUserProfile(loginData.session.user.id, loginData.session.user.email);
-          await fetchDataFromSupabase();
+          await fetchDataFromSupabase(loginData.session.user.id);
         }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -545,7 +554,7 @@ export default function App() {
         } else if (data.session) {
           setSession(data.session);
           await fetchUserProfile(data.session.user.id, data.session.user.email);
-          await fetchDataFromSupabase();
+          await fetchDataFromSupabase(data.session.user.id);
         }
       }
     } catch (err) {
@@ -651,7 +660,7 @@ export default function App() {
       setViewedUser(updatedUser);
       setIsEditProfileOpen(false);
 
-      await fetchDataFromSupabase();
+      await fetchDataFromSupabase(currentUser.id);
       Alert.alert('🎉 Sucesso!', 'Perfil atualizado com sucesso!');
 
     } catch (err) {
@@ -716,7 +725,7 @@ export default function App() {
     }
   }
 
-  async function fetchDataFromSupabase() {
+  async function fetchDataFromSupabase(currentUserId = currentUser.id) {
     try {
       const { data: challengesData } = await supabase.from('challenges').select('*');
       if (challengesData && challengesData.length > 0) {
@@ -782,9 +791,14 @@ export default function App() {
 
   const userMembershipsAll = memberships.filter(m => m.userId === currentUser.id);
   const adminChallenges = challenges.filter(c => c.creator_id === currentUser.id);
+  
+  // Participantes apenas onde o papel é active ou spectator (mas NÃO pending_community)
   const participantChallenges = challenges.filter(c => {
-    return memberships.some(m => m.challengeId === c.id && m.userId === currentUser.id) && c.creator_id !== currentUser.id;
+    return memberships.some(m => m.challengeId === c.id && m.userId === currentUser.id && (m.role === 'active' || m.role === 'spectator')) && c.creator_id !== currentUser.id;
   });
+
+  // Convites Recebidos (onde o role é pending_community)
+  const receivedInvitesList = memberships.filter(m => m.userId === currentUser.id && m.role === 'pending_community');
 
   const currentUserMembershipInActiveChallenge = memberships.find(
     m => m.challengeId === activeChallengeId && m.userId === currentUser.id
@@ -840,6 +854,18 @@ export default function App() {
     setCurrentScreen('athlete_center');
   }
 
+  async function handleAcceptInvite(membershipId) {
+    await supabase.from('memberships').update({ role: 'spectator' }).eq('id', membershipId);
+    await fetchDataFromSupabase(currentUser.id);
+    Alert.alert('🎉 Convite Aceito!', 'Agora faz parte da comunidade desta liga como Torcedor.');
+  }
+
+  async function handleRejectInvite(membershipId) {
+    await supabase.from('memberships').delete().eq('id', membershipId);
+    await fetchDataFromSupabase(currentUser.id);
+    Alert.alert('Convite Recusado', 'O convite foi removido.');
+  }
+
   async function handleRequestCommunityEntry(challenge) {
     const existing = memberships.find(m => m.challengeId === challenge.id && m.userId === currentUser.id);
     if (existing) {
@@ -862,7 +888,7 @@ export default function App() {
     };
 
     await supabase.from('memberships').insert([newMembership]);
-    fetchDataFromSupabase();
+    fetchDataFromSupabase(currentUser.id);
     setIsSearchOpen(false);
     setSearchQuery('');
 
@@ -929,7 +955,7 @@ export default function App() {
         return;
       }
 
-      await fetchDataFromSupabase();
+      await fetchDataFromSupabase(currentUser.id);
 
       Alert.alert(
         '⏳ Aprovação Pendente!',
@@ -1022,7 +1048,7 @@ export default function App() {
 
     await supabase.from('memberships').insert([newMembership]);
 
-    fetchDataFromSupabase();
+    fetchDataFromSupabase(currentUser.id);
     setIsCreateChallengeOpen(false);
     setNewChallengeTitle('');
     setNewChallengeCode('');
@@ -1057,7 +1083,7 @@ export default function App() {
         return;
       }
 
-      await fetchDataFromSupabase();
+      await fetchDataFromSupabase(currentUser.id);
       setCurrentScreen('dashboard');
 
       if (Platform.OS === 'web') {
@@ -1070,68 +1096,16 @@ export default function App() {
     }
   }
 
-  async function handleFinishChallenge(challengeId) {
-    const targetChallenge = challenges.find(c => c.id === challengeId);
-    if (!targetChallenge) return;
-
-    const challengeMembers = memberships.filter(m => m.challengeId === challengeId && m.role === 'active');
-    const sorted = [...challengeMembers].sort((a, b) => (b.rankingPoints || 0) - (a.rankingPoints || 0));
-
-    if (sorted[0]) {
-      const newGold = (sorted[0].goldMedals || 0) + 1;
-      await supabase.from('memberships').update({ gold_medals: newGold }).eq('id', sorted[0].id);
-      await supabase.from('profiles').update({ gold_medals: newGold }).eq('id', sorted[0].userId);
-    }
-    if (sorted[1]) {
-      const newSilver = (sorted[1].silverMedals || 0) + 1;
-      await supabase.from('memberships').update({ silver_medals: newSilver }).eq('id', sorted[1].id);
-      await supabase.from('profiles').update({ silver_medals: newSilver }).eq('id', sorted[1].userId);
-    }
-    if (sorted[2]) {
-      const newBronze = (sorted[2].bronzeMedals || 0) + 1;
-      await supabase.from('memberships').update({ bronze_medals: newBronze }).eq('id', sorted[2].id);
-      await supabase.from('profiles').update({ bronze_medals: newBronze }).eq('id', sorted[2].userId);
-    }
-
-    await supabase.from('memberships').update({ 
-      role: 'spectator', 
-      ranking_points: 0, 
-      bank_points: 0,
-      total_steps: 0,
-      total_km: 0,
-      active_days: 0
-    }).eq('challenge_id', challengeId);
-
-    const period = targetChallenge.rules_config?.leaguePeriod || 'Monthly';
-    const nextDayDate = new Date();
-    nextDayDate.setDate(nextDayDate.getDate() + 1);
-
-    const newSeasonDates = calculateSeasonDates(period, true, nextDayDate);
-
-    await supabase.from('challenges').update({ 
-      is_finished: false, 
-      registrations_closed: false,
-      start_date: newSeasonDates.startDateStr,
-      end_date: newSeasonDates.endDateStr
-    }).eq('id', challengeId);
-
-    fetchDataFromSupabase();
-    Alert.alert(
-      '🏆 Temporada Encerrada!', 
-      `As medalhas foram distribuídas! Nova Época Iniciada: ${newSeasonDates.startDateStr} até ${newSeasonDates.endDateStr}`
-    );
-  }
-
   async function toggleChallengeRegistrations() {
     const newStatus = !selectedChallenge.registrations_closed;
     await supabase.from('challenges').update({ registrations_closed: newStatus }).eq('id', selectedChallenge.id);
-    fetchDataFromSupabase();
+    fetchDataFromSupabase(currentUser.id);
     Alert.alert('Status Atualizado', newStatus ? 'Inscrições/Candidaturas ENCERRADAS!' : 'Inscrições/Candidaturas ABERTAS!');
   }
 
   async function handleUpdateAthleteStatus(memberId, newRole) {
     await supabase.from('memberships').update({ role: newRole }).eq('id', memberId);
-    fetchDataFromSupabase();
+    fetchDataFromSupabase(currentUser.id);
     
     if (newRole === 'active') {
       Alert.alert('Aprovação Efetuada', 'O participante agora é um ⚡ Atleta Ativo na liga!');
@@ -1144,19 +1118,19 @@ export default function App() {
 
   async function handleApproveCommunityMember(memberId) {
     await supabase.from('memberships').update({ role: 'spectator' }).eq('id', memberId);
-    fetchDataFromSupabase();
+    fetchDataFromSupabase(currentUser.id);
     Alert.alert('Membro Aprovado!', 'O participante foi aceito na Comunidade da Liga como Torcedor.');
   }
 
   async function handleRejectCommunityMember(memberId) {
     await supabase.from('memberships').delete().eq('id', memberId);
-    fetchDataFromSupabase();
+    fetchDataFromSupabase(currentUser.id);
     Alert.alert('Entrada Recusada', 'A solicitação de entrada na comunidade foi recusada.');
   }
 
   async function handleRemoveMemberFromCommunity(memberId) {
     await supabase.from('memberships').delete().eq('id', memberId);
-    fetchDataFromSupabase();
+    fetchDataFromSupabase(currentUser.id);
     Alert.alert('Removido', 'O participante foi removido da comunidade.');
   }
 
@@ -1215,7 +1189,7 @@ export default function App() {
 
     await supabase.from('feed_posts').insert([newPost]);
 
-    fetchDataFromSupabase();
+    fetchDataFromSupabase(currentUser.id);
 
     setManualRankingPts('');
     setManualBankPts('');
@@ -1287,7 +1261,7 @@ export default function App() {
       };
 
       await supabase.from('feed_posts').insert([newPost]);
-      await fetchDataFromSupabase();
+      await fetchDataFromSupabase(currentUser.id);
       Alert.alert('Treino Aprovado!', 'O treino foi aprovado e publicado no Feed!');
 
     } catch (err) {
@@ -1297,7 +1271,7 @@ export default function App() {
 
   async function handleRejectWorkout(workoutId) {
     await supabase.from('pending_workouts').delete().eq('id', workoutId);
-    fetchDataFromSupabase();
+    fetchDataFromSupabase(currentUser.id);
     Alert.alert('Treino Rejeitado', 'O registro foi removido.');
   }
 
@@ -1516,7 +1490,7 @@ export default function App() {
 
     try {
       await supabase.from('pending_workouts').insert([newPendingWorkout]);
-      await fetchDataFromSupabase();
+      await fetchDataFromSupabase(currentUser.id);
       
       setIsWorkoutModalOpen(false);
       setKmInput('');
@@ -1554,7 +1528,7 @@ export default function App() {
         .eq('id', selectedConfigChallengeId);
 
       setIsAdvancedRulesModalOpen(false);
-      fetchDataFromSupabase();
+      fetchDataFromSupabase(currentUser.id);
       Alert.alert('🎉 Sucesso!', 'As regras desta liga foram salvas permanentemente no banco de dados!');
     } catch (err) {
       Alert.alert('Erro Inesperado', err.message || 'Não foi possível gravar as regras.');
@@ -1894,10 +1868,6 @@ export default function App() {
 
   const timePeriodsArray = Object.keys(timeByPeriodMap).length > 0 ? Object.keys(timeByPeriodMap) : ['Set/26'];
 
-  const isThreePhotosGroupActive = ['💪 Musculação', '🏋️ Crossfit / Treino Funcional', '🫀 Treino Aeróbico'].includes(selectedActivity);
-  const isKmGroupActive = ['🏃 Corrida', '🚶 Caminhada', '🚴 Bike'].includes(selectedActivity);
-  const isStepsActive = selectedActivity === '🚶‍♂️ Passos Diários';
-
   if (loadingAuth) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1e3a8a' }}>
@@ -2197,74 +2167,149 @@ export default function App() {
                 </View>
               )}
 
-              <Text style={styles.sectionHeaderTitle}>🔑 Ligas que Administra</Text>
-              {adminChallenges.length === 0 ? (
-                <Text style={styles.emptyNoticeText}>Ainda não criou nenhum desafio no Supabase.</Text>
-              ) : (
-                adminChallenges.map((c) => (
-                  <View key={c.id} style={[styles.cardBox, { borderColor: '#f97316', borderWidth: 1.5 }]}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={styles.cardBoxTitle}>{c.title}</Text>
-                      <Text style={c.is_finished ? styles.tagClosed : c.registrations_closed ? styles.tagClosed : styles.tagOpen}>
-                        {c.is_finished ? '🏆 ENCERRADO' : c.registrations_closed ? '🔒 FECHADO' : '🟢 ABERTO'}
-                      </Text>
-                    </View>
-                    
-                    <Text style={styles.cardBoxSub}>
-                      Código: {c.invite_code} | {c.startDate || c.start_date} até {c.endDate || c.end_date}
-                    </Text>
+              {/* SEÇÃO 1: Ligas que Administra */}
+              <View style={{ marginBottom: 12 }}>
+                <TouchableOpacity 
+                  style={styles.sectionToggleHeader} 
+                  onPress={() => setDashSectionAdmin(!dashSectionAdmin)}
+                >
+                  <Text style={styles.sectionHeaderTitle}>🔑 Ligas que Administra ({adminChallenges.length})</Text>
+                  <Text style={styles.sectionToggleArrow}>{dashSectionAdmin ? '▲' : '▼'}</Text>
+                </TouchableOpacity>
 
-                    <TouchableOpacity style={[styles.primaryBtn, { marginVertical: 6 }]} onPress={() => selectChallengeContext(c, true)}>
-                      <Text style={styles.primaryBtnText}>ENTRAR COMO ADMIN ➔</Text>
-                    </TouchableOpacity>
+                {dashSectionAdmin && (
+                  <View style={{ marginTop: 6 }}>
+                    {adminChallenges.length === 0 ? (
+                      <Text style={styles.emptyNoticeText}>Ainda não criou nenhum desafio no Supabase.</Text>
+                    ) : (
+                      adminChallenges.map((c) => (
+                        <View key={c.id} style={[styles.cardBox, { borderColor: '#f97316', borderWidth: 1.5 }]}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text style={styles.cardBoxTitle}>{c.title}</Text>
+                            <Text style={c.is_finished ? styles.tagClosed : c.registrations_closed ? styles.tagClosed : styles.tagOpen}>
+                              {c.is_finished ? '🏆 ENCERRADO' : c.registrations_closed ? '🔒 FECHADO' : '🟢 ABERTO'}
+                            </Text>
+                          </View>
+                          
+                          <Text style={styles.cardBoxSub}>
+                            Código: {c.invite_code} | {c.startDate || c.start_date} até {c.endDate || c.end_date}
+                          </Text>
 
-                    <View style={{ flexDirection: 'column', gap: 6, marginTop: 4 }}>
-                      <TouchableOpacity style={styles.dashboardActionBtnGreen} onPress={() => handleShareInvite(c)}>
-                        <Text style={styles.dashboardActionBtnText}>🔗 CONVIDAR</Text>
-                      </TouchableOpacity>
+                          <TouchableOpacity style={[styles.primaryBtn, { marginVertical: 6 }]} onPress={() => selectChallengeContext(c, true)}>
+                            <Text style={styles.primaryBtnText}>ENTRAR COMO ADMIN ➔</Text>
+                          </TouchableOpacity>
 
-                      {!c.is_finished && (
-                        <TouchableOpacity style={styles.dashboardActionBtnOrange} onPress={() => handleFinishChallenge(c.id)}>
-                          <Text style={styles.dashboardActionBtnText}>🏆 ENCERRAR TEMPORADA</Text>
-                        </TouchableOpacity>
-                      )}
+                          <View style={{ flexDirection: 'column', gap: 6, marginTop: 4 }}>
+                            <TouchableOpacity style={styles.dashboardActionBtnGreen} onPress={() => handleShareInvite(c)}>
+                              <Text style={styles.dashboardActionBtnText}>🔗 CONVIDAR</Text>
+                            </TouchableOpacity>
 
-                      <TouchableOpacity style={styles.dashboardActionBtnRed} onPress={() => handleDeleteChallenge(c.id)}>
-                        <Text style={styles.dashboardActionBtnText}>🗑️ ELIMINAR</Text>
-                      </TouchableOpacity>
-                    </View>
+                            <TouchableOpacity style={styles.dashboardActionBtnRed} onPress={() => handleDeleteChallenge(c.id)}>
+                              <Text style={styles.dashboardActionBtnText}>🗑️ ELIMINAR</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ))
+                    )}
                   </View>
-                ))
-              )}
+                )}
+              </View>
 
-              <Text style={[styles.sectionHeaderTitle, { marginTop: 16 }]}>⚡ Ligas em que é Participante / Comunidade</Text>
-              {participantChallenges.length === 0 ? (
-                <Text style={styles.emptyNoticeText}>Não está inscrito noutros desafios.</Text>
-              ) : (
-                participantChallenges.map((c) => (
-                  <View key={c.id} style={styles.cardBox}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={styles.cardBoxTitle}>{c.title}</Text>
-                      <Text style={c.is_finished ? styles.tagClosed : c.registrations_closed ? styles.tagClosed : styles.tagOpen}>
-                        {c.is_finished ? '🏆 ENCERRADO' : c.registrations_closed ? '🔒 FECHADO' : '🟢 ABERTO'}
-                      </Text>
-                    </View>
-                    <Text style={styles.cardBoxSub}>
-                      Código: {c.invite_code} | {c.startDate || c.start_date} até {c.endDate || c.end_date}
-                    </Text>
+              {/* SEÇÃO 2: Convites Recebidos */}
+              <View style={{ marginBottom: 12 }}>
+                <TouchableOpacity 
+                  style={styles.sectionToggleHeader} 
+                  onPress={() => setDashSectionInvites(!dashSectionInvites)}
+                >
+                  <Text style={[styles.sectionHeaderTitle, { color: '#d97706' }]}>📩 Convites Recebidos ({receivedInvitesList.length})</Text>
+                  <Text style={styles.sectionToggleArrow}>{dashSectionInvites ? '▲' : '▼'}</Text>
+                </TouchableOpacity>
 
-                    <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
-                      <TouchableOpacity style={[styles.actionBtn, { flex: 1, marginBottom: 0 }]} onPress={() => selectChallengeContext(c, false)}>
-                        <Text style={styles.actionBtnText}>ACEDER À LIGA ➔</Text>
-                      </TouchableOpacity>
-                      
-                      <TouchableOpacity style={styles.inviteBtn} onPress={() => handleShareInvite(c)}>
-                        <Text style={styles.btnMiniText}>🔗 CONVIDAR</Text>
-                      </TouchableOpacity>
-                    </View>
+                {dashSectionInvites && (
+                  <View style={{ marginTop: 6 }}>
+                    {receivedInvitesList.length === 0 ? (
+                      <Text style={styles.emptyNoticeText}>Nenhum convite pendente recebido no momento.</Text>
+                    ) : (
+                      receivedInvitesList.map((membership) => {
+                        const challengeObj = challenges.find(ch => ch.id === membership.challengeId);
+                        if (!challengeObj) return null;
+
+                        return (
+                          <View key={membership.id} style={[styles.cardBox, { borderColor: '#d97706', borderWidth: 1.5, backgroundColor: '#fffbeb' }]}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Text style={styles.cardBoxTitle}>{challengeObj.title}</Text>
+                              <Text style={styles.tagPendingInvite}>CONVITE PENDENTE</Text>
+                            </View>
+                            <Text style={styles.cardBoxSub}>
+                              Código: {challengeObj.invite_code} | Período: {challengeObj.startDate || challengeObj.start_date} até {challengeObj.endDate || challengeObj.end_date}
+                            </Text>
+
+                            <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                              <TouchableOpacity 
+                                style={[styles.dashboardActionBtnGreen, { flex: 1 }]} 
+                                onPress={() => handleAcceptInvite(membership.id)}
+                              >
+                                <Text style={styles.dashboardActionBtnText}>✅ ACEITAR</Text>
+                              </TouchableOpacity>
+
+                              <TouchableOpacity 
+                                style={[styles.dashboardActionBtnRed, { flex: 1 }]} 
+                                onPress={() => handleRejectInvite(membership.id)}
+                              >
+                                <Text style={styles.dashboardActionBtnText}>❌ RECUSAR</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        );
+                      })
+                    )}
                   </View>
-                ))
-              )}
+                )}
+              </View>
+
+              {/* SEÇÃO 3: Ligas em que é Participante / Comunidade */}
+              <View style={{ marginBottom: 12 }}>
+                <TouchableOpacity 
+                  style={styles.sectionToggleHeader} 
+                  onPress={() => setDashSectionParticipant(!dashSectionParticipant)}
+                >
+                  <Text style={styles.sectionHeaderTitle}>⚡ Ligas em que é Participante / Comunidade ({participantChallenges.length})</Text>
+                  <Text style={styles.sectionToggleArrow}>{dashSectionParticipant ? '▲' : '▼'}</Text>
+                </TouchableOpacity>
+
+                {dashSectionParticipant && (
+                  <View style={{ marginTop: 6 }}>
+                    {participantChallenges.length === 0 ? (
+                      <Text style={styles.emptyNoticeText}>Não está inscrito noutros desafios.</Text>
+                    ) : (
+                      participantChallenges.map((c) => (
+                        <View key={c.id} style={styles.cardBox}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text style={styles.cardBoxTitle}>{c.title}</Text>
+                            <Text style={c.is_finished ? styles.tagClosed : c.registrations_closed ? styles.tagClosed : styles.tagOpen}>
+                              {c.is_finished ? '🏆 ENCERRADO' : c.registrations_closed ? '🔒 FECHADO' : '🟢 ABERTO'}
+                            </Text>
+                          </View>
+                          <Text style={styles.cardBoxSub}>
+                            Código: {c.invite_code} | {c.startDate || c.start_date} até {c.endDate || c.end_date}
+                          </Text>
+
+                          <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
+                            <TouchableOpacity style={[styles.actionBtn, { flex: 1, marginBottom: 0 }]} onPress={() => selectChallengeContext(c, false)}>
+                              <Text style={styles.actionBtnText}>ACEDER À LIGA ➔</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity style={styles.inviteBtn} onPress={() => handleShareInvite(c)}>
+                              <Text style={styles.btnMiniText}>🔗 CONVIDAR</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ))
+                    )}
+                  </View>
+                )}
+              </View>
+
             </ScrollView>
           )}
 
@@ -2468,7 +2513,7 @@ export default function App() {
                   <View style={{ alignItems: 'center', paddingVertical: 12 }}>
                     <Text style={{ fontSize: 24, fontWeight: '900', color: '#f97316' }}>MUVFIT</Text>
                     <Text style={{ fontSize: 12 * fontSizeScale, fontWeight: 'bold', color: '#1e3a8a', marginTop: 4 }}>Mizan Soluções Técnicas</Text>
-                    <Text style={{ fontSize: 10 * fontSizeScale, color: '#64748b', marginTop: 8 }}>Versão Atual da Aplicação: 2.6.1-Nuvem</Text>
+                    <Text style={{ fontSize: 10 * fontSizeScale, color: '#64748b', marginTop: 8 }}>Versão Atual da Aplicação: 2.6.2-Nuvem</Text>
                     <Text style={{ fontSize: 9 * fontSizeScale, color: '#94a3b8', marginTop: 4, textAlign: 'center' }}>
                       Desenvolvido com tecnologia React Native & Supabase Cloud Services.
                     </Text>
@@ -4644,8 +4689,11 @@ const styles = StyleSheet.create({
 
   mainContent: { padding: 12 },
   pageTitle: { fontSize: 14, fontWeight: 'bold', color: '#1e3a8a', marginVertical: 8 },
-  sectionHeaderTitle: { fontSize: 12, fontWeight: 'bold', color: '#f97316', marginVertical: 6 },
+  sectionHeaderTitle: { fontSize: 12, fontWeight: 'bold', color: '#f97316' },
   emptyNoticeText: { fontSize: 10, color: '#94a3b8', fontStyle: 'italic', marginBottom: 8 },
+
+  sectionToggleHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#cbd5e1' },
+  sectionToggleArrow: { fontSize: 12, fontWeight: 'bold', color: '#f97316' },
 
   createChallengeBtnHeader: { backgroundColor: '#16a34a', paddingHorizontal: 8, paddingVertical: 5, borderRadius: 6 },
   createChallengeBtnText: { color: '#ffffff', fontSize: 9, fontWeight: 'bold' },
@@ -4656,9 +4704,9 @@ const styles = StyleSheet.create({
 
   tagOpen: { backgroundColor: '#f0fdf4', color: '#16a34a', fontSize: 9, fontWeight: 'bold', padding: 4, borderRadius: 4 },
   tagClosed: { backgroundColor: '#fef2f2', color: '#dc2626', fontSize: 9, fontWeight: 'bold', padding: 4, borderRadius: 4 },
+  tagPendingInvite: { backgroundColor: '#fef3c7', color: '#d97706', fontSize: 9, fontWeight: 'bold', padding: 4, borderRadius: 4 },
 
   dashboardActionBtnGreen: { backgroundColor: '#16a34a', paddingVertical: 10, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
-  dashboardActionBtnOrange: { backgroundColor: '#d97706', paddingVertical: 10, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   dashboardActionBtnRed: { backgroundColor: '#dc2626', paddingVertical: 10, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   dashboardActionBtnText: { color: '#ffffff', fontSize: 10, fontWeight: 'bold' },
 
@@ -4759,10 +4807,6 @@ const styles = StyleSheet.create({
 
   athleteStatusBadgeContainer: { backgroundColor: '#dcfce7', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 6, marginVertical: 4, borderWidth: 1, borderColor: '#16a34a' },
   athleteStatusBadgeText: { fontSize: 10, fontWeight: 'bold', color: '#16a34a' },
-
-  medalsRowContainer: { flexDirection: 'row', gap: 12, marginVertical: 8, backgroundColor: '#ffffff', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: '#cbd5e1' },
-  medalBadgeItem: { alignItems: 'center' },
-  medalBadgeCount: { fontSize: 9, fontWeight: 'bold', color: '#1e3a8a', marginTop: 2 },
 
   scoreRowContainer: { flexDirection: 'row', gap: 8, width: '100%', marginVertical: 8, justifyContent: 'center' },
   scoreBoxItem: { flex: 1, backgroundColor: '#ffffff', borderRadius: 8, padding: 8, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
