@@ -297,30 +297,31 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.search) {
+    let isMounted = true;
+
+    async function initApp() {
       try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const inviteCodeParam = urlParams.get('convite');
-        if (inviteCodeParam) {
-          setSearchQuery(inviteCodeParam);
-          setIsSearchOpen(true);
-          
-          if (session?.user?.id) {
+        if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.search) {
+          const urlParams = new URLSearchParams(window.location.search);
+          const inviteCodeParam = urlParams.get('convite');
+          if (inviteCodeParam) {
+            setSearchQuery(inviteCodeParam);
+            setIsSearchOpen(true);
+            
             supabase
               .from('challenges')
               .select('id, title')
               .eq('invite_code', inviteCodeParam.toUpperCase())
               .maybeSingle()
               .then(async ({ data: foundCh }) => {
-                if (foundCh) {
+                if (foundCh && isMounted) {
                   const { data: existingMem } = await supabase
                     .from('memberships')
                     .select('id')
                     .eq('challenge_id', foundCh.id)
-                    .eq('user_id', session.user.id)
                     .maybeSingle();
 
-                  if (!existingMem) {
+                  if (!existingMem && session?.user?.id) {
                     await supabase.from('memberships').insert([{
                       challenge_id: foundCh.id,
                       user_id: session.user.id,
@@ -334,47 +335,52 @@ export default function App() {
                     }]);
                     
                     fetchDataFromSupabase();
-                    if (Platform.OS === 'web') {
-                      window.alert(`📩 Convite detetado! Solicitação enviada para a liga "${foundCh.title}". O Administrador já pode aceitá-la.`);
-                    }
                   }
                 }
               });
           }
         }
+
+        if (!supabase || !supabase.auth) {
+          if (isMounted) setLoadingAuth(false);
+          return;
+        }
+
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (isMounted) {
+          setSession(currentSession);
+          if (currentSession) {
+            await fetchUserProfile(currentSession.user.id, currentSession.user.email);
+            await fetchDataFromSupabase();
+          }
+          setLoadingAuth(false);
+        }
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+          if (isMounted) {
+            setSession(newSession);
+            if (newSession) {
+              await fetchUserProfile(newSession.user.id, newSession.user.email);
+              await fetchDataFromSupabase();
+            } else {
+              setCurrentUser({ id: '', name: '', nickname: '' });
+            }
+            setLoadingAuth(false);
+          }
+        });
+
+        return () => {
+          isMounted = false;
+          subscription.unsubscribe();
+        };
       } catch (e) {
-        console.log('Erro ao ler parâmetros da URL:', e);
+        console.log('Erro na inicialização:', e);
+        if (isMounted) setLoadingAuth(false);
       }
     }
 
-    if (!supabase || !supabase.auth) {
-      console.error("Erro: O cliente Supabase não foi inicializado corretamente.");
-      setLoadingAuth(false);
-      return;
-    }
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) {
-        fetchUserProfile(session.user.id, session.user.email);
-        fetchDataFromSupabase();
-      }
-      setLoadingAuth(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) {
-        fetchUserProfile(session.user.id, session.user.email);
-        fetchDataFromSupabase();
-      } else {
-        setCurrentUser({ id: '', name: '', nickname: '' });
-      }
-      setLoadingAuth(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [session?.user?.id]);
+    initApp();
+  }, []);
 
   async function fetchUserProfile(userId, userEmail) {
     try {
@@ -448,18 +454,13 @@ export default function App() {
     if (!currentUser.id) return;
     try {
       const targetVal = (newTarget === '' || newTarget === null || isNaN(newTarget)) ? null : parseFloat(newTarget);
-      
-      const { error } = await supabase
+      await supabase
         .from('profiles')
         .update({
           weight_history: updatedList,
           target_weight: targetVal
         })
         .eq('id', currentUser.id);
-
-      if (error) {
-        console.log('Erro ao salvar dados de peso no Supabase:', error.message);
-      }
     } catch (err) {
       console.log('Erro inesperado ao salvar dados de peso:', err);
     }
@@ -587,7 +588,6 @@ export default function App() {
             .upload(fileName, blob, { contentType: `image/${fileExt}`, upsert: true });
 
           if (uploadError) {
-            console.log('Erro no upload da imagem:', uploadError);
             finalAvatarUrl = currentUser.avatar;
           } else {
             const { data: publicUrlData } = supabase.storage
@@ -597,7 +597,6 @@ export default function App() {
             finalAvatarUrl = publicUrlData.publicUrl;
           }
         } catch (imgErr) {
-          console.log('Falha ao processar imagem:', imgErr);
           finalAvatarUrl = currentUser.avatar;
         }
       }
@@ -625,13 +624,7 @@ export default function App() {
         profilePayload.birth_date = dbBirthDate;
       }
 
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert([profilePayload], { onConflict: 'id' });
-
-      if (profileError) {
-        throw new Error('Erro na tabela profiles: ' + profileError.message);
-      }
+      await supabase.from('profiles').upsert([profilePayload], { onConflict: 'id' });
 
       await supabase
         .from('memberships')
@@ -662,7 +655,6 @@ export default function App() {
       Alert.alert('🎉 Sucesso!', 'Perfil atualizado com sucesso!');
 
     } catch (err) {
-      console.error('Erro ao salvar perfil:', err);
       Alert.alert('Erro ao Salvar', err.message || 'Ocorreu um erro ao atualizar o perfil.');
     } finally {
       setSavingProfile(false);
@@ -887,16 +879,12 @@ export default function App() {
     }
 
     try {
-      const { data: existingMember, error: fetchErr } = await supabase
+      const { data: existingMember } = await supabase
         .from('memberships')
         .select('id, role')
         .eq('challenge_id', selectedChallenge.id)
         .eq('user_id', currentUser.id)
         .maybeSingle();
-
-      if (fetchErr) {
-        console.log('Erro ao consultar membership:', fetchErr);
-      }
 
       let error = null;
 
@@ -1243,26 +1231,17 @@ export default function App() {
     if (!workout) return;
 
     try {
-      const { error: deleteErr } = await supabase.from('pending_workouts').delete().eq('id', workoutId);
-      if (deleteErr) {
-        console.error('Erro ao remover treino pendente:', deleteErr);
-        Alert.alert('Erro', 'Não foi possível remover o treino pendente: ' + deleteErr.message);
-        return;
-      }
+      await supabase.from('pending_workouts').delete().eq('id', workoutId);
 
       const parsedKm = parseFloat(workout.distance_km) || 0;
       const parsedDuration = parseInt(workout.duration_minutes, 10) || 0;
       const targetChallengeId = workout.challenge_id;
 
-      const { data: currentMem, error: fetchMemErr } = await supabase.from('memberships')
+      const { data: currentMem } = await supabase.from('memberships')
         .select('ranking_points, bank_points, total_steps, total_km, active_days')
         .eq('challenge_id', targetChallengeId)
         .eq('user_id', workout.user_id)
         .maybeSingle();
-
-      if (fetchMemErr) {
-        console.error('Erro ao buscar membership:', fetchMemErr);
-      }
 
       if (currentMem) {
         let updatedObj = {
@@ -1277,14 +1256,10 @@ export default function App() {
           updatedObj.active_days = (currentMem.active_days || 0) + parsedDuration;
         }
 
-        const { error: updateMemErr } = await supabase.from('memberships')
+        await supabase.from('memberships')
           .update(updatedObj)
           .eq('challenge_id', targetChallengeId)
           .eq('user_id', workout.user_id);
-
-        if (updateMemErr) {
-          console.error('Erro ao atualizar pontos do membro:', updateMemErr);
-        }
       }
 
       const imagesList = [];
@@ -1311,19 +1286,11 @@ export default function App() {
         comments: []
       };
 
-      const { error: insertFeedErr } = await supabase.from('feed_posts').insert([newPost]);
-      
-      if (insertFeedErr) {
-        console.error('Erro detalhado ao inserir no feed_posts:', insertFeedErr);
-        Alert.alert('Erro ao Publicar no Feed', insertFeedErr.message);
-        return;
-      }
-
+      await supabase.from('feed_posts').insert([newPost]);
       await fetchDataFromSupabase();
-      Alert.alert('Treino Aprovado!', 'O treino foi aprovado, pontuação somada e publicado no Feed com sucesso!');
+      Alert.alert('Treino Aprovado!', 'O treino foi aprovado e publicado no Feed!');
 
     } catch (err) {
-      console.error('Erro inesperado em handleApproveWorkout:', err);
       Alert.alert('Erro Inesperado', err.message || 'Ocorreu um erro ao processar a aprovação.');
     }
   }
@@ -1425,7 +1392,7 @@ export default function App() {
 
     if (isThreePhotosGroup) {
       if (!photoStart || !photoEvidence || !photoEnd) {
-        Alert.alert('Comprovantes Obrigatórios', 'Para esta modalidade, envie as 3 fotos obrigatórias: Foto Horário Inicial, Foto Evidência e Foto Horário Final.');
+        Alert.alert('Comprovantes Obrigatórios', 'Para esta modalidade, envie as 3 fotos obrigatórias.');
         return;
       }
     } else {
@@ -1466,7 +1433,6 @@ export default function App() {
 
     if (bonusConfig.inquebravelEnabled) {
       const requiredDays = parseInt(bonusConfig.inquebravelDays, 10) || 3;
-      
       const userApprovedPosts = feedPosts.filter(p => p.challenge_id === activeChallengeId && p.user_id === currentUser.id);
       
       const uniqueDatesSet = new Set();
@@ -1549,14 +1515,7 @@ export default function App() {
     };
 
     try {
-      const { error: insertPendingErr } = await supabase.from('pending_workouts').insert([newPendingWorkout]);
-      
-      if (insertPendingErr) {
-        console.error('Erro detalhado ao inserir em pending_workouts:', insertPendingErr);
-        Alert.alert('Erro ao Enviar Treino', insertPendingErr.message);
-        return;
-      }
-
+      await supabase.from('pending_workouts').insert([newPendingWorkout]);
       await fetchDataFromSupabase();
       
       setIsWorkoutModalOpen(false);
@@ -1568,7 +1527,6 @@ export default function App() {
       
       Alert.alert('Sucesso', 'Treino enviado com sucesso! Aguardando aprovação do Administrador.');
     } catch (err) {
-      console.error('Erro inesperado ao submeter treino:', err);
       Alert.alert('Erro de Conexão', 'Não foi possível comunicar com o servidor do Supabase.');
     }
   }
@@ -1585,7 +1543,7 @@ export default function App() {
     };
 
     try {
-      const { error } = await supabase
+      await supabase
         .from('challenges')
         .update({
           title: selectedChallenge.title,
@@ -1594,11 +1552,6 @@ export default function App() {
           rules_config: fullRulesObject
         })
         .eq('id', selectedConfigChallengeId);
-
-      if (error) {
-        Alert.alert('Erro ao Salvar no Banco', error.message);
-        return;
-      }
 
       setIsAdvancedRulesModalOpen(false);
       fetchDataFromSupabase();
@@ -1870,12 +1823,6 @@ export default function App() {
   });
   const availablePeriodsList = Array.from(availablePeriodsSet);
 
-  const currentActiveChallengeObj = athletePerfScope === 'global' 
-    ? selectedChallenge 
-    : challenges.find(c => String(c.id) === String(athletePerfScope)) || selectedChallenge;
-
-  const currentLeaguePeriodType = currentActiveChallengeObj?.rules_config?.leaguePeriod || 'Monthly';
-  
   const kmFilteredPosts = athleteFeedPostsAll.filter(p => {
     const act = (p.activity_type || '').toUpperCase();
     return act.includes('CORRIDA') || act.includes('CAMINHADA') || act.includes('BIKE');
@@ -2212,7 +2159,7 @@ export default function App() {
                 <Text style={[styles.sidebarText, { fontSize: 9 * fontSizeScale }, currentScreen === 'ranking' && styles.sidebarTextActive]}>Ranking</Text>
               </TouchableOpacity>
 
-              {(selectedChallenge.creator_id === currentUser.id || adminChallenges.length > 0) && (
+              {selectedChallenge && (selectedChallenge.creator_id === currentUser.id || adminChallenges.length > 0) && (
                 <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'admin' && styles.sidebarBtnActive]} onPress={() => { setIsAdminContext(true); setCurrentScreen('admin'); }}>
                   <Text style={styles.sidebarIcon}>⚙️</Text>
                   <Text style={[styles.sidebarText, { fontSize: 9 * fontSizeScale }, currentScreen === 'admin' && styles.sidebarTextActive]}>Admin</Text>
@@ -2521,7 +2468,7 @@ export default function App() {
                   <View style={{ alignItems: 'center', paddingVertical: 12 }}>
                     <Text style={{ fontSize: 24, fontWeight: '900', color: '#f97316' }}>MUVFIT</Text>
                     <Text style={{ fontSize: 12 * fontSizeScale, fontWeight: 'bold', color: '#1e3a8a', marginTop: 4 }}>Mizan Soluções Técnicas</Text>
-                    <Text style={{ fontSize: 10 * fontSizeScale, color: '#64748b', marginTop: 8 }}>Versão Atual da Aplicação: 2.6.0-Nuvem</Text>
+                    <Text style={{ fontSize: 10 * fontSizeScale, color: '#64748b', marginTop: 8 }}>Versão Atual da Aplicação: 2.6.1-Nuvem</Text>
                     <Text style={{ fontSize: 9 * fontSizeScale, color: '#94a3b8', marginTop: 4, textAlign: 'center' }}>
                       Desenvolvido com tecnologia React Native & Supabase Cloud Services.
                     </Text>
@@ -2531,13 +2478,15 @@ export default function App() {
             </ScrollView>
           )}
 
-          {currentScreen === 'feed' && selectedChallenge && (
+          {currentScreen === 'feed' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <Text style={styles.pageTitle}>Feed — {selectedChallenge.title}</Text>
-                <TouchableOpacity style={styles.inviteBtn} onPress={() => handleShareInvite(selectedChallenge)}>
-                  <Text style={styles.btnMiniText}>🔗 CONVIDAR</Text>
-                </TouchableOpacity>
+                <Text style={styles.pageTitle}>Feed — {selectedChallenge?.title || 'Liga'}</Text>
+                {selectedChallenge?.id && (
+                  <TouchableOpacity style={styles.inviteBtn} onPress={() => handleShareInvite(selectedChallenge)}>
+                    <Text style={styles.btnMiniText}>🔗 CONVIDAR</Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
               {currentUserMembershipInActiveChallenge?.role === 'active' ? (
@@ -2621,10 +2570,10 @@ export default function App() {
             </ScrollView>
           )}
 
-          {currentScreen === 'ranking' && selectedChallenge && (
+          {currentScreen === 'ranking' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
-                <Text style={styles.pageTitle}>🏆 Ranking — {selectedChallenge.title}</Text>
+                <Text style={styles.pageTitle}>🏆 Ranking — {selectedChallenge?.title || 'Liga'}</Text>
 
                 {currentUserMembershipInActiveChallenge?.role === 'active' ? (
                   <div style={{ backgroundColor: '#16a34a', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}>
@@ -2639,13 +2588,13 @@ export default function App() {
                     style={styles.blueRequestAthleteBtn} 
                     onPress={handleRequestAthleteActive}
                   >
-                    <Text style={styles.btnMiniText}>SOLICITAR PARTICIPAÇÃO - {selectedChallenge.title}</Text>
+                    <Text style={styles.btnMiniText}>SOLICITAR PARTICIPAÇÃO</Text>
                   </TouchableOpacity>
                 )}
               </View>
               
               <View style={styles.topWinnersBannerBox}>
-                <Text style={styles.topWinnersBannerTitle}>👑 HALL DA FAMA - {selectedChallenge.title.toUpperCase()}</Text>
+                <Text style={styles.topWinnersBannerTitle}>👑 HALL DA FAMA - {selectedChallenge?.title ? selectedChallenge.title.toUpperCase() : 'LIGA'}</Text>
                 {top3Winners.length > 0 ? (
                   top3Winners.map((winnerStr, idx) => (
                     <Text key={idx} style={styles.topWinnersBannerList}>
@@ -2672,7 +2621,7 @@ export default function App() {
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
                       <Text style={styles.rankingMemberPts}>{(member.rankingPoints || 0).toLocaleString()} pts</Text>
-                      {selectedChallenge.has_daily_cap && (
+                      {selectedChallenge?.has_daily_cap && (
                         <Text style={styles.rankingMemberBank}>Banco: {(member.bankPoints || 0).toLocaleString()} pts</Text>
                       )}
                     </View>
@@ -2891,10 +2840,10 @@ export default function App() {
             </ScrollView>
           )}
 
-          {currentScreen === 'admin' && selectedChallenge && (
+          {currentScreen === 'admin' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={styles.adminControlCard}>
-                <Text style={styles.adminCardTitle}>🎯 Central do Administrador: {selectedChallenge.title}</Text>
+                <Text style={styles.adminCardTitle}>🎯 Central do Administrador: {selectedChallenge?.title || 'Liga'}</Text>
                 <Text style={styles.adminCardSub}>Gerencie aprovações, inscrições de atletas ativos, lançamento manual, membros e configurações avançadas.</Text>
               </View>
 
@@ -2986,12 +2935,12 @@ export default function App() {
                       <TouchableOpacity 
                         style={[
                           styles.lockBtn, 
-                          { backgroundColor: selectedChallenge.registrations_closed ? '#dc2626' : '#16a34a', paddingHorizontal: 12, paddingVertical: 6 }
+                          { backgroundColor: selectedChallenge?.registrations_closed ? '#dc2626' : '#16a34a', paddingHorizontal: 12, paddingVertical: 6 }
                         ]} 
                         onPress={toggleChallengeRegistrations}
                       >
                         <Text style={styles.btnMiniText}>
-                          {selectedChallenge.registrations_closed ? '🔴 FECHADO' : '🟢 ABERTO'}
+                          {selectedChallenge?.registrations_closed ? '🔴 FECHADO' : '🟢 ABERTO'}
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -3134,7 +3083,7 @@ export default function App() {
                       onChangeText={setManualRankingPts}
                     />
 
-                    {selectedChallenge.has_daily_cap && (
+                    {selectedChallenge?.has_daily_cap && (
                       <>
                         <Text style={styles.inputLabel}>Banco de Pontos (Excedente ao Teto):</Text>
                         <TextInput
@@ -3329,10 +3278,7 @@ export default function App() {
 
             <View style={{ backgroundColor: '#ffffff', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 10 }}>
               <div style={{ height: '160px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', borderBottom: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', paddingBottom: '10px' }}>
-                {weightHistoryList.filter(item => {
-                  if (!chartStartDateFilter || !chartEndDateFilter) return true;
-                  return true;
-                }).length === 0 ? (
+                {weightHistoryList.length === 0 ? (
                   <Text style={{ fontSize: 10, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center' }}>
                     Nenhum dado de peso inserido para o período selecionado.
                   </Text>
@@ -3737,7 +3683,7 @@ export default function App() {
                   <Text style={styles.inputLabel}>Nome da Liga:</Text>
                   <TextInput
                     style={styles.input}
-                    value={selectedChallenge.title || ''}
+                    value={selectedChallenge?.title || ''}
                     onChangeText={(txt) => {
                       setChallenges(challenges.map(c => c.id === selectedConfigChallengeId ? { ...c, title: txt } : c));
                     }}
@@ -3782,23 +3728,23 @@ export default function App() {
                   <TouchableOpacity 
                     style={[styles.checkboxRow, { marginTop: 8 }]} 
                     onPress={() => {
-                      const currentVal = selectedChallenge.has_daily_cap;
+                      const currentVal = selectedChallenge?.has_daily_cap;
                       setChallenges(challenges.map(c => c.id === selectedConfigChallengeId ? { ...c, has_daily_cap: !currentVal } : c));
                     }}
                   >
-                    <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: selectedChallenge.has_daily_cap ? '#f97316' : '#ffffff' }}>
-                      {selectedChallenge.has_daily_cap && <Text style={styles.checkboxCheckmark}>✓</Text>}
+                    <div style={{ width: '18px', height: '18px', border: '2px solid #1e3a8a', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: selectedChallenge?.has_daily_cap ? '#f97316' : '#ffffff' }}>
+                      {selectedChallenge?.has_daily_cap && <Text style={styles.checkboxCheckmark}>✓</Text>}
                     </div>
                     <Text style={styles.checkboxLabel}>Ativar Limite de Teto Diário de Pontos?</Text>
                   </TouchableOpacity>
 
-                  {selectedChallenge.has_daily_cap && (
+                  {selectedChallenge?.has_daily_cap && (
                     <View style={{ marginTop: 4, marginBottom: 8 }}>
                       <Text style={styles.inputLabel}>Valor Exato do Teto Diário (Pts):</Text>
                       <TextInput
                         style={styles.input}
                         keyboardType="numeric"
-                        value={String(selectedChallenge.daily_cap || '22000')}
+                        value={String(selectedChallenge?.daily_cap || '22000')}
                         onChangeText={(txt) => {
                           const num = parseInt(txt, 10) || 0;
                           setChallenges(challenges.map(c => c.id === selectedConfigChallengeId ? { ...c, daily_cap: num } : c));
