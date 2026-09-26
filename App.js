@@ -1492,24 +1492,29 @@ export default function App() {
       points_to_bank: ptsBank
     };
 
-    const { error: insertPendingErr } = await supabase.from('pending_workouts').insert([newPendingWorkout]);
-    
-    if (insertPendingErr) {
-      console.error('Erro detalhado ao inserir em pending_workouts:', insertPendingErr);
-      Alert.alert('Erro ao Enviar Treino', insertPendingErr.message);
-      return;
-    }
+    try {
+      const { error: insertPendingErr } = await supabase.from('pending_workouts').insert([newPendingWorkout]);
+      
+      if (insertPendingErr) {
+        console.error('Erro detalhado ao inserir em pending_workouts:', insertPendingErr);
+        Alert.alert('Erro ao Enviar Treino', insertPendingErr.message);
+        return;
+      }
 
-    await fetchDataFromSupabase();
-    
-    setIsWorkoutModalOpen(false);
-    setKmInput('');
-    setWorkoutCaption('');
-    setPhotoStart(null);
-    setPhotoEvidence(null);
-    setPhotoEnd(null);
-    
-    Alert.alert('Sucesso', 'Treino enviado com sucesso! Aguardando aprovação do Administrador.');
+      await fetchDataFromSupabase();
+      
+      setIsWorkoutModalOpen(false);
+      setKmInput('');
+      setWorkoutCaption('');
+      setPhotoStart(null);
+      setPhotoEvidence(null);
+      setPhotoEnd(null);
+      
+      Alert.alert('Sucesso', 'Treino enviado com sucesso! Aguardando aprovação do Administrador.');
+    } catch (err) {
+      console.error('Erro inesperado ao submeter treino:', err);
+      Alert.alert('Erro de Conexão', 'Não foi possível comunicar com o servidor do Supabase.');
+    }
   }
 
   async function handleSaveAdvancedRules() {
