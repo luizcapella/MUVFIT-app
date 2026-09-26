@@ -2188,8 +2188,8 @@ export default function App() {
         </View>
       </View>
 
-      <View style={{ flex: 1, flexDirection: 'row' }}>
-        <View style={[styles.sidebar, highContrast && { backgroundColor: '#111111' }]}>
+      <View style={{ flex: 1, flexDirection: Platform.OS === 'web' && typeof window !== 'undefined' && window.innerWidth < 768 ? 'column' : 'row' }}>
+        <View style={[styles.sidebar, highContrast && { backgroundColor: '#111111' }, Platform.OS === 'web' && typeof window !== 'undefined' && window.innerWidth < 768 ? { width: '100%', height: 'auto', flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 6 } : {}]}>
           <TouchableOpacity style={[styles.sidebarBtn, currentScreen === 'dashboard' && styles.sidebarBtnActive]} onPress={() => setCurrentScreen('dashboard')}>
             <Text style={styles.sidebarIcon}>🏠</Text>
             <Text style={[styles.sidebarText, { fontSize: 9 * fontSizeScale }, currentScreen === 'dashboard' && styles.sidebarTextActive]}>Painel</Text>
@@ -2226,11 +2226,11 @@ export default function App() {
             onPress={() => setCurrentScreen('configuracao_conta')}
           >
             <Text style={styles.sidebarIcon}>☰</Text>
-            <Text style={[styles.sidebarText, { fontSize: 9 * fontSizeScale }, currentScreen === 'configuracao_conta' && styles.sidebarTextActive]}>Config. Conta</Text>
+            <Text style={[styles.sidebarText, { fontSize: 9 * fontSizeScale }, currentScreen === 'configuracao_conta' && styles.sidebarTextActive]}>Conta</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={[{ flex: 1, backgroundColor: '#ffffff' }, highContrast && { backgroundColor: '#000000' }]}>
+        <View style={[{ flex: 1, backgroundColor: '#ffffff', minWidth: 0 }, highContrast && { backgroundColor: '#000000' }]}>
           {currentScreen === 'dashboard' && (
             <ScrollView contentContainerStyle={styles.mainContent}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -4799,7 +4799,7 @@ const styles = StyleSheet.create({
   commentsListContainer: { backgroundColor: '#f8fafc', borderRadius: 6, padding: 6, marginTop: 6 },
   commentItemText: { fontSize: 9, color: '#334155', marginBottom: 2 },
   addCommentRow: { flexDirection: 'row', gap: 6, marginTop: 6 },
-  commentInput: { flex: 1, backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 4, paddingHorizontal: 6, fontSize: 9 },
+  commentInput: { flex: 1, backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: '4px', paddingHorizontal: 6, fontSize: 9 },
   sendCommentBtn: { backgroundColor: '#1e3a8a', paddingHorizontal: 8, justifyContent: 'center', borderRadius: 4 },
   sendCommentBtnText: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
 
