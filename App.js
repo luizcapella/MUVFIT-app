@@ -91,7 +91,6 @@ export default function App() {
   });
 
   const [viewedUser, setViewedUser] = useState('');
-
   const [currentScreen, setCurrentScreen] = useState('dashboard');
 
   const [challenges, setChallenges] = useState([]);
@@ -110,9 +109,7 @@ export default function App() {
   const [dashSectionInvites, setDashSectionInvites] = useState(true);
   const [dashSectionParticipant, setDashSectionParticipant] = useState(true);
 
-  const selectedChallenge = challenges.find(c => c.id === activeChallengeId) || {};
   const [commentInputs, setCommentInputs] = useState({});
-
   const [isWorkoutModalOpen, setIsWorkoutModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState('💪 Musculação');
 
@@ -183,17 +180,14 @@ export default function App() {
     { id: 'dailySteps', label: 'Passos Diários', enabled: true, order: 1 },
     { id: 'bankPoints', label: 'Banco de Pontos', enabled: true, order: 2 }
   ]);
-  // INICIALIZAÇÃO DE SESSÃO E MONITORAMENTO DO USUÁRIO
   useEffect(() => {
     let isMounted = true;
-
     async function initApp() {
       try {
         if (!supabase || !supabase.auth) {
           if (isMounted) setLoadingAuth(false);
           return;
         }
-
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         if (isMounted) {
           setSession(currentSession);
@@ -204,7 +198,6 @@ export default function App() {
           setLoadingAuth(false);
         }
 
-        // Monitora mudanças de estado (Login, Logout, Cadastro)
         supabase.auth.onAuthStateChange(async (_event, newSession) => {
           if (isMounted) {
             setSession(newSession);
@@ -216,29 +209,18 @@ export default function App() {
             }
           }
         });
-
       } catch (e) {
-        console.log('Erro na inicialização do aplicativo:', e);
+        console.log('Erro na inicialização:', e);
         if (isMounted) setLoadingAuth(false);
       }
     }
-
     initApp();
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
 
-    // CARREGA INFORMAÇÕES PÚBLICAS DO ATLETA (PROFILES) - CORRIGIDO CONTRA ERRO #31
   async function fetchUserProfile(userId, userEmail) {
     try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      // Força o fallback a ser texto puro extraindo o primeiro item do split
+      const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
       const fallbackStringName = userEmail && typeof userEmail === 'string' ? userEmail.split('@')[0] : 'Atleta';
 
       if (data) {
@@ -247,9 +229,7 @@ export default function App() {
           const parts = data.birth_date.split('-');
           if (parts.length === 3) formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
-
         const computedAge = formattedDate ? calculateAge(formattedDate) : 0;
-
         const loadedUser = {
           id: String(data.id),
           name: String(data.full_name || fallbackStringName),
@@ -258,11 +238,10 @@ export default function App() {
           age: computedAge,
           gender: String(data.gender || 'Masculino'),
           avatar: String(data.avatar_url || `https://picsum.photos{data.id}/200/200`),
-          isAdmin: true
+          isAdmin: true,
+          goldMedals: 0, silverMedals: 0, bronzeMedals: 0
         };
-
-        // setCurrentUser(loadedUser);
-        setViewedUser(loadedUser);
+        setCurrentUser(loadedUser);
       } else {
         const fallbackUser = {
           id: String(userId),
@@ -272,53 +251,41 @@ export default function App() {
           age: 0,
           gender: 'Masculino',
           avatar: `https://picsum.photos{userId}/200/200`,
-          isAdmin: true
+          isAdmin: true,
+          goldMedals: 0, silverMedals: 0, bronzeMedals: 0
         };
-        // setCurrentUser(fallbackUser);
-        setViewedUser(fallbackUser);
+        setCurrentUser(fallbackUser);
       }
     } catch (err) {
-      console.log('Erro inesperado ao buscar perfil:', err);
+      console.log('Erro ao buscar perfil:', err);
     }
   }
 
-
-  // BUSCA DADOS DAS LIGAS, MEMBROS E FEED GERAL
   async function fetchDataFromSupabase() {
     try {
       const { data: challengesData } = await supabase.from('challenges').select('*');
       if (challengesData && challengesData.length > 0) {
         setChallenges(challengesData);
-        if (!activeChallengeId) {
-          setActiveChallengeId(challengesData[0].id);
-        }
+        if (!activeChallengeId) setActiveChallengeId(challengesData[0].id);
       }
-
       const { data: membersData } = await supabase.from('memberships').select('*');
-      if (membersData) {
-        setMemberships(membersData);
-      }
-
+      if (membersData) setMemberships(membersData);
       const { data: feedData } = await supabase.from('feed_posts').select('*');
-      if (feedData) {
-        setFeedPosts(feedData);
-      }
-
+      if (feedData) setFeedPosts(feedData);
     } catch (err) {
-      console.log('Erro de sincronização com o banco de dados:', err);
+      console.log('Erro ao carregar do Supabase:', err);
     }
   }
 
-  // LOGOUT (SAÍDA DO USUÁRIO)
   async function handleSignOut() {
     try {
       await supabase.auth.signOut();
       setSession(null);
     } catch (err) {
-      Alert.alert('Erro', 'Não foi possível encerrar a sessão.');
+      Alert.alert('Erro', 'Não foi possível fechar a sessão.');
     }
   }
-    // LÓGICA DE SUBMISSÃO E SALVAMENTO DO TREINO NO SUPABASE
+
   const [workoutSubmitting, setWorkoutSubmitting] = useState(false);
 
   async function handleSaveWorkout() {
@@ -326,11 +293,9 @@ export default function App() {
       Alert.alert('Erro', 'É obrigatório tirar uma foto como evidência do seu exercício!');
       return;
     }
-
     setWorkoutSubmitting(true);
     try {
       const calculatedPoints = calculateWorkoutPoints(selectedActivity, kmInput);
-
       const { error } = await supabase.from('pending_workouts').insert([
         {
           user_id: currentUser.id,
@@ -350,129 +315,76 @@ export default function App() {
         return;
       }
 
-      Alert.alert('Sucesso!', `Treino enviado com sucesso! Aguardando validação para somar seus ${calculatedPoints} pontos.`);
-      
+      Alert.alert('Sucesso!', `Treino enviado com sucesso! Aguardando validação.`);
       setWorkoutCaption('');
       setKmInput('');
       setPhotoEvidence(null);
       setIsWorkoutModalOpen(false);
-      
       await fetchDataFromSupabase();
-
     } catch (err) {
       Alert.alert('Erro Inesperado', 'Não foi possível salvar o seu exercício.');
     } finally {
       setWorkoutSubmitting(false);
     }
   }
-  // LÓGICA PARA INTERAÇÃO DE CURTIDAS (LIKE) NO SUPABASE
+
   async function handleLikePost(postId) {
     try {
       const post = feedPosts.find(p => p.id === postId);
       if (!post) return;
-
       const newLikesCount = (post.likes_count || 0) + 1;
-
-      const { error } = await supabase
-        .from('feed_posts')
-        .update({ likes_count: newLikesCount })
-        .eq('id', postId);
-
-      if (error) {
-        console.log('Erro ao salvar curtida:', error.message);
-        return;
+      const { error } = await supabase.from('feed_posts').update({ likes_count: newLikesCount }).eq('id', postId);
+      if (!error) {
+        setFeedPosts(feedPosts.map(p => p.id === postId ? { ...p, likes_count: newLikesCount } : p));
       }
-
-      setFeedPosts(feedPosts.map(p => p.id === postId ? { ...p, likes_count: newLikesCount } : p));
     } catch (err) {
-      console.log('Erro inesperado na curtida:', err);
+      console.log(err);
     }
   }
 
-  // LÓGICA PARA INSERÇÃO DE COMENTÁRIOS NO SUPABASE
   async function handleAddComment(postId, commentText) {
     try {
       const post = feedPosts.find(p => p.id === postId);
       if (!post) return;
-
       const newCommentObj = {
-        user_name: currentUser.nickname || currentUser.name || 'Atleta',
+        user_name: String(currentUser.nickname || currentUser.name || 'Atleta'),
         text: commentText.trim(),
         created_at: new Date().toISOString()
       };
-
-      const currentComments = post.comments || [];
-      const updatedComments = [...currentComments, newCommentObj];
-
-      const { error } = await supabase
-        .from('feed_posts')
-        .update({ comments: updatedComments })
-        .eq('id', postId);
-
-      if (error) {
-        console.log('Erro ao salvar comentário:', error.message);
-        return;
+      const updatedComments = [...(post.comments || []), newCommentObj];
+      const { error } = await supabase.from('feed_posts').update({ comments: updatedComments }).eq('id', postId);
+      if (!error) {
+        setFeedPosts(feedPosts.map(p => p.id === postId ? { ...p, comments: updatedComments } : p));
       }
-
-      setFeedPosts(feedPosts.map(p => p.id === postId ? { ...p, comments: updatedComments } : p));
     } catch (err) {
-      console.log('Erro inesperado no comentário:', err);
+      console.log(err);
     }
   }
-
-  // GERENCIAMENTO DAS AÇÕES DE ENTRADA E REGISTRO
   async function handleAuthAction() {
     if (!emailInput.trim() || !passwordInput.trim()) {
       Alert.alert('Atenção', 'Preencha E-mail e Senha para continuar.');
       return;
     }
-    if (isSignUp && !fullNameInput.trim()) {
-      Alert.alert('Atenção', 'Por favor, preencha o seu Nome Completo.');
-      return;
-    }
-
     setAuthSubmitting(true);
     try {
       if (isSignUp) {
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: emailInput.trim(),
           password: passwordInput.trim(),
-          options: {
-            data: {
-              full_name: fullNameInput.trim(),
-              nickname: fullNameInput.trim(),
-              gender: genderInput,
-            }
-          }
         });
-
         if (authError) {
           Alert.alert('Erro no Cadastro', authError.message);
           return;
         }
-
-        // Criação automática na tabela pública de perfis
-        if (authData?.user) {
-          await supabase.from('profiles').upsert([
-            {
-              id: authData.user.id,
-              full_name: fullNameInput.trim(),
-              nickname: fullNameInput.trim(),
-              gender: genderInput
-            }
-          ], { onConflict: 'id' });
-        }
-
-        Alert.alert('Sucesso!', 'Conta criada com sucesso! Faça o login para acessar.');
+        Alert.alert('Sucesso!', 'Conta criada. Faça o login para acessar.');
         setIsSignUp(false);
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: emailInput.trim(),
           password: passwordInput.trim(),
         });
-
         if (error) {
-          Alert.alert('Erro no Login', error.message.includes('Invalid login credentials') ? 'E-mail ou senha incorretos.' : error.message);
+          Alert.alert('Erro no Login', 'E-mail ou senha incorretos.');
         } else if (data.session) {
           setSession(data.session);
           await fetchUserProfile(data.session.user.id, data.session.user.email);
@@ -480,13 +392,12 @@ export default function App() {
         }
       }
     } catch (err) {
-      Alert.alert('Erro de Conexão', err.message || 'Não foi possível comunicar com o servidor do Supabase.');
+      Alert.alert('Erro Inesperado', 'Ocorreu um erro de conexão.');
     } finally {
       setAuthSubmitting(false);
     }
   }
 
-  // EXIBIÇÃO DA TELA DE CARREGAMENTO INICIAL
   if (loadingAuth) {
     return (
       <View style={styles.loadingContainer}>
@@ -496,7 +407,6 @@ export default function App() {
     );
   }
 
-  // INTERFACE PARA USUÁRIOS NÃO AUTENTICADOS (LOGIN/CADASTRO)
   if (!session) {
     return (
       <SafeAreaView style={styles.authContainer}>
@@ -517,8 +427,6 @@ export default function App() {
                   value={fullNameInput}
                   onChangeText={setFullNameInput}
                 />
-
-                {/* SELETORES DE GÊNERO NATIVOS RESTAURADOS (COMPATÍVEIS COM WEB E APK) */}
                 <View style={styles.genderRow}>
                   <TouchableOpacity
                     style={[styles.genderChip, genderInput === 'Masculino' && styles.genderChipActive]}
@@ -526,7 +434,6 @@ export default function App() {
                   >
                     <Text style={[styles.genderText, genderInput === 'Masculino' && styles.genderTextActive]}>Masculino</Text>
                   </TouchableOpacity>
-                  
                   <TouchableOpacity
                     style={[styles.genderChip, genderInput === 'Feminino' && styles.genderChipActive]}
                     onPress={() => setGenderInput('Feminino')}
@@ -571,8 +478,6 @@ export default function App() {
       </SafeAreaView>
     );
   }
-
-  // INTERFACE PRINCIPAL DO APLICATIVO APÓS LOGIN
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.topHeader}>
@@ -586,7 +491,6 @@ export default function App() {
           </TouchableOpacity>
         </View>
 
-                {/* SELETOR DE DESAFIO BLINDADO CONTRA ERRO #31 */}
         {Array.isArray(challenges) && challenges.length > 0 ? (
           <CustomPicker
             label="🎯 Selecione o Desafio:"
@@ -599,9 +503,8 @@ export default function App() {
             <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: 'bold' }}>⏳ Carregando desafios disponíveis...</Text>
           </View>
         )}
-
       </View>
-          {/* CONTEÚDO DINÂMICO BASEADO NA ABA SELECIONADA */}
+
       {currentScreen === 'dashboard' && (
         <DashboardScreen
           currentUser={currentUser}
@@ -633,93 +536,34 @@ export default function App() {
         />
       )}
 
-      {/* BOTÃO FLUTUANTE DE REGISTRO DE TREINO */}
       <TouchableOpacity 
         style={{
           position: 'absolute', bottom: 85, right: 20, backgroundColor: '#f97316',
-          paddingVertical: 14, paddingHorizontal: 20, borderRadius: 30, elevation: 5, shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, zIndex: 10
+          paddingVertical: 14, paddingHorizontal: 20, borderRadius: 30, elevation: 5, zIndex: 10
         }}
         onPress={() => setIsWorkoutModalOpen(true)}
       >
         <Text style={{ color: '#ffffff', fontWeight: 'bold' }}>🏋️ MUVFIT TREINO</Text>
       </TouchableOpacity>
 
-      {/* BARRA DE NAVEGAÇÃO DE ABAS NO RODAPÉ ATUALIZADA (3 BOTÕES) */}
       <View style={{
         flexDirection: 'row', height: 65, backgroundColor: '#1e3a8a', 
         borderTopWidth: 1, borderTopColor: '#3b82f6', alignItems: 'center', justifyContent: 'space-around'
       }}>
-        <TouchableOpacity 
-          style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} 
-          onPress={() => setCurrentScreen('dashboard')}
-        >
+        <TouchableOpacity style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} onPress={() => setCurrentScreen('dashboard')}>
           <Text style={{ fontSize: 18, marginBottom: 2 }}>📊</Text>
           <Text style={{ color: currentScreen === 'dashboard' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Dashboard</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} 
-          onPress={() => setCurrentScreen('feed')}
-        >
+        <TouchableOpacity style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} onPress={() => setCurrentScreen('feed')}>
           <Text style={{ fontSize: 18, marginBottom: 2 }}>🔥</Text>
           <Text style={{ color: currentScreen === 'feed' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Feed Geral</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} 
-          onPress={() => setCurrentScreen('ranking')}
-        >
+        <TouchableOpacity style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} onPress={() => setCurrentScreen('ranking')}>
           <Text style={{ fontSize: 18, marginBottom: 2 }}>🏆</Text>
           <Text style={{ color: currentScreen === 'ranking' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Ranking</Text>
         </TouchableOpacity>
       </View>
 
-          feedPosts={feedPosts}
-          currentUser={currentUser}
-          commentInputs={commentInputs}
-          setCommentInputs={setCommentInputs}
-          handleLikePost={handleLikePost}
-          handleAddComment={handleAddComment}
-        />
-      )}
-
-      {/* BARRA DE NAVEGAÇÃO DE ABAS NO RODAPÉ (WEB / APK) */}
-      <View style={{
-        flexDirection: 'row', height: 65, backgroundColor: '#1e3a8a', 
-        borderTopWidth: 1, borderTopColor: '#3b82f6', alignItems: 'center', justifyContent: 'space-around',
-        marginTop: 10
-      }}>
-        <TouchableOpacity 
-          style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} 
-          onPress={() => setCurrentScreen('dashboard')}
-        >
-          <Text style={{ fontSize: 20, marginBottom: 2 }}>📊</Text>
-          <Text style={{ color: currentScreen === 'dashboard' ? '#f97316' : '#ffffff', fontSize: 11, fontWeight: 'bold' }}>Dashboard</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} 
-          onPress={() => setCurrentScreen('feed')}
-        >
-          <Text style={{ fontSize: 20, marginBottom: 2 }}>🔥</Text>
-          <Text style={{ color: currentScreen === 'feed' ? '#f97316' : '#ffffff', fontSize: 11, fontWeight: 'bold' }}>Feed Geral</Text>
-        </TouchableOpacity>
-      </View>
-
-
-      {/* BOTÃO FLUTUANTE DE REGISTRO DE TREINO */}
-      <TouchableOpacity 
-        style={{
-          position: 'absolute', bottom: 20, right: 20, backgroundColor: '#f97316',
-          paddingVertical: 14, paddingHorizontal: 20, borderRadius: 30, elevation: 5, shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84
-        }}
-        onPress={() => setIsWorkoutModalOpen(true)}
-      >
-        <Text style={{ color: '#ffffff', fontWeight: 'bold' }}>🏋️ MUVFIT TREINO</Text>
-      </TouchableOpacity>
-      {/* MODAL DE REGISTRO DE TREINO CONECTADO */}
       <WorkoutModal
         isOpen={isWorkoutModalOpen}
         onClose={() => setIsWorkoutModalOpen(false)}
@@ -737,12 +581,10 @@ export default function App() {
         onSubmit={handleSaveWorkout}
         submitting={workoutSubmitting}
       />
-
     </SafeAreaView>
   );
 }
 
-// FOLHA DE ESTILOS OTIMIZADA CROSS-PLATFORM
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1e3a8a' },
@@ -768,9 +610,5 @@ const styles = StyleSheet.create({
   brandTitle: { fontSize: 22, fontWeight: '900', color: '#f97316' },
   brandSubtitle: { fontSize: 11, fontWeight: 'bold', color: '#ffffff' },
   logoutBtn: { backgroundColor: '#dc2626', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
-  logoutBtnText: { color: '#ffffff', fontSize: 11, fontWeight: 'bold' },
-  mainContent: { padding: 16 },
-  pageTitle: { fontSize: 18, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 16 },
-  actionBtn: { backgroundColor: '#1e3a8a', paddingVertical: 12, borderRadius: 6, alignItems: 'center', marginTop: 10 },
-  actionBtnText: { color: '#ffffff', fontSize: 14, fontWeight: 'bold' }
+  logoutBtnText: { color: '#ffffff', fontSize: 11, fontWeight: 'bold' }
 });
