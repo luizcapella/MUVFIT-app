@@ -22,6 +22,7 @@ import { calculateAge, formatDateBR, calculateSeasonDates, formatBirthDateMask }
 import { calculateWorkoutPoints } from './services/pointsEngine';
 import { handleTriggerPhoto } from './src/components/ImageService';
 import CustomPicker from './src/components/CustomPicker';
+import DashboardScreen from './src/screens/DashboardScreen';
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -484,16 +485,31 @@ export default function App() {
         />
       </View>
 
-      <ScrollView contentContainerStyle={styles.mainContent}>
-        <Text style={styles.pageTitle}>Painel Geral de Ligas</Text>
-        
-        <TouchableOpacity 
-          style={styles.actionBtn} 
-          onPress={() => handleTriggerPhoto('camera', setPhotoEvidence)}
-        >
-          <Text style={styles.actionBtnText}>📸 Enviar Evidência de Exercício</Text>
-        </TouchableOpacity>
-      </ScrollView>
+            <DashboardScreen
+        currentUser={currentUser}
+        athletePerfScope={athletePerfScope}
+        setAthletePerfScope={setAthletePerfScope}
+        tiebreakers={tiebreakers}
+        setIsWeightChartModalOpen={setIsWeightChartModalOpen}
+        setIsKmChartModalOpen={setIsKmChartModalOpen}
+        setIsTimeChartModalOpen={setIsTimeChartModalOpen}
+        setIsModalityRadarModalOpen={setIsModalityRadarModalOpen}
+        personalGoals={personalGoals}
+        setIsGoalModalOpen={setIsGoalModalOpen}
+      />
+
+      {/* BOTÃO FLUTUANTE DE REGISTRO DE TREINO */}
+      <TouchableOpacity 
+        style={{
+          position: 'absolute', bottom: 20, right: 20, backgroundColor: '#f97316',
+          paddingVertical: 14, paddingHorizontal: 20, borderRadius: 30, elevation: 5, shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84
+        }}
+        onPress={() => setIsWorkoutModalOpen(true)}
+      >
+        <Text style={{ color: '#ffffff', fontWeight: 'bold' }}>🏋️ MUVFIT TREINO</Text>
+      </TouchableOpacity>
+
     </SafeAreaView>
   );
 }
