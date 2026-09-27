@@ -23,6 +23,7 @@ import { calculateWorkoutPoints } from './services/pointsEngine';
 import { handleTriggerPhoto } from './src/components/ImageService';
 import CustomPicker from './src/components/CustomPicker';
 import DashboardScreen from './src/screens/DashboardScreen';
+import WorkoutModal from './src/components/WorkoutModal';
 
 export default function App() {
   const [session, setSession] = useState(null);
