@@ -90,7 +90,8 @@ export default function App() {
     goldMedals: 0, silverMedals: 0, bronzeMedals: 0
   });
 
-  const [viewedUser, setViewedUser] = useState(currentUser);
+  const [viewedUser, setViewedUser] = useState('');
+
   const [currentScreen, setCurrentScreen] = useState('dashboard');
 
   const [challenges, setChallenges] = useState([]);
@@ -260,7 +261,7 @@ export default function App() {
           isAdmin: true
         };
 
-        setCurrentUser(loadedUser);
+        // setCurrentUser(loadedUser);
         setViewedUser(loadedUser);
       } else {
         const fallbackUser = {
@@ -273,7 +274,7 @@ export default function App() {
           avatar: `https://picsum.photos{userId}/200/200`,
           isAdmin: true
         };
-        setCurrentUser(fallbackUser);
+        // setCurrentUser(fallbackUser);
         setViewedUser(fallbackUser);
       }
     } catch (err) {
