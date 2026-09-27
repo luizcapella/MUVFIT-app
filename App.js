@@ -586,12 +586,20 @@ export default function App() {
           </TouchableOpacity>
         </View>
 
-        <CustomPicker
-          label="🎯 Selecione o Desafio:"
-          selectedValue={activeChallengeId}
-          onValueChange={(val) => setActiveChallengeId(val)}
-          options={challenges.map(c => ({ label: c.title, value: c.id }))}
-        />
+                {/* SELETOR DE DESAFIO BLINDADO CONTRA ERRO #31 */}
+        {Array.isArray(challenges) && challenges.length > 0 ? (
+          <CustomPicker
+            label="🎯 Selecione o Desafio:"
+            selectedValue={activeChallengeId}
+            onValueChange={(val) => setActiveChallengeId(val)}
+            options={challenges.map(c => ({ label: String(c?.title || 'Desafio'), value: String(c?.id || '') }))}
+          />
+        ) : (
+          <View style={{ padding: 10, backgroundColor: '#1e40af', borderRadius: 6, marginTop: 8 }}>
+            <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: 'bold' }}>⏳ Carregando desafios disponíveis...</Text>
+          </View>
+        )}
+
       </View>
           {/* CONTEÚDO DINÂMICO BASEADO NA ABA SELECIONADA */}
       {currentScreen === 'dashboard' && (
