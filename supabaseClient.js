@@ -1,5 +1,5 @@
 // supabaseClient.js
-import { createClient } from '@supabase/supabase-client';
+import { createClient } from '@supabase/supabase-js';
 
 // Substitua "seu-id-de-projeto" pelas credenciais encontradas no seu painel
 const supabaseUrl = 'https://wmizfiabviqcclfaivza.supabase.co'; 
