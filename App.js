@@ -79,6 +79,7 @@ export default function App() {
   const [ratingStars, setRatingStars] = useState(5);
   const [feedbackSuggestion, setFeedbackSuggestion] = useState('');
   const [helpMessage, setHelpMessage] = useState('');
+
   const [currentUser, setCurrentUser] = useState({
     id: '', name: '', nickname: '', birth_date: '', age: 0, gender: 'Masculino',
     avatar: 'https://picsum.photos', isAdmin: true,
@@ -177,15 +178,17 @@ export default function App() {
     { id: 'dailySteps', label: 'Passos Diários', enabled: true, order: 1 },
     { id: 'bankPoints', label: 'Banco de Pontos', enabled: true, order: 2 }
   ]);
-
+  // INICIALIZAÇÃO DE SESSÃO E MONITORAMENTO DO USUÁRIO
   useEffect(() => {
     let isMounted = true;
+
     async function initApp() {
       try {
         if (!supabase || !supabase.auth) {
           if (isMounted) setLoadingAuth(false);
           return;
         }
+
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         if (isMounted) {
           setSession(currentSession);
@@ -195,25 +198,50 @@ export default function App() {
           }
           setLoadingAuth(false);
         }
+
+        // Monitora mudanças de estado (Login, Logout, Cadastro)
+        supabase.auth.onAuthStateChange(async (_event, newSession) => {
+          if (isMounted) {
+            setSession(newSession);
+            if (newSession) {
+              await fetchUserProfile(newSession.user.id, newSession.user.email);
+              await fetchDataFromSupabase();
+            } else {
+              setCurrentUser({ id: '', name: '', nickname: '' });
+            }
+          }
+        });
+
       } catch (e) {
-        console.log('Erro na inicialização:', e);
+        console.log('Erro na inicialização do aplicativo:', e);
         if (isMounted) setLoadingAuth(false);
       }
     }
+
     initApp();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
+  // CARREGA INFORMAÇÕES PÚBLICAS DO ATLETA (PROFILES)
   async function fetchUserProfile(userId, userEmail) {
     try {
-      const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
       if (data) {
         let formattedDate = '';
         if (data.birth_date) {
           const parts = data.birth_date.split('-');
           if (parts.length === 3) formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
+
         const computedAge = formattedDate ? calculateAge(formattedDate) : 0;
+
         const loadedUser = {
           id: data.id,
           name: data.full_name || userEmail.split('@')[0],
@@ -224,63 +252,117 @@ export default function App() {
           avatar: data.avatar_url || `https://picsum.photos{data.id}/200/200`,
           isAdmin: true
         };
+
         setCurrentUser(loadedUser);
         setViewedUser(loadedUser);
+      } else {
+        const fallbackName = userEmail ? userEmail.split('@')[0] : 'Atleta';
+        const fallbackUser = {
+          id: userId,
+          name: fallbackName,
+          nickname: fallbackName,
+          birth_date: '',
+          age: 0,
+          gender: 'Masculino',
+          avatar: `https://picsum.photos{userId}/200/200`,
+          isAdmin: true
+        };
+        setCurrentUser(fallbackUser);
+        setViewedUser(fallbackUser);
       }
     } catch (err) {
-      console.log('Erro ao buscar perfil:', err);
+      console.log('Erro inesperado ao buscar perfil:', err);
     }
   }
 
+  // BUSCA DADOS DAS LIGAS, MEMBROS E FEED GERAL
   async function fetchDataFromSupabase() {
     try {
       const { data: challengesData } = await supabase.from('challenges').select('*');
       if (challengesData && challengesData.length > 0) {
         setChallenges(challengesData);
-        if (!activeChallengeId) setActiveChallengeId(challengesData[0].id);
+        if (!activeChallengeId) {
+          setActiveChallengeId(challengesData[0].id);
+        }
       }
+
       const { data: membersData } = await supabase.from('memberships').select('*');
-      if (membersData) setMemberships(membersData);
+      if (membersData) {
+        setMemberships(membersData);
+      }
+
       const { data: feedData } = await supabase.from('feed_posts').select('*');
-      if (feedData) setFeedPosts(feedData);
+      if (feedData) {
+        setFeedPosts(feedData);
+      }
+
     } catch (err) {
-      console.log('Erro ao carregar do Supabase:', err);
+      console.log('Erro de sincronização com o banco de dados:', err);
     }
   }
 
+  // LOGOUT (SAÍDA DO USUÁRIO)
   async function handleSignOut() {
     try {
       await supabase.auth.signOut();
       setSession(null);
     } catch (err) {
-      Alert.alert('Erro', 'Não foi possível fechar a sessão.');
+      Alert.alert('Erro', 'Não foi possível encerrar a sessão.');
     }
   }
+  // GERENCIAMENTO DAS AÇÕES DE ENTRADA E REGISTRO
   async function handleAuthAction() {
     if (!emailInput.trim() || !passwordInput.trim()) {
       Alert.alert('Atenção', 'Preencha E-mail e Senha para continuar.');
       return;
     }
+    if (isSignUp && !fullNameInput.trim()) {
+      Alert.alert('Atenção', 'Por favor, preencha o seu Nome Completo.');
+      return;
+    }
+
     setAuthSubmitting(true);
     try {
       if (isSignUp) {
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: emailInput.trim(),
           password: passwordInput.trim(),
+          options: {
+            data: {
+              full_name: fullNameInput.trim(),
+              nickname: fullNameInput.trim(),
+              gender: genderInput,
+            }
+          }
         });
+
         if (authError) {
           Alert.alert('Erro no Cadastro', authError.message);
           return;
         }
-        Alert.alert('Sucesso!', 'Conta criada. Faça o login para acessar.');
+
+        // Criação automática na tabela pública de perfis
+        if (authData?.user) {
+          await supabase.from('profiles').upsert([
+            {
+              id: authData.user.id,
+              full_name: fullNameInput.trim(),
+              nickname: fullNameInput.trim(),
+              gender: genderInput
+            }
+          ], { onConflict: 'id' });
+        }
+
+        Alert.alert('Sucesso!', 'Conta criada com sucesso! Faça o login para acessar.');
         setIsSignUp(false);
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: emailInput.trim(),
           password: passwordInput.trim(),
         });
+
         if (error) {
-          Alert.alert('Erro no Login', 'E-mail ou senha incorretos.');
+          Alert.alert('Erro no Login', error.message.includes('Invalid login credentials') ? 'E-mail ou senha incorretos.' : error.message);
         } else if (data.session) {
           setSession(data.session);
           await fetchUserProfile(data.session.user.id, data.session.user.email);
@@ -288,12 +370,13 @@ export default function App() {
         }
       }
     } catch (err) {
-      Alert.alert('Erro Inesperado', 'Ocorreu um erro de conexão.');
+      Alert.alert('Erro de Conexão', err.message || 'Não foi possível comunicar com o servidor do Supabase.');
     } finally {
       setAuthSubmitting(false);
     }
   }
 
+  // EXIBIÇÃO DA TELA DE CARREGAMENTO INICIAL
   if (loadingAuth) {
     return (
       <View style={styles.loadingContainer}>
@@ -303,6 +386,7 @@ export default function App() {
     );
   }
 
+  // INTERFACE PARA USUÁRIOS NÃO AUTENTICADOS (LOGIN/CADASTRO)
   if (!session) {
     return (
       <SafeAreaView style={styles.authContainer}>
@@ -316,12 +400,31 @@ export default function App() {
             </Text>
 
             {isSignUp && (
-              <TextInput
-                style={styles.input}
-                placeholder="Nome Completo"
-                value={fullNameInput}
-                onChangeText={setFullNameInput}
-              />
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nome Completo"
+                  value={fullNameInput}
+                  onChangeText={setFullNameInput}
+                />
+
+                {/* SELETORES DE GÊNERO NATIVOS RESTAURADOS (COMPATÍVEIS COM WEB E APK) */}
+                <View style={styles.genderRow}>
+                  <TouchableOpacity
+                    style={[styles.genderChip, genderInput === 'Masculino' && styles.genderChipActive]}
+                    onPress={() => setGenderInput('Masculino')}
+                  >
+                    <Text style={[styles.genderText, genderInput === 'Masculino' && styles.genderTextActive]}>Masculino</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.genderChip, genderInput === 'Feminino' && styles.genderChipActive]}
+                    onPress={() => setGenderInput('Feminino')}
+                  >
+                    <Text style={[styles.genderText, genderInput === 'Feminino' && styles.genderTextActive]}>Feminino</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
             )}
 
             <TextInput
@@ -359,6 +462,7 @@ export default function App() {
     );
   }
 
+  // INTERFACE PRINCIPAL DO APLICATIVO APÓS LOGIN
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.topHeader}>
@@ -394,6 +498,7 @@ export default function App() {
   );
 }
 
+// FOLHA DE ESTILOS OTIMIZADA CROSS-PLATFORM
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1e3a8a' },
@@ -405,6 +510,11 @@ const styles = StyleSheet.create({
   authCard: { backgroundColor: '#ffffff', borderRadius: 12, padding: 16, elevation: 5 },
   authCardTitle: { fontSize: 16, fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center', marginBottom: 16 },
   input: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, padding: 10, fontSize: 14, marginBottom: 12, color: '#0f172a' },
+  genderRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  genderChip: { flex: 1, paddingVertical: 10, borderRadius: 6, alignItems: 'center', backgroundColor: '#f1f5f9' },
+  genderChipActive: { backgroundColor: '#f97316' },
+  genderText: { color: '#475569', fontWeight: 'bold', fontSize: 13 },
+  genderTextActive: { color: '#ffffff' },
   primaryBtn: { backgroundColor: '#f97316', paddingVertical: 12, borderRadius: 6, alignItems: 'center', marginTop: 6 },
   primaryBtnText: { color: '#ffffff', fontSize: 14, fontWeight: 'bold' },
   toggleAuthBtn: { marginTop: 14, alignItems: 'center' },
