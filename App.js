@@ -24,6 +24,7 @@ import { handleTriggerPhoto } from './src/components/ImageService';
 import CustomPicker from './src/components/CustomPicker';
 import DashboardScreen from './src/screens/DashboardScreen';
 import WorkoutModal from './src/components/WorkoutModal';
+import FeedScreen from './src/screens/FeedScreen';
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -359,6 +360,60 @@ export default function App() {
       setWorkoutSubmitting(false);
     }
   }
+  // LÓGICA PARA INTERAÇÃO DE CURTIDAS (LIKE) NO SUPABASE
+  async function handleLikePost(postId) {
+    try {
+      const post = feedPosts.find(p => p.id === postId);
+      if (!post) return;
+
+      const newLikesCount = (post.likes_count || 0) + 1;
+
+      const { error } = await supabase
+        .from('feed_posts')
+        .update({ likes_count: newLikesCount })
+        .eq('id', postId);
+
+      if (error) {
+        console.log('Erro ao salvar curtida:', error.message);
+        return;
+      }
+
+      setFeedPosts(feedPosts.map(p => p.id === postId ? { ...p, likes_count: newLikesCount } : p));
+    } catch (err) {
+      console.log('Erro inesperado na curtida:', err);
+    }
+  }
+
+  // LÓGICA PARA INSERÇÃO DE COMENTÁRIOS NO SUPABASE
+  async function handleAddComment(postId, commentText) {
+    try {
+      const post = feedPosts.find(p => p.id === postId);
+      if (!post) return;
+
+      const newCommentObj = {
+        user_name: currentUser.nickname || currentUser.name || 'Atleta',
+        text: commentText.trim(),
+        created_at: new Date().toISOString()
+      };
+
+      const currentComments = post.comments || [];
+      const updatedComments = [...currentComments, newCommentObj];
+
+      const { error } = await supabase
+        .from('feed_posts')
+        .update({ comments: updatedComments })
+        .eq('id', postId);
+
+      if (error) {
+        console.log('Erro ao salvar comentário:', error.message);
+        return;
+      }
+
+      setFeedPosts(feedPosts.map(p => p.id === postId ? { ...p, comments: updatedComments } : p));
+    } catch (err) {
+      console.log('Erro inesperado no comentário:', err);
+    }
+  }
 
   // GERENCIAMENTO DAS AÇÕES DE ENTRADA E REGISTRO
   async function handleAuthAction() {
@@ -533,19 +588,54 @@ export default function App() {
           options={challenges.map(c => ({ label: c.title, value: c.id }))}
         />
       </View>
+      {/* CONTEÚDO DINÂMICO BASEADO NA ABA SELECIONADA */}
+      {currentScreen === 'dashboard' ? (
+        <DashboardScreen
+          currentUser={currentUser}
+          athletePerfScope={athletePerfScope}
+          setAthletePerfScope={setAthletePerfScope}
+          tiebreakers={tiebreakers}
+          setIsWeightChartModalOpen={setIsWeightChartModalOpen}
+          setIsKmChartModalOpen={setIsKmChartModalOpen}
+          setIsTimeChartModalOpen={setIsTimeChartModalOpen}
+          setIsModalityRadarModalOpen={setIsModalityRadarModalOpen}
+          personalGoals={personalGoals}
+          setIsGoalModalOpen={setIsGoalModalOpen}
+        />
+      ) : (
+        <FeedScreen
+          feedPosts={feedPosts}
+          currentUser={currentUser}
+          commentInputs={commentInputs}
+          setCommentInputs={setCommentInputs}
+          handleLikePost={handleLikePost}
+          handleAddComment={handleAddComment}
+        />
+      )}
 
-            <DashboardScreen
-        currentUser={currentUser}
-        athletePerfScope={athletePerfScope}
-        setAthletePerfScope={setAthletePerfScope}
-        tiebreakers={tiebreakers}
-        setIsWeightChartModalOpen={setIsWeightChartModalOpen}
-        setIsKmChartModalOpen={setIsKmChartModalOpen}
-        setIsTimeChartModalOpen={setIsTimeChartModalOpen}
-        setIsModalityRadarModalOpen={setIsModalityRadarModalOpen}
-        personalGoals={personalGoals}
-        setIsGoalModalOpen={setIsGoalModalOpen}
-      />
+      {/* BARRA DE NAVEGAÇÃO DE ABAS NO RODAPÉ (WEB / APK) */}
+      <View style={{
+        flexDirection: 'row', height: 65, backgroundColor: '#1e3a8a', 
+        borderTopWidth: 1, borderTopColor: '#3b82f6', alignItems: 'center', justifyContent: 'space-around',
+        marginTop: 10
+      }}>
+        <TouchableOpacity 
+          style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} 
+          onPress={() => setCurrentScreen('dashboard')}
+        >
+          <Text style={{ fontSize: 20, marginBottom: 2 }}>📊</Text>
+          <Text style={{ color: currentScreen === 'dashboard' ? '#f97316' : '#ffffff', fontSize: 11, fontWeight: 'bold' }}>Dashboard</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} 
+          onPress={() => setCurrentScreen('feed')}
+        >
+          <Text style={{ fontSize: 20, marginBottom: 2 }}>🔥</Text>
+          <Text style={{ color: currentScreen === 'feed' ? '#f97316' : '#ffffff', fontSize: 11, fontWeight: 'bold' }}>Feed Geral</Text>
+        </TouchableOpacity>
+      </View>
+
 
       {/* BOTÃO FLUTUANTE DE REGISTRO DE TREINO */}
       <TouchableOpacity 
