@@ -18,11 +18,12 @@ import {
   Linking
 } from 'react-native';
 
-// IMPORTAÇÕES DOS SEUS NOVOS MÓDULOS OTIMIZADOS
+// IMPORTAÇÕES DOS SEUS NOVOS MÓDULOS OTIMIZADOS CORRIGIDOS
 import { calculateAge, formatDateBR, calculateSeasonDates } from './src/utils/dateHelpers';
 import { calculateWorkoutPoints } from './src/services/pointsEngine';
 import { handleTriggerPhoto } from './src/components/ImageService';
 import CustomPicker from './src/components/CustomPicker';
+
 
 export default function App() {
   const [session, setSession] = useState(null);
