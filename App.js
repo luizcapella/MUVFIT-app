@@ -25,6 +25,7 @@ import CustomPicker from './src/components/CustomPicker';
 import DashboardScreen from './src/screens/DashboardScreen';
 import WorkoutModal from './src/components/WorkoutModal';
 import FeedScreen from './src/screens/FeedScreen';
+import RankingScreen from './src/screens/RankingScreen';
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -588,8 +589,8 @@ export default function App() {
           options={challenges.map(c => ({ label: c.title, value: c.id }))}
         />
       </View>
-      {/* CONTEÚDO DINÂMICO BASEADO NA ABA SELECIONADA */}
-      {currentScreen === 'dashboard' ? (
+          {/* CONTEÚDO DINÂMICO BASEADO NA ABA SELECIONADA */}
+      {currentScreen === 'dashboard' && (
         <DashboardScreen
           currentUser={currentUser}
           athletePerfScope={athletePerfScope}
@@ -602,8 +603,66 @@ export default function App() {
           personalGoals={personalGoals}
           setIsGoalModalOpen={setIsGoalModalOpen}
         />
-      ) : (
+      )}
+      {currentScreen === 'feed' && (
         <FeedScreen
+          feedPosts={feedPosts}
+          currentUser={currentUser}
+          commentInputs={commentInputs}
+          setCommentInputs={setCommentInputs}
+          handleLikePost={handleLikePost}
+          handleAddComment={handleAddComment}
+        />
+      )}
+      {currentScreen === 'ranking' && (
+        <RankingScreen
+          memberships={memberships}
+          currentUser={currentUser}
+        />
+      )}
+
+      {/* BOTÃO FLUTUANTE DE REGISTRO DE TREINO */}
+      <TouchableOpacity 
+        style={{
+          position: 'absolute', bottom: 85, right: 20, backgroundColor: '#f97316',
+          paddingVertical: 14, paddingHorizontal: 20, borderRadius: 30, elevation: 5, shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, zIndex: 10
+        }}
+        onPress={() => setIsWorkoutModalOpen(true)}
+      >
+        <Text style={{ color: '#ffffff', fontWeight: 'bold' }}>🏋️ MUVFIT TREINO</Text>
+      </TouchableOpacity>
+
+      {/* BARRA DE NAVEGAÇÃO DE ABAS NO RODAPÉ ATUALIZADA (3 BOTÕES) */}
+      <View style={{
+        flexDirection: 'row', height: 65, backgroundColor: '#1e3a8a', 
+        borderTopWidth: 1, borderTopColor: '#3b82f6', alignItems: 'center', justifyContent: 'space-around'
+      }}>
+        <TouchableOpacity 
+          style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} 
+          onPress={() => setCurrentScreen('dashboard')}
+        >
+          <Text style={{ fontSize: 18, marginBottom: 2 }}>📊</Text>
+          <Text style={{ color: currentScreen === 'dashboard' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Dashboard</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} 
+          onPress={() => setCurrentScreen('feed')}
+        >
+          <Text style={{ fontSize: 18, marginBottom: 2 }}>🔥</Text>
+          <Text style={{ color: currentScreen === 'feed' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Feed Geral</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} 
+          onPress={() => setCurrentScreen('ranking')}
+        >
+          <Text style={{ fontSize: 18, marginBottom: 2 }}>🏆</Text>
+          <Text style={{ color: currentScreen === 'ranking' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Ranking</Text>
+        </TouchableOpacity>
+      </View>
+
           feedPosts={feedPosts}
           currentUser={currentUser}
           commentInputs={commentInputs}
