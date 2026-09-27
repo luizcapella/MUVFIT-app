@@ -312,6 +312,54 @@ export default function App() {
       Alert.alert('Erro', 'Não foi possível encerrar a sessão.');
     }
   }
+    // LÓGICA DE SUBMISSÃO E SALVAMENTO DO TREINO NO SUPABASE
+  const [workoutSubmitting, setWorkoutSubmitting] = useState(false);
+
+  async function handleSaveWorkout() {
+    if (!photoEvidence) {
+      Alert.alert('Erro', 'É obrigatório tirar uma foto como evidência do seu exercício!');
+      return;
+    }
+
+    setWorkoutSubmitting(true);
+    try {
+      const calculatedPoints = calculateWorkoutPoints(selectedActivity, kmInput);
+
+      const { error } = await supabase.from('pending_workouts').insert([
+        {
+          user_id: currentUser.id,
+          challenge_id: activeChallengeId,
+          activity: selectedActivity,
+          workout_date: workoutDate,
+          caption: workoutCaption,
+          km_distance: kmInput ? parseFloat(kmInput) : 0,
+          evidence_url: photoEvidence,
+          points_computed: calculatedPoints,
+          status: 'pending'
+        }
+      ]);
+
+      if (error) {
+        Alert.alert('Erro ao Salvar', error.message);
+        return;
+      }
+
+      Alert.alert('Sucesso!', `Treino enviado com sucesso! Aguardando validação para somar seus ${calculatedPoints} pontos.`);
+      
+      setWorkoutCaption('');
+      setKmInput('');
+      setPhotoEvidence(null);
+      setIsWorkoutModalOpen(false);
+      
+      await fetchDataFromSupabase();
+
+    } catch (err) {
+      Alert.alert('Erro Inesperado', 'Não foi possível salvar o seu exercício.');
+    } finally {
+      setWorkoutSubmitting(false);
+    }
+  }
+
   // GERENCIAMENTO DAS AÇÕES DE ENTRADA E REGISTRO
   async function handleAuthAction() {
     if (!emailInput.trim() || !passwordInput.trim()) {
@@ -510,6 +558,24 @@ export default function App() {
       >
         <Text style={{ color: '#ffffff', fontWeight: 'bold' }}>🏋️ MUVFIT TREINO</Text>
       </TouchableOpacity>
+      {/* MODAL DE REGISTRO DE TREINO CONECTADO */}
+      <WorkoutModal
+        isOpen={isWorkoutModalOpen}
+        onClose={() => setIsWorkoutModalOpen(false)}
+        selectedActivity={selectedActivity}
+        setSelectedActivity={setSelectedActivity}
+        workoutDate={workoutDate}
+        setWorkoutDate={setWorkoutDate}
+        workoutCaption={workoutCaption}
+        setWorkoutCaption={setWorkoutCaption}
+        kmInput={kmInput}
+        setKmInput={setKmInput}
+        handleTriggerPhoto={handleTriggerPhoto}
+        photoEvidence={photoEvidence}
+        setPhotoEvidence={setPhotoEvidence}
+        onSubmit={handleSaveWorkout}
+        submitting={workoutSubmitting}
+      />
 
     </SafeAreaView>
   );
