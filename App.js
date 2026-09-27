@@ -26,6 +26,7 @@ import DashboardScreen from './src/screens/DashboardScreen';
 import WorkoutModal from './src/components/WorkoutModal';
 import FeedScreen from './src/screens/FeedScreen';
 import RankingScreen from './src/screens/RankingScreen';
+import AdminScreen from './src/screens/AdminScreen';
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -529,39 +530,58 @@ export default function App() {
           handleAddComment={handleAddComment}
         />
       )}
-      {currentScreen === 'ranking' && (
+           {currentScreen === 'ranking' && (
         <RankingScreen
           memberships={memberships}
           currentUser={currentUser}
         />
       )}
+      {currentScreen === 'admin' && currentUser?.isAdmin && (
+        <AdminScreen
+          pendingWorkouts={pendingWorkouts}
+          setPendingWorkouts={setPendingWorkouts}
+          fetchDataFromSupabase={fetchDataFromSupabase}
+        />
+      )}
 
+      {/* BOTÃO FLUTUANTE DE REGISTRO DE TREINO */}
       <TouchableOpacity 
         style={{
           position: 'absolute', bottom: 85, right: 20, backgroundColor: '#f97316',
-          paddingVertical: 14, paddingHorizontal: 20, borderRadius: 30, elevation: 5, zIndex: 10
+          paddingVertical: 14, paddingHorizontal: 20, borderRadius: 30, elevation: 5, shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, zIndex: 10
         }}
         onPress={() => setIsWorkoutModalOpen(true)}
       >
         <Text style={{ color: '#ffffff', fontWeight: 'bold' }}>🏋️ MUVFIT TREINO</Text>
       </TouchableOpacity>
 
+           {/* BARRA DE NAVEGAÇÃO DE ABAS NO RODAPÉ ATUALIZADA (4 BOTÕES) */}
       <View style={{
         flexDirection: 'row', height: 65, backgroundColor: '#1e3a8a', 
         borderTopWidth: 1, borderTopColor: '#3b82f6', alignItems: 'center', justifyContent: 'space-around'
       }}>
         <TouchableOpacity style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} onPress={() => setCurrentScreen('dashboard')}>
-          <Text style={{ fontSize: 18, marginBottom: 2 }}>📊</Text>
-          <Text style={{ color: currentScreen === 'dashboard' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Dashboard</Text>
+          <Text style={{ fontSize: 16, marginBottom: 2 }}>📊</Text>
+          <Text style={{ color: currentScreen === 'dashboard' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Painel</Text>
         </TouchableOpacity>
+
         <TouchableOpacity style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} onPress={() => setCurrentScreen('feed')}>
-          <Text style={{ fontSize: 18, marginBottom: 2 }}>🔥</Text>
-          <Text style={{ color: currentScreen === 'feed' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Feed Geral</Text>
+          <Text style={{ fontSize: 16, marginBottom: 2 }}>🔥</Text>
+          <Text style={{ color: currentScreen === 'feed' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Feed</Text>
         </TouchableOpacity>
+
         <TouchableOpacity style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} onPress={() => setCurrentScreen('ranking')}>
-          <Text style={{ fontSize: 18, marginBottom: 2 }}>🏆</Text>
+          <Text style={{ fontSize: 16, marginBottom: 2 }}>🏆</Text>
           <Text style={{ color: currentScreen === 'ranking' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Ranking</Text>
         </TouchableOpacity>
+
+        {currentUser?.isAdmin && (
+          <TouchableOpacity style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} onPress={() => setCurrentScreen('admin')}>
+            <Text style={{ fontSize: 16, marginBottom: 2 }}>🛡️</Text>
+            <Text style={{ color: currentScreen === 'admin' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Admin</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <WorkoutModal
