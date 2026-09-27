@@ -14,12 +14,21 @@ export default function DashboardScreen({
   personalGoals,
   setIsGoalModalOpen
 }) {
+  // Garante que o nickname ou name seja extraído como string pura para evitar o erro #31
+  const renderName = () => {
+    if (!currentUser) return 'Atleta';
+    if (typeof currentUser.nickname === 'string') return currentUser.nickname;
+    if (typeof currentUser.name === 'string') return currentUser.name;
+    if (Array.isArray(currentUser.name)) return currentUser.name[0] || 'Atleta';
+    return 'Atleta';
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {/* CARD DO ATLETA */}
       <View style={styles.profileCard}>
-        <Text style={styles.welcomeText}>👋 Olá, {currentUser?.nickname || 'Atleta'}!</Text>
-        <Text style={styles.rankText}>🏆 Medalhas: {currentUser?.goldMedals || 0}🥇 | {currentUser?.silverMedals || 0}🥈 | {currentUser?.bronzeMedals || 0}🥉</Text>
+        <Text style={styles.welcomeText}>👋 Olá, {renderName()}!</Text>
+        <Text style={styles.rankText}>🏆 Medalhas: {Number(currentUser?.goldMedals || 0)}🥇 | {Number(currentUser?.silverMedals || 0)}🥈 | {Number(currentUser?.bronzeMedals || 0)}🥉</Text>
       </View>
 
       {/* FILTRO DE ESCOPO */}
@@ -41,8 +50,8 @@ export default function DashboardScreen({
       {/* CRITÉRIOS DE DESEMPATE ATIVOS */}
       <View style={styles.sectionCard}>
         <Text style={styles.sectionTitle}>⚖️ Critérios de Desempate Ativos</Text>
-        {tiebreakers.filter(t => t.enabled).map((crit, idx) => (
-          <Text key={crit.id} style={styles.critText}>{idx + 1}º - {crit.label}</Text>
+        {Array.isArray(tiebreakers) && tiebreakers.filter(t => t && t.enabled).map((crit, idx) => (
+          <Text key={crit.id || idx} style={styles.critText}>{idx + 1}º - {String(crit.label)}</Text>
         ))}
       </View>
 
@@ -82,11 +91,11 @@ export default function DashboardScreen({
             <Text style={styles.addGoalText}>+ Adicionar</Text>
           </TouchableOpacity>
         </View>
-        {personalGoals.length === 0 ? (
+        {!personalGoals || personalGoals.length === 0 ? (
           <Text style={styles.emptyText}>Nenhuma meta definida para esta liga ainda.</Text>
         ) : (
           personalGoals.map((goal, index) => (
-            <Text key={index} style={styles.goalItem}>• {goal.text || goal}</Text>
+            <Text key={index} style={styles.goalItem}>• {typeof goal === 'object' ? String(goal.text || '') : String(goal)}</Text>
           ))
         )}
       </View>
