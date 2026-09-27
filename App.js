@@ -228,7 +228,7 @@ export default function App() {
     };
   }, []);
 
-  // CARREGA INFORMAÇÕES PÚBLICAS DO ATLETA (PROFILES)
+    // CARREGA INFORMAÇÕES PÚBLICAS DO ATLETA (PROFILES) - CORRIGIDO CONTRA ERRO #31
   async function fetchUserProfile(userId, userEmail) {
     try {
       const { data } = await supabase
@@ -236,6 +236,9 @@ export default function App() {
         .select('*')
         .eq('id', userId)
         .maybeSingle();
+
+      // Força o fallback a ser texto puro extraindo o primeiro item do split
+      const fallbackStringName = userEmail && typeof userEmail === 'string' ? userEmail.split('@')[0] : 'Atleta';
 
       if (data) {
         let formattedDate = '';
@@ -247,24 +250,23 @@ export default function App() {
         const computedAge = formattedDate ? calculateAge(formattedDate) : 0;
 
         const loadedUser = {
-          id: data.id,
-          name: data.full_name || userEmail.split('@')[0],
-          nickname: data.nickname || data.full_name || userEmail.split('@')[0],
+          id: String(data.id),
+          name: String(data.full_name || fallbackStringName),
+          nickname: String(data.nickname || data.full_name || fallbackStringName),
           birth_date: formattedDate,
           age: computedAge,
-          gender: data.gender || 'Masculino',
-          avatar: data.avatar_url || `https://picsum.photos{data.id}/200/200`,
+          gender: String(data.gender || 'Masculino'),
+          avatar: String(data.avatar_url || `https://picsum.photos{data.id}/200/200`),
           isAdmin: true
         };
 
         setCurrentUser(loadedUser);
         setViewedUser(loadedUser);
       } else {
-        const fallbackName = userEmail ? userEmail.split('@')[0] : 'Atleta';
         const fallbackUser = {
-          id: userId,
-          name: fallbackName,
-          nickname: fallbackName,
+          id: String(userId),
+          name: String(fallbackStringName),
+          nickname: String(fallbackStringName),
           birth_date: '',
           age: 0,
           gender: 'Masculino',
@@ -278,6 +280,7 @@ export default function App() {
       console.log('Erro inesperado ao buscar perfil:', err);
     }
   }
+
 
   // BUSCA DADOS DAS LIGAS, MEMBROS E FEED GERAL
   async function fetchDataFromSupabase() {
