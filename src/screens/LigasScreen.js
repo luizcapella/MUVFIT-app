@@ -14,10 +14,7 @@ export default function LigasScreen({ challenges, memberships, currentUser, setC
   const [isCreating, setIsCreating] = useState(false);
 
   // Mock de convites recebidos para visualização da funcionalidade
-  const [invitesReceived, setInvitesReceived] = useState([
-    { id: 'inv-1', title: 'Liga dos Campeões MuvFit', created_at: '2026-09-15', status: 'Aberto' },
-    { id: 'inv-2', title: 'Desafio Ultra Fitness', created_at: '2026-09-20', status: 'Fechado' }
-  ]);
+    const [invitesReceived, setInvitesReceived] = useState([]);
 
   // FUNÇÃO: CRIAR NOVO DESAFIO / LIGA
   async function handleCreateChallenge() {
