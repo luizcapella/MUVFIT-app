@@ -121,11 +121,20 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.pageTitle}>🏆 Gerenciamento de Ligas</Text>
+      
+      {/* CABEÇALHO SUPERIOR COORDENADO */}
+      <View style={styles.headerTopBarRow}>
+        <Text style={styles.headerTopBarTitle}>🏆 Central de Ligas MuvFit</Text>
+        <TouchableOpacity style={styles.signOutTopBtn} onPress={() => {
+          if (handleSignOut) handleSignOut();
+        }}>
+          <Text style={styles.signOutTopBtnText}>🚪 SAIR</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* BLOCO: CRIAR DESAFIO */}
       <View style={styles.createCard}>
-        <Text style={styles.cardHeader}>🆕 Criar Novo Desafio</Text>
+        <Text style={styles.cardHeader}>🟩 Criar Novo Desafio</Text>
         <View style={styles.row}>
           <TextInput
             style={styles.input}
@@ -150,7 +159,7 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
 
       {isAdminSectionOpen && (
         <View style={styles.accordionContent}>
-          {challenges.filter(c => c.creator_id === currentUser?.id).length === 0 ? (
+          {(!challenges || challenges.filter(c => c.creator_id === currentUser?.id).length === 0) ? (
             <Text style={styles.emptyText}>Você não administra nenhuma liga atualmente.</Text>
           ) : (
             challenges.filter(c => c.creator_id === currentUser?.id).map((liga) => {
@@ -158,13 +167,12 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
               return (
                 <View key={liga.id} style={styles.ligaRow}>
                   <View style={styles.ligaMeta}>
-                                       <TouchableOpacity onPress={() => {
+                    <TouchableOpacity onPress={() => {
                       if (setSelectedLeagueFilter) setSelectedLeagueFilter(liga.id);
                       Alert.alert('MuvFit Ligas 🏆', `Você ativou a visualização da liga: ${liga.title}. O desempenho detalhado dela já foi carregado na aba Atleta!`);
                     }}>
                       <Text style={styles.ligaTitleLink}>{liga.title}</Text>
                     </TouchableOpacity>
-
                     <Text style={styles.ligaDate}>Criada em: {liga.created_at ? liga.created_at.substring(0, 10) : '2026-09-28'}</Text>
                   </View>
 
@@ -204,7 +212,7 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
 
       {isParticipantSectionOpen && (
         <View style={styles.accordionContent}>
-          {challenges.filter(c => c.creator_id !== currentUser?.id).length === 0 ? (
+          {(!challenges || challenges.filter(c => c.creator_id !== currentUser?.id).length === 0) ? (
             <Text style={styles.emptyText}>Você não está participando de outras ligas ainda.</Text>
           ) : (
             challenges.filter(c => c.creator_id !== currentUser?.id).map((liga) => {
@@ -212,14 +220,17 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
               return (
                 <View key={liga.id} style={styles.ligaRow}>
                   <View style={styles.ligaMeta}>
-                    <TouchableOpacity onPress={() => Alert.alert('Navegação', `Entrando na liga: ${liga.title}`)}>
+                    <TouchableOpacity onPress={() => {
+                      if (setSelectedLeagueFilter) setSelectedLeagueFilter(liga.id);
+                      Alert.alert('MuvFit Ligas 🏆', `Você ativou a visualização da liga: ${liga.title}. O desempenho detalhado dela já foi carregado na aba Atleta!`);
+                    }}>
                       <Text style={styles.ligaTitleLink}>{liga.title}</Text>
                     </TouchableOpacity>
                     <Text style={styles.ligaDate}>Criada em: {liga.created_at ? liga.created_at.substring(0, 10) : '2026-09-28'}</Text>
                   </View>
 
                   <View style={styles.actionRow}>
-                    {/* Feedback visual de Status (Não clicável para participante) */}
+                    {/* Feedback visual de Status */}
                     <View style={[styles.statusFeedback, isOpen ? styles.feedbackOpen : styles.feedbackClose]}>
                       <Text style={styles.statusBtnText}>{isOpen ? 'Aberto' : 'Fechado'}</Text>
                     </View>
@@ -255,13 +266,11 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
               return (
                 <View key={invite.id} style={styles.inviteCard}>
                   <View style={styles.ligaMeta}>
-                    <TouchableOpacity onPress={() => Alert.alert('Pré-visualização', 'Como visitante, você pode ver o Feed e Ranking. Entre para interagir!')}>
+                    <TouchableOpacity onPress={() => Alert.alert('Pré-visualização', 'Visão de Convidado liberada.')}>
                       <Text style={styles.ligaTitleLink}>{invite.title}</Text>
                     </TouchableOpacity>
                     <Text style={styles.ligaDate}>Criação: {invite.created_at}</Text>
-                    <Text style={styles.ligaDate}>Status da Liga: <Text style={{fontWeight: 'bold', color: isOpen ? '#22c55e' : '#dc2626'}}>{invite.status}</Text></Text>
                   </View>
-
                   <View style={styles.inviteActionRow}>
                     <TouchableOpacity style={[styles.choiceBtn, styles.acceptBtn]} onPress={() => handleAcceptInvite(invite.id)}>
                       <Text style={styles.choiceBtnText}>✅ Aceitar</Text>
@@ -281,19 +290,22 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: '#f8fafc' },
-  pageTitle: { fontSize: 20, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 16 },
-  createCard: { backgroundColor: '#ffffff', padding: 14, borderRadius: 10, marginBottom: 20, borderWidth: 1, borderColor: '#cbd5e1' },
-  cardHeader: { fontSize: 14, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 8 },
+  container: { padding: 16, backgroundColor: '#f8fafc', paddingBottom: 100 },
+  headerTopBarRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, backgroundColor: '#1e3a8a', padding: 12, borderRadius: 8 },
+  headerTopBarTitle: { color: '#ffffff', fontSize: 15, fontWeight: 'bold' },
+  signOutTopBtn: { backgroundColor: '#dc2626', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
+  signOutTopBtnText: { color: '#ffffff', fontSize: 11, fontWeight: 'bold' },
+  createCard: { backgroundColor: '#ffffff', padding: 14, borderRadius: 10, marginBottom: 16, borderWidth: 1, borderColor: '#cbd5e1' },
+  cardHeader: { fontSize: 13, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 8 },
   row: { flexDirection: 'row', gap: 8 },
-  input: { flex: 1, backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, paddingHorizontal: 10, height: 40, fontSize: 14, color: '#0f172a' },
-  createBtn: { backgroundColor: '#f97316', paddingHorizontal: 16, borderRadius: 6, justifyContent: 'center' },
-  createBtnText: { color: '#ffffff', fontWeight: 'bold', fontSize: 14 },
+  input: { flex: 1, backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 6, paddingHorizontal: 10, height: 40, fontSize: 13, color: '#0f172a' },
+  createBtn: { backgroundColor: '#f97316', paddingHorizontal: 18, borderRadius: 6, justifyContent: 'center' },
+  createBtnText: { color: '#ffffff', fontWeight: 'bold', fontSize: 13 },
   accordionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#e2e8f0', padding: 12, borderRadius: 8, marginTop: 12 },
-  accordionTitle: { fontSize: 14, fontWeight: 'bold', color: '#1e3a8a' },
-  accordionArrow: { fontSize: 12, color: '#475569' },
+  accordionTitle: { fontSize: 13, fontWeight: 'bold', color: '#1e3a8a' },
+  accordionArrow: { fontSize: 11, color: '#475569' },
   accordionContent: { backgroundColor: '#ffffff', borderBottomLeftRadius: 8, borderBottomRightRadius: 8, padding: 10, borderWidth: 1, borderColor: '#e2e8f0', borderTopWidth: 0 },
-  emptyText: { fontSize: 12, color: '#64748b', fontStyle: 'italic', padding: 8 },
+  emptyText: { fontSize: 12, color: '#64748b', fontStyle: 'italic', padding: 6 },
   ligaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   ligaMeta: { flex: 1, gap: 2, marginRight: 8 },
   ligaTitleLink: { fontSize: 14, fontWeight: 'bold', color: '#f97316', textDecorationLine: 'underline' },
@@ -307,7 +319,7 @@ const styles = StyleSheet.create({
   feedbackClose: { backgroundColor: '#b91c1c' },
   statusBtnText: { color: '#ffffff', fontSize: 11, fontWeight: 'bold' },
   iconBtn: { backgroundColor: '#f1f5f9', width: 32, height: 32, borderRadius: 6, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#cbd5e1' },
-  iconText: { fontSize: 14 },
+  iconText: { fontSize: 13 },
   inviteCard: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, padding: 10, marginBottom: 10 },
   inviteActionRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
   choiceBtn: { flex: 1, paddingVertical: 8, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
