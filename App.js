@@ -268,7 +268,7 @@ export default function App() {
 
   async function fetchDataFromSupabase() {
     try {
-      const { data: challengesData } = await supabase.from('challenges').select('*');
+          const { data: challengesData } = await supabase.from('challenges_v2').select('*');
       if (challengesData && challengesData.length > 0) {
         setChallenges(challengesData);
         if (!activeChallengeId) setActiveChallengeId(challengesData[0].id);
