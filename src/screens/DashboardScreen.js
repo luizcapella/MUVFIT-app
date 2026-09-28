@@ -68,12 +68,47 @@ export default function DashboardScreen({
     setProfileBirthDate(formatted);
   };
 
-  // FUNÇÃO: SIMULAR SELEÇÃO DE FOTO DE PERFIL (CÂMERA OU GALERIA)
-  const handlePickAvatar = (source) => {
-    Alert.alert('📸 MuvFit Mídia', `A carregar recurso de foto via: ${source === 'camera' ? 'Câmera do Dispositivo' : 'Galeria de Imagens'}...`);
-    // Mock de avatar gerado aleatoriamente para fins visuais imediatos
-    setProfileAvatar(`https://picsum.photos{Math.random()}/200/200`);
-  };
+    // FUNÇÃO REAL: SELECIONAR E FAZER UPLOAD DA FOTO DE PERFIL PARA O SUPABASE STORAGE
+  async function handlePickAvatar() {
+    try {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      
+      input.onchange = async (e) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+        const file = files[0];
+
+        Alert.alert('⏳ Enviando', 'Fazendo upload da sua nova foto de perfil...');
+        
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${currentUser?.id || Math.random()}-${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { data, error } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+        if (error) {
+          Alert.alert('Erro no Upload', error.message);
+          return;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+
+        setProfileAvatar(publicUrl);
+        Alert.alert('Sucesso!', 'Foto carregada! Clique em GRAVAR PERFIL para consolidar.');
+      };
+
+      input.click();
+    } catch (err) {
+      console.log('Erro ao abrir seletor de mídia:', err);
+    }
+  }
+
 
   // FUNÇÃO: GRAVAR ATUALIZAÇÕES DO PERFIL NO SUPABASE
   async function handleSaveProfile() {
@@ -208,14 +243,15 @@ export default function DashboardScreen({
                 source={{ uri: profileAvatar || 'https://picsum.photos' }} 
                 style={styles.modalPreviewAvatarImage} 
               />
-              <View style={styles.mediaSourceActionsColumn}>
-                <TouchableOpacity style={styles.mediaActionBtn} onPress={() => handlePickAvatar('camera')}>
-                  <Text style={styles.mediaActionBtnText}>📷 Tirar Foto</Text>
+                            <View style={styles.mediaSourceActionsColumn}>
+                <TouchableOpacity style={styles.mediaActionBtn} onPress={handlePickAvatar}>
+                  <Text style={styles.mediaActionBtnText}>📷 Tirar Foto / Câmera</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.mediaActionBtn, { backgroundColor: '#475569' }]} onPress={() => handlePickAvatar('gallery')}>
-                  <Text style={styles.mediaActionBtnText}>🖼️ Galeria</Text>
+                <TouchableOpacity style={[styles.mediaActionBtn, { backgroundColor: '#475569' }]} onPress={handlePickAvatar}>
+                  <Text style={styles.mediaActionBtnText}>🖼️ Abrir da Galeria</Text>
                 </TouchableOpacity>
               </View>
+
             </View>
 
             {/* FORMULÁRIO DE ENTRADAS DE TEXTO */}
