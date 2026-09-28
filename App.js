@@ -106,6 +106,8 @@ export default function App() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const [activeChallengeId, setActiveChallengeId] = useState(null);
+  const [selectedLeagueFilter, setSelectedLeagueFilter] = useState('all');
+
   const [isAdminContext, setIsAdminContext] = useState(true);
 
   const [dashSectionAdmin, setDashSectionAdmin] = useState(true);
@@ -508,7 +510,7 @@ export default function App() {
         )}
       </View>
 
-      {currentScreen === 'dashboard' && (
+           {currentScreen === 'dashboard' && (
         <DashboardScreen
           currentUser={currentUser}
           athletePerfScope={athletePerfScope}
@@ -520,8 +522,12 @@ export default function App() {
           setIsModalityRadarModalOpen={setIsModalityRadarModalOpen}
           personalGoals={personalGoals}
           setIsGoalModalOpen={setIsGoalModalOpen}
+          challenges={challenges}
+          selectedLeagueFilter={selectedLeagueFilter}
+          setSelectedLeagueFilter={setSelectedLeagueFilter}
         />
       )}
+
       {currentScreen === 'feed' && (
         <FeedScreen
           feedPosts={feedPosts}
