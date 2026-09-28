@@ -68,8 +68,8 @@ export default function DashboardScreen({
     setProfileBirthDate(formatted);
   };
 
-    // FUNÇÃO REAL: SELECIONAR E FAZER UPLOAD DA FOTO DE PERFIL PARA O SUPABASE STORAGE
-  async function handlePickAvatar() {
+    // FUNÇÃO EXCLUSIVA: ABRIR A CÂMERA DO CELULAR
+  async function handleTakePhoto() {
     try {
       const input = document.createElement('input');
       input.type = 'file';
@@ -81,34 +81,50 @@ export default function DashboardScreen({
         if (!files || files.length === 0) return;
         const file = files[0];
 
-        Alert.alert('⏳ Enviando', 'Fazendo upload da sua nova foto de perfil...');
-        
+        Alert.alert('⏳ Enviando', 'Fazendo upload da foto batida pela câmera...');
         const fileExt = file.name.split('.').pop();
-        const fileName = `${currentUser?.id || Math.random()}-${Math.random()}.${fileExt}`;
+        const fileName = `${currentUser?.id || Math.random()}-${Date.now()}.${fileExt}`;
         const filePath = `${fileName}`;
 
-        const { data, error } = await supabase.storage
-          .from('avatars')
-          .upload(filePath, file, { cacheControl: '3600', upsert: true });
+        const { error } = await supabase.storage.from('avatars').upload(filePath, file, { cacheControl: '3600', upsert: true });
+        if (error) { Alert.alert('Erro no Upload', error.message); return; }
 
-        if (error) {
-          Alert.alert('Erro no Upload', error.message);
-          return;
-        }
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(filePath);
-
+        const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
         setProfileAvatar(publicUrl);
-        Alert.alert('Sucesso!', 'Foto carregada! Clique em GRAVAR PERFIL para consolidar.');
+        Alert.alert('Sucesso!', 'Foto capturada! Clique em GRAVAR PERFIL.');
       };
-
       input.click();
-    } catch (err) {
-      console.log('Erro ao abrir seletor de mídia:', err);
-    }
+    } catch (err) { console.log(err); }
   }
+
+  // FUNÇÃO EXCLUSIVA: ABRIR A GALERIA DE FOTOS
+  async function handlePickFromGallery() {
+    try {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      
+      input.onchange = async (e) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+        const file = files[0];
+
+        Alert.alert('⏳ Enviando', 'Fazendo upload da imagem selecionada da galeria...');
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${currentUser?.id || Math.random()}-${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error } = await supabase.storage.from('avatars').upload(filePath, file, { cacheControl: '3600', upsert: true });
+        if (error) { Alert.alert('Erro no Upload', error.message); return; }
+
+        const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+        setProfileAvatar(publicUrl);
+        Alert.alert('Sucesso!', 'Imagem carregada da galeria! Clique em GRAVAR PERFIL.');
+      };
+      input.click();
+    } catch (err) { console.log(err); }
+  }
+
 
 
   // FUNÇÃO: GRAVAR ATUALIZAÇÕES DO PERFIL NO SUPABASE
@@ -244,11 +260,11 @@ export default function DashboardScreen({
                 source={{ uri: profileAvatar || 'https://picsum.photos' }} 
                 style={styles.modalPreviewAvatarImage} 
               />
-                            <View style={styles.mediaSourceActionsColumn}>
-                <TouchableOpacity style={styles.mediaActionBtn} onPress={handlePickAvatar}>
+                                      <View style={styles.mediaSourceActionsColumn}>
+                <TouchableOpacity style={styles.mediaActionBtn} onPress={handleTakePhoto}>
                   <Text style={styles.mediaActionBtnText}>📷 Tirar Foto / Câmera</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.mediaActionBtn, { backgroundColor: '#475569' }]} onPress={handlePickAvatar}>
+                <TouchableOpacity style={[styles.mediaActionBtn, { backgroundColor: '#475569' }]} onPress={handlePickFromGallery}>
                   <Text style={styles.mediaActionBtnText}>🖼️ Abrir da Galeria</Text>
                 </TouchableOpacity>
               </View>
