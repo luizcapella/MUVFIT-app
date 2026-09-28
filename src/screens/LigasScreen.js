@@ -105,16 +105,6 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
   return (
     <ScrollView contentContainerStyle={styles.container}>
       
-      {/* CABEÇALHO SUPERIOR COM BOTÃO SAIR INTEGRADO */}
-      <View style={styles.headerTopBarRow}>
-        <Text style={styles.headerTopBarTitle}>🏆 Central de Ligas MuvFit</Text>
-        <TouchableOpacity style={styles.signOutTopBtn} onPress={() => {
-          if (handleSignOut) handleSignOut();
-        }}>
-          <Text style={styles.signOutTopBtnText}>🚪 SAIR</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* BOX: CRIAR NOVO DESAFIO */}
       <View style={styles.createCard}>
         <Text style={styles.cardHeader}>🟩 Criar Novo Desafio</Text>
