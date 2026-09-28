@@ -28,6 +28,7 @@ import FeedScreen from './src/screens/FeedScreen';
 import RankingScreen from './src/screens/RankingScreen';
 import AdminScreen from './src/screens/AdminScreen';
 import LigasScreen from './src/screens/LigasScreen';
+import ConfigScreen from './src/screens/ConfigScreen';
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -554,6 +555,12 @@ export default function App() {
           fetchDataFromSupabase={fetchDataFromSupabase}
         />
       )}
+      {currentScreen === 'config' && (
+        <ConfigScreen
+          currentUser={currentUser}
+          fetchDataFromSupabase={fetchDataFromSupabase}
+        />
+      )}
 
       {/* BOTÃO FLUTUANTE DE REGISTRO DE TREINO */}
       <TouchableOpacity 
@@ -567,7 +574,7 @@ export default function App() {
         <Text style={{ color: '#ffffff', fontWeight: 'bold' }}>🏋️ MUVFIT TREINO</Text>
       </TouchableOpacity>
 
-               {/* BARRA DE NAVEGAÇÃO DE ABAS NO RODAPÉ ATUALIZADA */}
+        {/* BARRA DE NAVEGAÇÃO DE ABAS NO RODAPÉ ATUALIZADA (6 BOTÕES) */}
       <View style={{
         flexDirection: 'row', height: 65, backgroundColor: '#1e3a8a', 
         borderTopWidth: 1, borderTopColor: '#3b82f6', alignItems: 'center', justifyContent: 'space-around'
@@ -598,7 +605,13 @@ export default function App() {
             <Text style={{ color: currentScreen === 'admin' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Admin</Text>
           </TouchableOpacity>
         )}
+
+        <TouchableOpacity style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} onPress={() => setCurrentScreen('config')}>
+          <Text style={{ fontSize: 16, marginBottom: 2 }}>⚙️</Text>
+          <Text style={{ color: currentScreen === 'config' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Config</Text>
+        </TouchableOpacity>
       </View>
+
 
 
       <WorkoutModal
