@@ -116,11 +116,14 @@ export default function DashboardScreen({
     }
   }
 
-  // Gera as opções da janela de seleção de ligas dinamicamente
+  // Gera as opções da janela de seleção de ligas dinamicamente blindada contra erro undefined
   const leagueOptions = [
     { label: '🌐 Todas as Ligas (Somatório Geral)', value: 'all' },
-    ...challenges.map(c => ({ label: String(c.title), value: String(c.id) }))
+    ...(Array.isArray(challenges) 
+      ? challenges.map(c => ({ label: String(c?.title || 'Desafio'), value: String(c?.id || '') })) 
+      : [])
   ];
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       
