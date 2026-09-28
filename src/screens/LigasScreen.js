@@ -20,13 +20,11 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
     }
     setIsCreating(true);
     try {
-      const { error } = await supabase
-        .from('challenges')
-        .insert({
-          title: newTitle.trim(),
-          creator_id: currentUser?.id,
-          status_inscription: 'Aberto'
-        });
+      // Aciona o gatilho RPC puro criado no banco de dados, ignorando travas de outras tabelas
+      const { error } = await supabase.rpc('criar_desafio_direto', {
+        nome_liga: newTitle.trim(),
+        criador_id: currentUser?.id
+      });
 
       if (error) {
         Alert.alert('Erro ao criar liga', error.message);
