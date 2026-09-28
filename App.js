@@ -536,6 +536,16 @@ export default function App() {
           currentUser={currentUser}
         />
       )}
+      {currentScreen === 'ligas' && (
+        <LigasScreen
+          challenges={challenges}
+          memberships={memberships}
+          currentUser={currentUser}
+          setChallenges={setChallenges}
+          fetchDataFromSupabase={fetchDataFromSupabase}
+        />
+      )}
+
       {currentScreen === 'admin' && currentUser?.isAdmin && (
         <AdminScreen
           pendingWorkouts={pendingWorkouts}
@@ -556,14 +566,19 @@ export default function App() {
         <Text style={{ color: '#ffffff', fontWeight: 'bold' }}>🏋️ MUVFIT TREINO</Text>
       </TouchableOpacity>
 
-           {/* BARRA DE NAVEGAÇÃO DE ABAS NO RODAPÉ ATUALIZADA (4 BOTÕES) */}
+               {/* BARRA DE NAVEGAÇÃO DE ABAS NO RODAPÉ ATUALIZADA */}
       <View style={{
         flexDirection: 'row', height: 65, backgroundColor: '#1e3a8a', 
         borderTopWidth: 1, borderTopColor: '#3b82f6', alignItems: 'center', justifyContent: 'space-around'
       }}>
         <TouchableOpacity style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} onPress={() => setCurrentScreen('dashboard')}>
-          <Text style={{ fontSize: 16, marginBottom: 2 }}>📊</Text>
-          <Text style={{ color: currentScreen === 'dashboard' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Painel</Text>
+          <Text style={{ fontSize: 16, marginBottom: 2 }}>👤</Text>
+          <Text style={{ color: currentScreen === 'dashboard' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Atleta</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} onPress={() => setCurrentScreen('ligas')}>
+          <Text style={{ fontSize: 16, marginBottom: 2 }}>🏆</Text>
+          <Text style={{ color: currentScreen === 'ligas' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Ligas</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} onPress={() => setCurrentScreen('feed')}>
@@ -572,8 +587,8 @@ export default function App() {
         </TouchableOpacity>
 
         <TouchableOpacity style={{ alignItems: 'center', flex: 1, paddingVertical: 10 }} onPress={() => setCurrentScreen('ranking')}>
-          <Text style={{ fontSize: 16, marginBottom: 2 }}>🏆</Text>
-          <Text style={{ color: currentScreen === 'ranking' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Ranking</Text>
+          <Text style={{ fontSize: 16, marginBottom: 2 }}>🏅</Text>
+          <Text style={{ color: currentScreen === 'ranking' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Classificação</Text>
         </TouchableOpacity>
 
         {currentUser?.isAdmin && (
@@ -583,6 +598,7 @@ export default function App() {
           </TouchableOpacity>
         )}
       </View>
+
 
       <WorkoutModal
         isOpen={isWorkoutModalOpen}
