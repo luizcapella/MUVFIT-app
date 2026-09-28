@@ -221,15 +221,20 @@ export default function DashboardScreen({
           <View style={styles.leaguePickerModalContentCard}>
             <Text style={styles.leaguePickerModalTitleHeader}>Selecione a Liga para Individualizar:</Text>
             <ScrollView style={styles.leagueOptionsListArea}>
-              {leagueOptions.map((option) => {
+                        {leagueOptions.map((option) => {
                 const isSelected = option.value === selectedLeagueFilter;
                 return (
                   <TouchableOpacity
                     key={option.value}
                     style={[styles.leagueOptionItemRow, isSelected && styles.leagueOptionItemRowActive]}
                     onPress={() => {
-                      setSelectedLeagueFilter(option.value);
                       setIsLeaguePickerOpen(false);
+                      // Garante que o modal feche antes do estado atualizar a tela de fundo
+                      setTimeout(() => {
+                        if (setSelectedLeagueFilter) {
+                          setSelectedLeagueFilter(option.value);
+                        }
+                      }, 50);
                     }}
                   >
                     <Text style={[styles.leagueOptionItemText, isSelected && styles.leagueOptionItemTextActive]}>
@@ -238,6 +243,7 @@ export default function DashboardScreen({
                   </TouchableOpacity>
                 );
               })}
+
             </ScrollView>
             <TouchableOpacity style={styles.leaguePickerCancelBtn} onPress={() => setIsLeaguePickerOpen(false)}>
               <Text style={styles.leaguePickerCancelBtnText}>Cancelar</Text>
