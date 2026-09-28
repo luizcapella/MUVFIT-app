@@ -1,9 +1,9 @@
-// src/screens/LigasScreen.js (Parte 1 de 2)
-import React, { useState } from 'react';
+// src/screens/LigasScreen.js (Atualizado e Integrado)
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Share } from 'react-native';
 import { supabase } from '../../supabaseClient';
 
-export default function LigasScreen({ challenges, memberships, currentUser, setChallenges, fetchDataFromSupabase }) {
+export default function LigasScreen({ challenges, memberships, currentUser, handleSignOut, fetchDataFromSupabase, setSelectedLeagueFilter }) {
   // Controle de abas expansíveis / colapsáveis
   const [isAdminSectionOpen, setIsAdminSectionOpen] = useState(true);
   const [isParticipantSectionOpen, setIsParticipantSectionOpen] = useState(true);
@@ -13,10 +13,10 @@ export default function LigasScreen({ challenges, memberships, currentUser, setC
   const [newTitle, setNewTitle] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
-  // Mock de convites recebidos para visualização da funcionalidade
-    const [invitesReceived, setInvitesReceived] = useState([]);
+  // Lista de convites recebidos
+  const [invitesReceived, setInvitesReceived] = useState([]);
 
-  // FUNÇÃO: CRIAR NOVO DESAFIO / LIGA
+  // FUNÇÃO: CRIAR NOVO DESAFIO / LIGA CONECTADO REAL
   async function handleCreateChallenge() {
     if (!newTitle.trim()) {
       Alert.alert('Atenção', 'Por favor, digite o nome da liga.');
@@ -28,7 +28,7 @@ export default function LigasScreen({ challenges, memberships, currentUser, setC
         {
           title: newTitle.trim(),
           creator_id: currentUser?.id,
-          status_inscription: 'Aberto' // Inicia aberta por padrão
+          status_inscription: 'Aberto'
         }
       ]);
 
@@ -37,7 +37,7 @@ export default function LigasScreen({ challenges, memberships, currentUser, setC
         return;
       }
 
-      Alert.alert('Sucesso!', 'Nova liga criada com sucesso!');
+      Alert.alert('Sucesso!', `A liga "${newTitle}" foi criada com sucesso!`);
       setNewTitle('');
       if (fetchDataFromSupabase) await fetchDataFromSupabase();
     } catch (err) {
@@ -47,9 +47,9 @@ export default function LigasScreen({ challenges, memberships, currentUser, setC
     }
   }
 
-  // FUNÇÃO: ALTERAR STATUS DE INSCRIÇÃO (ABERTO / FECHADO)
+  // FUNÇÃO: ALTERAR STATUS DE INSCRIÇÃO (ABERTO / FECHADO) REAL
   async function handleToggleInscription(challengeId, currentStatus) {
-    const nextStatus = currentStatus === 'Aberto' ? 'Fechado' : 'Aberto';
+    const nextStatus = currentStatus === 'Fechado' ? 'Aberto' : 'Fechado';
     try {
       const { error } = await supabase
         .from('challenges')
@@ -61,21 +61,22 @@ export default function LigasScreen({ challenges, memberships, currentUser, setC
         return;
       }
 
+      Alert.alert('Status Atualizado', `Inscrições da liga alteradas para: ${nextStatus}`);
       if (fetchDataFromSupabase) await fetchDataFromSupabase();
     } catch (err) {
       console.log(err);
     }
   }
 
-  // FUNÇÃO: REMOVER LIGA PERMANENTEMENTE
+  // FUNÇÃO: REMOVER LIGA PERMANENTEMENTE DO BANCO DE DADOS
   async function handleRemoveChallenge(challengeId) {
     Alert.alert(
-      'Remover Liga',
-      'Tem certeza de que deseja excluir permanentemente esta liga? Esta ação não pode ser desfeita.',
+      'Remover Liga 🗑️',
+      'Tem certeza de que deseja excluir permanentemente esta liga da base de dados? Esta ação não pode ser desfeita.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Excluir',
+          text: 'Excluir permanentemente',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -84,7 +85,7 @@ export default function LigasScreen({ challenges, memberships, currentUser, setC
                 Alert.alert('Erro', 'Não foi possível remover a liga.');
                 return;
               }
-              Alert.alert('Sucesso', 'Liga excluída definitivamente.');
+              Alert.alert('Sucesso', 'Liga excluída definitivamente da base de dados do MuvFit.');
               if (fetchDataFromSupabase) await fetchDataFromSupabase();
             } catch (err) {
               console.log(err);
@@ -95,16 +96,17 @@ export default function LigasScreen({ challenges, memberships, currentUser, setC
     );
   }
 
-  // FUNÇÃO: CONVIDAR VIA COMPARTILHAMENTO NATIVO (WHATSAPP, ETC.)
+  // FUNÇÃO: CONVIDAR VIA COMPARTILHAMENTO
   async function handleInviteShare(challengeTitle, challengeId) {
     try {
       await Share.share({
-        message: `Venha participar da minha liga "${challengeTitle}" no MuvFit! Acesse o app e use o link oficial de entrada: https://vercel.app{challengeId}`,
+        message: `Venha participar da minha liga "${challengeTitle}" no MuvFit! Acesse e use o link oficial de entrada: https://vercel.app{challengeId}`,
       });
     } catch (error) {
       console.log(error.message);
     }
   }
+
   // LÓGICA DE GERENCIAMENTO DE CONVITES RECEBIDOS
   function handleAcceptInvite(inviteId) {
     Alert.alert('Sucesso', 'Você aceitou o convite para a liga!');
@@ -112,9 +114,10 @@ export default function LigasScreen({ challenges, memberships, currentUser, setC
   }
 
   function handleRejectInvite(inviteId) {
-    Alert.alert('Convite Rejeitado', 'O convite foi removido da sua lista.');
+    Alert.alert('Convite Rejeitado', 'O convite foi removido.');
     setInvitesReceived(invitesReceived.filter(inv => inv.id !== inviteId));
   }
+
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -155,9 +158,13 @@ export default function LigasScreen({ challenges, memberships, currentUser, setC
               return (
                 <View key={liga.id} style={styles.ligaRow}>
                   <View style={styles.ligaMeta}>
-                    <TouchableOpacity onPress={() => Alert.alert('Navegação', `Entrando na liga: ${liga.title}`)}>
+                                       <TouchableOpacity onPress={() => {
+                      if (setSelectedLeagueFilter) setSelectedLeagueFilter(liga.id);
+                      Alert.alert('MuvFit Ligas 🏆', `Você ativou a visualização da liga: ${liga.title}. O desempenho detalhado dela já foi carregado na aba Atleta!`);
+                    }}>
                       <Text style={styles.ligaTitleLink}>{liga.title}</Text>
                     </TouchableOpacity>
+
                     <Text style={styles.ligaDate}>Criada em: {liga.created_at ? liga.created_at.substring(0, 10) : '2026-09-28'}</Text>
                   </View>
 
