@@ -11,6 +11,8 @@ export default function DashboardScreen({
 }) {
   // Controle do modal de edição de perfil
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isLeaguePickerOpen, setIsLeaguePickerOpen] = useState(false);
+
 
   // Estados dos campos do Perfil do Atleta
   const [profileName, setProfileName] = useState(currentUser?.name || '');
@@ -175,6 +177,11 @@ export default function DashboardScreen({
       ? challenges.map(c => ({ label: String(c?.title || 'Desafio'), value: String(c?.id || '') })) 
       : [])
   ];
+  // Retorna o nome amigável da liga selecionada
+  const getSelectedLeagueLabel = () => {
+    const found = leagueOptions.find(o => o.value === selectedLeagueFilter);
+    return found ? found.label : '🌐 Selecionar Liga';
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -196,15 +203,49 @@ export default function DashboardScreen({
         </View>
       </View>
 
-      {/* JANELA DE SELEÇÃO DE LIGAS (FILTRO INDIVIDUALIZADO) */}
+           {/* JANELA DE SELEÇÃO DE LIGAS COM SOBREPOSIÇÃO MODAL */}
       <View style={styles.leagueFilterSectionBox}>
-        <CustomPicker
-          label="🔍 Visualizar Desempenho por Liga:"
-          selectedValue={selectedLeagueFilter}
-          onValueChange={(val) => setSelectedLeagueFilter(val)}
-          options={leagueOptions}
-        />
+        <Text style={styles.pickerFieldLabelTitle}>🔍 Visualizar Desempenho por Liga:</Text>
+        <TouchableOpacity style={styles.leaguePickerTriggerBtn} onPress={() => setIsLeaguePickerOpen(true)}>
+          <Text style={styles.leaguePickerTriggerBtnText}>{getSelectedLeagueLabel()} ▾</Text>
+        </TouchableOpacity>
       </View>
+
+      {/* JANELA FLUTUANTE QUE SOBREPÕE TODOS OS ITENS DA TELA */}
+      <Modal visible={isLeaguePickerOpen} transparent={true} animationType="fade">
+        <TouchableOpacity 
+          style={styles.modalOverlayBackground} 
+          activeOpacity={1} 
+          onPress={() => setIsLeaguePickerOpen(false)}
+        >
+          <View style={styles.leaguePickerModalContentCard}>
+            <Text style={styles.leaguePickerModalTitleHeader}>Selecione a Liga para Individualizar:</Text>
+            <ScrollView style={styles.leagueOptionsListArea}>
+              {leagueOptions.map((option) => {
+                const isSelected = option.value === selectedLeagueFilter;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[styles.leagueOptionItemRow, isSelected && styles.leagueOptionItemRowActive]}
+                    onPress={() => {
+                      setSelectedLeagueFilter(option.value);
+                      setIsLeaguePickerOpen(false);
+                    }}
+                  >
+                    <Text style={[styles.leagueOptionItemText, isSelected && styles.leagueOptionItemTextActive]}>
+                      {option.label} {isSelected && ' ✓'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            <TouchableOpacity style={styles.leaguePickerCancelBtn} onPress={() => setIsLeaguePickerOpen(false)}>
+              <Text style={styles.leaguePickerCancelBtnText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
 
       {/* QUADRO DE MEDALHAS COMPACTO */}
       <View style={styles.squareMedalDisplayCard}>
@@ -361,6 +402,20 @@ const styles = StyleSheet.create({
   addGoalText: { color: '#ffffff', fontSize: 11, fontWeight: 'bold' },
   emptyText: { fontSize: 12, color: '#64748b', fontStyle: 'italic' },
   goalItem: { fontSize: 12, color: '#334155', marginBottom: 3 },
+    pickerFieldLabelTitle: { fontSize: 12, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 6, paddingHorizontal: 4 },
+  leaguePickerTriggerBtn: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, paddingHorizontal: 12, height: 42, justifyContent: 'center' },
+  leaguePickerTriggerBtnText: { fontSize: 13, fontWeight: 'bold', color: '#f97316' },
+  modalOverlayBackground: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  leaguePickerModalContentCard: { backgroundColor: '#ffffff', width: '100%', maxWidth: 400, borderRadius: 12, padding: 16, elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4.65 },
+  leaguePickerModalTitleHeader: { fontSize: 14, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#e2e8f0', paddingBottom: 8 },
+  leagueOptionsListArea: { maxHeight: 250 },
+  leagueOptionItemRow: { paddingVertical: 12, paddingHorizontal: 10, borderRadius: 6, marginBottom: 4 },
+  leagueOptionItemRowActive: { backgroundColor: '#fff7ed' },
+  leagueOptionItemText: { fontSize: 13, color: '#334155', fontWeight: '500' },
+  leagueOptionItemTextActive: { color: '#ea580c', fontWeight: 'bold' },
+  leaguePickerCancelBtn: { marginTop: 12, backgroundColor: '#cbd5e1', paddingVertical: 10, borderRadius: 6, alignItems: 'center' },
+  leaguePickerCancelBtnText: { color: '#334155', fontSize: 13, fontWeight: 'bold' },
+
 
   // Estilos da Janela Modal de Perfil
   modalFullWrapper: { flex: 1, backgroundColor: '#ffffff' },
