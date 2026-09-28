@@ -130,10 +130,10 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
 
       {isAdminSectionOpen && (
         <View style={styles.accordionContent}>
-          {(!challenges || challenges.filter(c => c.creator_id === currentUser?.id).length === 0) ? (
+                    {(!challenges || challenges.filter(c => (c.creator_id === currentUser?.id || c.created_by === currentUser?.id)).length === 0) ? (
             <Text style={styles.emptyText}>Você não administra nenhuma liga atualmente.</Text>
           ) : (
-            challenges.filter(c => c.creator_id === currentUser?.id).map((liga) => {
+          challenges.filter(c => (c.creator_id === currentUser?.id || c.created_by === currentUser?.id)).map((liga) => {
               const isOpen = (liga.status_inscription || 'Aberto') === 'Aberto';
               return (
                 <View key={liga.id} style={styles.ligaRow}>
@@ -177,10 +177,10 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
 
       {isParticipantSectionOpen && (
         <View style={styles.accordionContent}>
-          {(!challenges || challenges.filter(c => c.creator_id !== currentUser?.id).length === 0) ? (
+                   {(!challenges || challenges.filter(c => (c.creator_id !== currentUser?.id && c.created_by !== currentUser?.id)).length === 0) ? (
             <Text style={styles.emptyText}>Você não está participando de outras ligas ainda.</Text>
           ) : (
-            challenges.filter(c => c.creator_id !== currentUser?.id).map((liga) => {
+            challenges.filter(c => (c.creator_id !== currentUser?.id && c.created_by !== currentUser?.id)).map((liga) => {
               const isOpen = (liga.status_inscription || 'Aberto') === 'Aberto';
               return (
                 <View key={liga.id} style={styles.ligaRow}>
