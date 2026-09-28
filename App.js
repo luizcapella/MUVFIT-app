@@ -27,6 +27,7 @@ import WorkoutModal from './src/components/WorkoutModal';
 import FeedScreen from './src/screens/FeedScreen';
 import RankingScreen from './src/screens/RankingScreen';
 import AdminScreen from './src/screens/AdminScreen';
+import LigasScreen from './src/screens/LigasScreen';
 
 export default function App() {
   const [session, setSession] = useState(null);
