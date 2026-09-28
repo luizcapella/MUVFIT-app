@@ -13,14 +13,13 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
   const [invitesReceived, setInvitesReceived] = useState([]);
 
   // 1. FUNÇÃO: CRIAR DESAFIO / LIGA REAL CONECTADA
-   async function handleCreateChallenge() {
+  async function handleCreateChallenge() {
     if (!newTitle.trim()) {
       Alert.alert('Atenção', 'Por favor, digite o nome da liga.');
       return;
     }
     setIsCreating(true);
     try {
-      // Envia uma requisição limpa sem colchetes e sem .select() para evitar o erro 400
       const { error } = await supabase
         .from('challenges')
         .insert({
@@ -45,6 +44,7 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
       setIsCreating(false);
     }
   }
+
 
   // 2. FUNÇÃO: ALTERAR STATUS DE INSCRIÇÃO (ABERTO / FECHADO) REAL CONECTADA
   async function handleToggleInscription(challengeId, currentStatus) {
