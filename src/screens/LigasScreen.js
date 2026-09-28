@@ -13,31 +13,34 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
   const [invitesReceived, setInvitesReceived] = useState([]);
 
   // 1. FUNÇÃO: CRIAR DESAFIO / LIGA REAL CONECTADA
-  async function handleCreateChallenge() {
+   async function handleCreateChallenge() {
     if (!newTitle.trim()) {
       Alert.alert('Atenção', 'Por favor, digite o nome da liga.');
       return;
     }
     setIsCreating(true);
     try {
-      const { data, error } = await supabase.from('challenges').insert([
-        {
+      // Envia uma requisição limpa sem colchetes e sem .select() para evitar o erro 400
+      const { error } = await supabase
+        .from('challenges')
+        .insert({
           title: newTitle.trim(),
           creator_id: currentUser?.id,
           status_inscription: 'Aberto'
-        }
-      ]).select();
+        });
 
       if (error) {
         Alert.alert('Erro ao criar liga', error.message);
         return;
       }
 
-      Alert.alert('Sucesso! 🏆', `A liga "${newTitle}" foi criada com sucesso na base de dados!`);
+      Alert.alert('Sucesso! 🏆', `A liga "${newTitle}" foi criada com sucesso!`);
       setNewTitle('');
-      if (fetchDataFromSupabase) await fetchDataFromSupabase();
+      if (fetchDataFromSupabase) {
+        await fetchDataFromSupabase();
+      }
     } catch (err) {
-      console.log(err);
+      console.log('Erro interno na gravação:', err);
     } finally {
       setIsCreating(false);
     }
