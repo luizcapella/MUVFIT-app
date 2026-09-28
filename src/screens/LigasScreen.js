@@ -1,22 +1,18 @@
-// src/screens/LigasScreen.js (Atualizado e Integrado)
-import React, { useState, useEffect } from 'react';
+// src/screens/LigasScreen.js (Parte 1 de 3)
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Share } from 'react-native';
 import { supabase } from '../../supabaseClient';
 
 export default function LigasScreen({ challenges, memberships, currentUser, handleSignOut, fetchDataFromSupabase, setSelectedLeagueFilter }) {
-  // Controle de abas expansíveis / colapsáveis
   const [isAdminSectionOpen, setIsAdminSectionOpen] = useState(true);
   const [isParticipantSectionOpen, setIsParticipantSectionOpen] = useState(true);
   const [isInvitesSectionOpen, setIsInvitesSectionOpen] = useState(true);
 
-  // Estados para criação de novo desafio
   const [newTitle, setNewTitle] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-
-  // Lista de convites recebidos
   const [invitesReceived, setInvitesReceived] = useState([]);
 
-  // FUNÇÃO: CRIAR NOVO DESAFIO / LIGA CONECTADO REAL
+  // 1. FUNÇÃO: CRIAR DESAFIO / LIGA REAL CONECTADA
   async function handleCreateChallenge() {
     if (!newTitle.trim()) {
       Alert.alert('Atenção', 'Por favor, digite o nome da liga.');
@@ -24,20 +20,20 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
     }
     setIsCreating(true);
     try {
-      const { error } = await supabase.from('challenges').insert([
+      const { data, error } = await supabase.from('challenges').insert([
         {
           title: newTitle.trim(),
           creator_id: currentUser?.id,
           status_inscription: 'Aberto'
         }
-      ]);
+      ]).select();
 
       if (error) {
-        Alert.alert('Erro', error.message);
+        Alert.alert('Erro ao criar liga', error.message);
         return;
       }
 
-      Alert.alert('Sucesso!', `A liga "${newTitle}" foi criada com sucesso!`);
+      Alert.alert('Sucesso! 🏆', `A liga "${newTitle}" foi criada com sucesso na base de dados!`);
       setNewTitle('');
       if (fetchDataFromSupabase) await fetchDataFromSupabase();
     } catch (err) {
@@ -47,7 +43,7 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
     }
   }
 
-  // FUNÇÃO: ALTERAR STATUS DE INSCRIÇÃO (ABERTO / FECHADO) REAL
+  // 2. FUNÇÃO: ALTERAR STATUS DE INSCRIÇÃO (ABERTO / FECHADO) REAL CONECTADA
   async function handleToggleInscription(challengeId, currentStatus) {
     const nextStatus = currentStatus === 'Fechado' ? 'Aberto' : 'Fechado';
     try {
@@ -57,35 +53,34 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
         .eq('id', challengeId);
 
       if (error) {
-        Alert.alert('Erro', 'Não foi possível alterar o status de inscrição.');
+        Alert.alert('Erro ao mudar status', error.message);
         return;
       }
 
-      Alert.alert('Status Atualizado', `Inscrições da liga alteradas para: ${nextStatus}`);
+      Alert.alert('Status Alterado! ⚙️', `As inscrições para esta liga agora estão: ${nextStatus}`);
       if (fetchDataFromSupabase) await fetchDataFromSupabase();
     } catch (err) {
       console.log(err);
     }
   }
-
-  // FUNÇÃO: REMOVER LIGA PERMANENTEMENTE DO BANCO DE DADOS
+  // 3. FUNÇÃO: REMOVER LIGA DEFINITIVAMENTE DO BANCO DE DADOS
   async function handleRemoveChallenge(challengeId) {
     Alert.alert(
-      'Remover Liga 🗑️',
-      'Tem certeza de que deseja excluir permanentemente esta liga da base de dados? Esta ação não pode ser desfeita.',
+      'Excluir Liga 🗑️',
+      'Tem certeza de que deseja deletar permanentemente esta liga da base de dados do MuvFit?',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Excluir permanentemente',
+          text: 'Excluir de Vez',
           style: 'destructive',
           onPress: async () => {
             try {
               const { error } = await supabase.from('challenges').delete().eq('id', challengeId);
               if (error) {
-                Alert.alert('Erro', 'Não foi possível remover a liga.');
+                Alert.alert('Erro ao remover', error.message);
                 return;
               }
-              Alert.alert('Sucesso', 'Liga excluída definitivamente da base de dados do MuvFit.');
+              Alert.alert('Removida!', 'A liga foi excluída com sucesso do banco de dados.');
               if (fetchDataFromSupabase) await fetchDataFromSupabase();
             } catch (err) {
               console.log(err);
@@ -96,33 +91,21 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
     );
   }
 
-  // FUNÇÃO: CONVIDAR VIA COMPARTILHAMENTO
+  // 4. FUNÇÃO: COMPARTILHAR LINK DE CONVITE NATIVO
   async function handleInviteShare(challengeTitle, challengeId) {
     try {
       await Share.share({
-        message: `Venha participar da minha liga "${challengeTitle}" no MuvFit! Acesse e use o link oficial de entrada: https://vercel.app{challengeId}`,
+        message: `Venha participar da minha liga "${challengeTitle}" no MuvFit! Acesse o app pelo link oficial: https://vercel.app{challengeId}`,
       });
     } catch (error) {
       console.log(error.message);
     }
   }
 
-  // LÓGICA DE GERENCIAMENTO DE CONVITES RECEBIDOS
-  function handleAcceptInvite(inviteId) {
-    Alert.alert('Sucesso', 'Você aceitou o convite para a liga!');
-    setInvitesReceived(invitesReceived.filter(inv => inv.id !== inviteId));
-  }
-
-  function handleRejectInvite(inviteId) {
-    Alert.alert('Convite Rejeitado', 'O convite foi removido.');
-    setInvitesReceived(invitesReceived.filter(inv => inv.id !== inviteId));
-  }
-
-
   return (
     <ScrollView contentContainerStyle={styles.container}>
       
-      {/* CABEÇALHO SUPERIOR COORDENADO */}
+      {/* CABEÇALHO SUPERIOR COM BOTÃO SAIR INTEGRADO */}
       <View style={styles.headerTopBarRow}>
         <Text style={styles.headerTopBarTitle}>🏆 Central de Ligas MuvFit</Text>
         <TouchableOpacity style={styles.signOutTopBtn} onPress={() => {
@@ -132,7 +115,7 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
         </TouchableOpacity>
       </View>
 
-      {/* BLOCO: CRIAR DESAFIO */}
+      {/* BOX: CRIAR NOVO DESAFIO */}
       <View style={styles.createCard}>
         <Text style={styles.cardHeader}>🟩 Criar Novo Desafio</Text>
         <View style={styles.row}>
@@ -149,10 +132,7 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
       </View>
 
       {/* ABA: LIGAS QUE ADMINISTRA */}
-      <TouchableOpacity 
-        style={styles.accordionHeader} 
-        onPress={() => setIsAdminSectionOpen(!isAdminSectionOpen)}
-      >
+      <TouchableOpacity style={styles.accordionHeader} onPress={() => setIsAdminSectionOpen(!isAdminSectionOpen)}>
         <Text style={styles.accordionTitle}>🔑 Ligas Que Administra</Text>
         <Text style={styles.accordionArrow}>{isAdminSectionOpen ? '▲' : '▼'}</Text>
       </TouchableOpacity>
@@ -177,7 +157,6 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
                   </View>
 
                   <View style={styles.actionRow}>
-                    {/* Botão de Status Inscrição (Administrador abre/fecha) */}
                     <TouchableOpacity 
                       style={[styles.statusBtn, isOpen ? styles.btnOpen : styles.btnClose]}
                       onPress={() => handleToggleInscription(liga.id, liga.status_inscription || 'Aberto')}
@@ -185,12 +164,10 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
                       <Text style={styles.statusBtnText}>{isOpen ? 'Aberto' : 'Fechado'}</Text>
                     </TouchableOpacity>
 
-                    {/* Botão Convidar */}
                     <TouchableOpacity style={styles.iconBtn} onPress={() => handleInviteShare(liga.title, liga.id)}>
                       <Text style={styles.iconText}>🔗</Text>
                     </TouchableOpacity>
 
-                    {/* Botão Remover */}
                     <TouchableOpacity style={styles.iconBtn} onPress={() => handleRemoveChallenge(liga.id)}>
                       <Text style={styles.iconText}>🗑️</Text>
                     </TouchableOpacity>
@@ -202,10 +179,7 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
         </View>
       )}
       {/* ABA: LIGAS EM QUE PARTICIPO */}
-      <TouchableOpacity 
-        style={styles.accordionHeader} 
-        onPress={() => setIsParticipantSectionOpen(!isParticipantSectionOpen)}
-      >
+      <TouchableOpacity style={styles.accordionHeader} onPress={() => setIsParticipantSectionOpen(!isParticipantSectionOpen)}>
         <Text style={styles.accordionTitle}>⚡ Ligas em que Participo</Text>
         <Text style={styles.accordionArrow}>{isParticipantSectionOpen ? '▲' : '▼'}</Text>
       </TouchableOpacity>
@@ -230,53 +204,11 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
                   </View>
 
                   <View style={styles.actionRow}>
-                    {/* Feedback visual de Status */}
                     <View style={[styles.statusFeedback, isOpen ? styles.feedbackOpen : styles.feedbackClose]}>
                       <Text style={styles.statusBtnText}>{isOpen ? 'Aberto' : 'Fechado'}</Text>
                     </View>
-
-                    {/* Botão Convidar */}
                     <TouchableOpacity style={styles.iconBtn} onPress={() => handleInviteShare(liga.title, liga.id)}>
                       <Text style={styles.iconText}>🔗</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              );
-            })
-          )}
-        </View>
-      )}
-
-      {/* ABA: CONVITES RECEBIDOS */}
-      <TouchableOpacity 
-        style={styles.accordionHeader} 
-        onPress={() => setIsInvitesSectionOpen(!isInvitesSectionOpen)}
-      >
-        <Text style={styles.accordionTitle}>📩 Convites Recebidos</Text>
-        <Text style={styles.accordionArrow}>{isInvitesSectionOpen ? '▲' : '▼'}</Text>
-      </TouchableOpacity>
-
-      {isInvitesSectionOpen && (
-        <View style={styles.accordionContent}>
-          {invitesReceived.length === 0 ? (
-            <Text style={styles.emptyText}>Nenhum convite pendente por aqui.</Text>
-          ) : (
-            invitesReceived.map((invite) => {
-              const isOpen = invite.status === 'Aberto';
-              return (
-                <View key={invite.id} style={styles.inviteCard}>
-                  <View style={styles.ligaMeta}>
-                    <TouchableOpacity onPress={() => Alert.alert('Pré-visualização', 'Visão de Convidado liberada.')}>
-                      <Text style={styles.ligaTitleLink}>{invite.title}</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.ligaDate}>Criação: {invite.created_at}</Text>
-                  </View>
-                  <View style={styles.inviteActionRow}>
-                    <TouchableOpacity style={[styles.choiceBtn, styles.acceptBtn]} onPress={() => handleAcceptInvite(invite.id)}>
-                      <Text style={styles.choiceBtnText}>✅ Aceitar</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.choiceBtn, styles.rejectBtn]} onPress={() => handleRejectInvite(invite.id)}>
-                      <Text style={styles.choiceBtnText}>❌ Rejeitar</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -319,11 +251,5 @@ const styles = StyleSheet.create({
   feedbackClose: { backgroundColor: '#b91c1c' },
   statusBtnText: { color: '#ffffff', fontSize: 11, fontWeight: 'bold' },
   iconBtn: { backgroundColor: '#f1f5f9', width: 32, height: 32, borderRadius: 6, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#cbd5e1' },
-  iconText: { fontSize: 13 },
-  inviteCard: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, padding: 10, marginBottom: 10 },
-  inviteActionRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
-  choiceBtn: { flex: 1, paddingVertical: 8, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
-  acceptBtn: { backgroundColor: '#10b981' },
-  rejectBtn: { backgroundColor: '#ef4444' },
-  choiceBtnText: { color: '#ffffff', fontSize: 12, fontWeight: 'bold' }
+  iconText: { fontSize: 13 }
 });
