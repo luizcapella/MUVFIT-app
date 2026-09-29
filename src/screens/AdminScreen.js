@@ -156,21 +156,22 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
             })
           )}
 
-          {/* b. Solicitação Para Atletas Ativos */}
+                   {/* b. Solicitação Para Atletas Ativos */}
           <Text style={[styles.subSectionTitle, { marginTop: 14 }]}>⚡ Solicitação Para Atletas Ativos:</Text>
           {challengeRequests.length === 0 ? (
             <Text style={styles.emptyText}>Nenhuma solicitação de inscrição no desafio pendente.</Text>
           ) : (
-                         {challengeRequests.map((req) => (
-          (
-              <View key={req.id} style={styles.requestRow}>
-                <View style={styles.userInfo}>
-                  <Image 
-                    source={{ uri: prof?.avatar_url || 'https://placeholder.com' }} 
-                    style={styles.userAvatar} 
-                  />
-                  <Text style={styles.userNickname}>{prof?.nickname || 'Atleta Anônimo'}</Text>
-                </View>
+            challengeRequests.map(function(req) {
+              var prof = profiles ? profiles.find(function(p) { return p.id === req.user_id; }) : null;
+              return (
+                <View key={req.id} style={styles.requestRow}>
+                  <View style={styles.userInfo}>
+                    <Image 
+                      source={{ uri: (prof && prof.avatar_url) ? prof.avatar_url : 'https://placeholder.com' }} 
+                      style={styles.userAvatar} 
+                    />
+                    <Text style={styles.userNickname}>{(prof && prof.nickname) ? prof.nickname : 'Atleta Anônimo'}</Text>
+                  </View>
 
                   <View style={styles.btnRow}>
                     <TouchableOpacity 
