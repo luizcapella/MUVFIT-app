@@ -589,7 +589,6 @@ export default function App() {
                <AdminScreen
           challenges={challenges}
           currentUser={currentUser}
-          profiles={profiles}
           handleSignOut={handleSignOut}
           fetchDataFromSupabase={fetchDataFromSupabase}
           pendingWorkouts={pendingWorkouts}
