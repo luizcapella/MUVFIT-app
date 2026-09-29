@@ -563,7 +563,7 @@ export default function App() {
           currentUser={currentUser}
         />
       )}
-           {currentScreen === 'ligas' && (
+      {currentScreen === 'ligas' && (
         <LigasScreen
           challenges={challenges}
           memberships={memberships}
@@ -574,7 +574,6 @@ export default function App() {
           setSelectedLeagueFilter={setSelectedLeagueFilter}
         />
       )}
-
 
       {currentScreen === 'admin' && currentUser?.isAdmin && (
         <AdminScreen
