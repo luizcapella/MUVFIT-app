@@ -161,9 +161,8 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
           {challengeRequests.length === 0 ? (
             <Text style={styles.emptyText}>Nenhuma solicitação de inscrição no desafio pendente.</Text>
           ) : (
-                     {challengeRequests.map((req) => {
-            const prof = profiles?.find(p => p.id === req.user_id);
-            return (
+                         {challengeRequests.map((req) => (
+          (
               <View key={req.id} style={styles.requestRow}>
                 <View style={styles.userInfo}>
                   <Image 
