@@ -211,16 +211,16 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
           {leagueMembers.length === 0 ? (
             <Text style={styles.emptyText}>Nenhum membro aprovado nesta liga ainda.</Text>
           ) : (
-            leagueMembers.map((member) => {
-              const prof = profiles?.find(p => p.id === member.user_id);
-              return (
+                    {leagueMembers.map((member) => {
+            const userProf = (profiles && profiles.length > 0) ? profiles.find(p => p.id === member.user_id) : null;
+            return (
                 <View key={member.id} style={styles.memberRow}>
                   <View style={styles.userInfo}>
                     <Image 
-                      source={{ uri: prof?.avatar_url || 'https://placeholder.com' }} 
+                     source={{ uri: userProf?.avatar_url || 'https://placeholder.com' }}
                       style={styles.userAvatar} 
                     />
-                    <Text style={styles.userNickname}>{prof?.nickname || 'Atleta Anônimo'}</Text>
+                    <Text style={styles.userNickname}>{userProf?.nickname || 'Atleta Anônimo'}</Text>
                   </View>
                   <Text style={styles.memberStatusTag}>{member.status}</Text>
                 </View>
