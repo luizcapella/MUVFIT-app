@@ -210,8 +210,8 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
           <Text style={[styles.subSectionTitle, { marginTop: 14 }]}>👥 Membros:</Text>
           {leagueMembers.length === 0 ? (
             <Text style={styles.emptyText}>Nenhum membro aprovado nesta liga ainda.</Text>
-          ) : (
-                    {leagueMembers.map((member) => {
+          ) : ({
+                    leagueMembers.map((member) => {
             const userProf = (profiles && profiles.length > 0) ? profiles.find(p => p.id === member.user_id) : null;
             return (
                 <View key={member.id} style={styles.memberRow}>
