@@ -300,3 +300,4 @@ const styles = StyleSheet.create({
   btnReject: { backgroundColor: '#ef4444' },
   memberStatusTag: { fontSize: 11, fontWeight: 'bold', color: '#f97316', backgroundColor: '#ffedd5', paddingVertical: 2, paddingHorizontal: 6, borderRadius: 4 }
 });
+
