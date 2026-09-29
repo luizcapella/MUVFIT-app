@@ -268,7 +268,7 @@ export default function App() {
 
   async function fetchDataFromSupabase() {
     try {
-         // Busca em tempo real da tabela nova challenges_v2
+           // Busca em tempo real da tabela nova challenges_v2
     const { data: challengesData, error: challengesError } = await supabase
       .from('challenges_v2')
       .select('*');
@@ -284,13 +284,23 @@ export default function App() {
 
       setChallenges(mappedChallenges);
 
-      // CORREÇÃO: Define a primeira liga ativa lendo o índice zero corretamente sem erros de sintaxe
       if (mappedChallenges.length > 0 && !activeChallengeId) {
         setActiveChallengeId(mappedChallenges[0].id);
       }
     } else {
       setChallenges([]);
     }
+
+    // DOWNLOAD EM TEMPO REAL: Busca as solicitações de membros de liras
+    const { data: reqMembersData } = await supabase
+      .from('league_memberships')
+      .select('*');
+    
+    // DOWNLOAD EM TEMPO REAL: Busca as solicitações de atletas para os desafios
+    const { data: reqChallengesData } = await supabase
+      .from('challenge_applications')
+      .select('*');
+
 
       const { data: membersData } = await supabase.from('memberships').select('*');
       if (membersData) setMemberships(membersData);
