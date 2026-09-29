@@ -4,7 +4,8 @@ import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'rea
 import { supabase } from '../../supabaseClient';
 
 export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetchDataFromSupabase, challenges, currentUser, profiles }) {
-    // 1. ESTADOS PARA CONTROLE VISUAL DA SANFONA E REQUISITOS
+  
+  // 1. ESTADOS PARA CONTROLE VISUAL DA SANFONA E REQUISITOS
   const [isManagementOpen, setIsManagementOpen] = React.useState(false);
   const [leagueRequests, setLeagueRequests] = React.useState([]);
   const [challengeRequests, setChallengeRequests] = React.useState([]);
@@ -19,22 +20,17 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
 
   async function loadManagementData() {
     try {
-      // Baixa todas as solicitações de membros de ligas
       const { data: memData } = await supabase.from('league_memberships').select('*');
-      // Baixa todas as solicitações de atletas para os desafios
       const { data: chalData } = await supabase.from('challenge_applications').select('*');
 
       if (memData) {
-        // Separa quem está aguardando aprovação
         const requests = memData.filter(m => m.status === 'Aguardando Aprovação do Admin');
-        // Separa quem já é membro ativo na liga (Telespectadores, Pendentes ou Ativos)
         const approved = memData.filter(m => m.status !== 'Aguardando Aprovação do Admin');
 
         setLeagueRequests(requests);
         setLeagueMembers(approved);
       }
       if (chalData) {
-        // Filtra pedidos pendentes para o desafio interno
         setChallengeRequests(chalData.filter(c => c.status === 'Pendente'));
       }
     } catch (err) {
@@ -46,7 +42,6 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
   async function handleLeagueDecision(requestId, userId, leagueId, accept) {
     try {
       if (accept) {
-        // Se aceito, muda o status do usuário na liga para TELESPECTADOR
         const { error } = await supabase
           .from('league_memberships')
           .update({ status: 'TELESPECTADOR' })
@@ -55,7 +50,6 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
         if (error) throw error;
         alert('Usuário aceito como TELESPECTADOR 👀 com sucesso!');
       } else {
-        // Se rejeitado, remove a solicitação da tabela para liberar o botão dele de novo
         const { error } = await supabase
           .from('league_memberships')
           .delete()
@@ -75,18 +69,12 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
   async function handleChallengeDecision(applicationId, userId, leagueId, accept) {
     try {
       if (accept) {
-        // 1. Atualiza o status da aplicação para Aceito
         await supabase.from('challenge_applications').update({ status: 'Aceito' }).eq('id', applicationId);
-        // 2. Promove o status dele na liga de ATLETA PENDENTE para ATLETA ATIVO de forma definitiva
         await supabase.from('league_memberships').update({ status: 'ATLETA ATIVO' }).eq('league_id', leagueId).eq('user_id', userId);
-        
         alert('Atleta aprovado com sucesso! Agora ele é um ATLETA ATIVO ⚡');
       } else {
-        // 1. Atualiza o status da aplicação para Recusado
         await supabase.from('challenge_applications').update({ status: 'Recusado' }).eq('id', applicationId);
-        // 2. Retorna o status dele na liga de volta para TELESPECTADOR 👀 para ele poder tentar de novo depois se quiser
         await supabase.from('league_memberships').update({ status: 'TELESPECTADOR' }).eq('league_id', leagueId).eq('user_id', userId);
-        
         alert('Inscrição no desafio recusada.');
       }
       await loadManagementData();
@@ -96,7 +84,7 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
     }
   }
 
-  // Lógica para validar ou rejeitar o treino diretamente no Supabase
+  // 5. FUNÇÃO ORIGINAL MANTIDA: MODERAÇÃO DE TREINOS FISICAIS
   async function handleModerateWorkout(workoutId, newStatus) {
     try {
       const { error } = await supabase
@@ -105,23 +93,20 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
         .eq('id', workoutId);
 
       if (error) {
-        alert('Erro ao moderar treino: ' + error.message);
+        alert('Erro ao atualizar status do treino.');
         return;
       }
 
-      alert(newStatus === 'approved' ? '🎯 Treino aprovado! Pontos computados.' : '❌ Treino rejeitado.');
-      
-      // Remove da lista pendente local imediatamente
-      setPendingWorkouts(pendingWorkouts.filter(w => w.id !== workoutId));
-      
-      // Atualiza os dados gerais da liga para computar os novos pontos no Ranking/Feed
+      alert(newStatus === 'approved' ? 'Treino aprovado com sucesso! 🎉' : 'Treino rejeitado.');
+      if (setPendingWorkouts) {
+        setPendingWorkouts(prev => prev.filter(w => w.id !== workoutId));
+      }
       if (fetchDataFromSupabase) await fetchDataFromSupabase();
     } catch (err) {
-      console.log('Erro na moderação:', err);
+      console.log(err);
     }
   }
-
-   return (
+  return (
     <ScrollView contentContainerStyle={styles.container}>
       
       {/* 1º NOVA ABA COLAPSÁVEL: GERENCIAMENTO DA LIGA/DESAFIO DA LIGA */}
@@ -211,13 +196,13 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
           {leagueMembers.length === 0 ? (
             <Text style={styles.emptyText}>Nenhum membro aprovado nesta liga ainda.</Text>
           ) : (
-              {leagueMembers.map((member) => {
-            const userProf = (profiles && profiles.length > 0) ? profiles.find(p => p.id === member.user_id) : null;
-            return (
+            leagueMembers.map((member) => {
+              const userProf = profiles?.find(p => p.id === member.user_id);
+              return (
                 <View key={member.id} style={styles.memberRow}>
                   <View style={styles.userInfo}>
                     <Image 
-                     source={{ uri: userProf?.avatar_url || 'https://placeholder.com' }}
+                      source={{ uri: userProf?.avatar_url || 'https://placeholder.com' }} 
                       style={styles.userAvatar} 
                     />
                     <Text style={styles.userNickname}>{userProf?.nickname || 'Atleta Anônimo'}</Text>
@@ -255,20 +240,20 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
               </Text>
 
               <Text style={styles.labelMandatory}>📸 EVIDÊNCIA DA FOTO OBRIGATÓRIA:</Text>
-              {workout.evidence_url ? (
-                <Image source={{ uri: workout.evidence_url }} style={styles.evidenceImage} resizeMode="cover" />
+              {workout.evidence_image_url ? (
+                <Image source={{ uri: workout.evidence_image_url }} style={styles.evidenceImage} resizeMode="cover" />
               ) : (
                 <Text style={styles.alertText}>⚠️ Treino enviado sem foto de evidência!</Text>
               )}
 
-              <Text style={styles.pointsWorth}><Text style={styles.boldText}>🔥 Pontos:</Text> {workout.points_computed || 0} pts</Text>
+              <Text style={styles.pointsEarned}><Text style={styles.boldText}>🔥 Pontos:</Text> {workout.points_computed || 0} pts</Text>
 
               <View style={styles.actionRow}>
-                <TouchableOpacity style={[styles.btn, styles.rejectBtn]} onPress={() => handleModerateWorkout(workout.id, 'rejected')}>
+                <TouchableOpacity style={[styles.btn, styles.btnRejectOld]} onPress={() => handleModerateWorkout(workout.id, 'rejected')}>
                   <Text style={styles.btnText}>❌ Rejeitar Treino</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={[styles.btn, styles.approveBtn]} onPress={() => handleModerateWorkout(workout.id, 'approved')}>
+                <TouchableOpacity style={[styles.btn, styles.btnApproveOld]} onPress={() => handleModerateWorkout(workout.id, 'approved')}>
                   <Text style={styles.btnText}>✅ Aprovar Treino</Text>
                 </TouchableOpacity>
               </View>
@@ -278,31 +263,28 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
       )}
     </ScrollView>
   );
-}
 
 const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: '#f8fafc' },
-  pageTitle: { fontSize: 18, fontWeight: 'bold', color: '#1e3a8a', marginBottom: 4 },
-  pageSubtitle: { fontSize: 12, color: '#64748b', marginBottom: 16 },
-  emptyText: { fontSize: 13, color: '#64748b', fontStyle: 'italic', textAlign: 'center', marginTop: 24 },
-  adminCard: { backgroundColor: '#ffffff', borderRadius: 10, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: '#cbd5e1', elevation: 1 },
-  metaRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  userLabel: { fontSize: 12, color: '#475569' },
-  boldText: { fontWeight: 'bold', color: '#1e3a8a' },
-  dateLabel: { fontSize: 11, color: '#64748b' },
-  workoutInfo: { fontSize: 13, color: '#334155', marginBottom: 2 },
-  activityText: { color: '#f97316', fontWeight: 'bold' },
-  captionText: { fontSize: 12, color: '#475569', fontStyle: 'italic', marginVertical: 6 },
-  evidenceImage: { width: '100%', height: 200, borderRadius: 8, marginTop: 8, backgroundColor: '#e2e8f0' },
-  alertBox: { backgroundColor: '#fee2e2', padding: 12, borderRadius: 6, marginTop: 6, alignItems: 'center' },
-  alertText: { color: '#b91c1c', fontSize: 12, fontWeight: 'bold' },
-  pointsWorth: { fontSize: 14, fontWeight: 'bold', color: '#16a34a', marginTop: 10 },
-  actionRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  btn: { flex: 1, paddingVertical: 12, borderRadius: 6, alignItems: 'center' },
-  approveBtn: { backgroundColor: '#16a34a' },
-  rejectBtn: { backgroundColor: '#dc2626' },
-  btnText: { color: '#ffffff', fontSize: 13, fontWeight: 'bold' },
-    accordionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#e2e8f0', padding: 12, borderRadius: 8, marginBottom: 14, borderWidth: 1, borderColor: '#cbd5e1' },
+  container: { padding: 16, backgroundColor: '#FAF9F6', paddingBottom: 60 },
+  pageTitle: { fontSize: 16, fontWeight: 'bold', color: '#1E3A8A', marginTop: 14, marginBottom: 4 },
+  pageSubtitle: { fontSize: 12, color: '#64748B', marginBottom: 16 },
+  adminCard: { backgroundColor: '#FFFFFF', padding: 16, borderRadius: 12, marginBottom: 16, borderHorizontalWidth: 1, borderColor: '#E2E8F0' },
+  workoutHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  userLabel: { fontSize: 12, fontWeight: 'bold', color: '#475569' },
+  userValue: { fontSize: 12, color: '#0F172A', fontWeight: '500' },
+  workoutInfo: { fontSize: 13, color: '#334155', marginBottom: 4 },
+  boldText: { fontWeight: 'bold', color: '#1E3A8A' },
+  labelMandatory: { fontSize: 11, fontWeight: 'bold', color: '#F97316', marginTop: 10, marginBottom: 6 },
+  evidenceImage: { width: '100%', height: 180, borderRadius: 8, marginTop: 4, marginBottom: 10 },
+  alertText: { fontSize: 12, color: '#EF4444', fontStyle: 'italic', marginVertical: 8 },
+  pointsEarned: { fontSize: 14, fontWeight: 'bold', color: '#16A34A', marginTop: 6, marginBottom: 12 },
+  actionRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
+  btn: { flex: 1, paddingVertical: 10, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  btnRejectOld: { backgroundColor: '#EF4444' },
+  btnApproveOld: { backgroundColor: '#22C55E' },
+  btnText: { color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' },
+  emptyText: { fontSize: 12, color: '#64748B', fontStyle: 'italic', padding: 6 },
+  accordionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#e2e8f0', padding: 12, borderRadius: 8, marginBottom: 14, borderWidth: 1, borderColor: '#cbd5e1' },
   accordionTitle: { fontSize: 13, fontWeight: 'bold', color: '#1e3a8a' },
   accordionArrow: { fontSize: 11, color: '#475569' },
   accordionContent: { backgroundColor: '#ffffff', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#cbd5e1', marginBottom: 14 },
