@@ -585,13 +585,16 @@ export default function App() {
         />
       )}
 
-      {currentScreen === 'admin' && currentUser?.isAdmin && (
+                 {currentScreen === 'admin' && currentUser?.isAdmin && (
         <AdminScreen
-          pendingWorkouts={pendingWorkouts}
-          setPendingWorkouts={setPendingWorkouts}
+          challenges={challenges}
+          currentUser={currentUser}
+          profiles={profiles}
+          handleSignOut={handleSignOut}
           fetchDataFromSupabase={fetchDataFromSupabase}
         />
       )}
+
       {currentScreen === 'config' && (
         <ConfigScreen
           currentUser={currentUser}
