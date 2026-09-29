@@ -3,13 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { supabase } from '../../supabaseClient';
 
-export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetchDataFromSupabase, challenges, currentUser, profiles }) {
+export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetchDataFromSupabase, challenges, currentUser, profilesData }) {
   
   // 1. ESTADOS PARA CONTROLE VISUAL DA SANFONA E REQUISITOS
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const [leagueRequests, setLeagueRequests] = useState([]);
   const [challengeRequests, setChallengeRequests] = useState([]);
   const [leagueMembers, setLeagueMembers] = useState([]);
+  const [profiles, setProfiles] = useState([]);
 
   // 2. FUNÇÃO EFEITO: CARREGA AS SOLICITAÇÕES DA LIGA DO ADMIN EM TEMPO REAL
   useEffect(() => {
@@ -20,6 +21,8 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
 
   async function loadManagementData() {
     try {
+            const { data: profsData } = await supabase.from('profiles').select('*');
+      if (profsData) setProfiles(profsData);
       const { data: memData } = await supabase.from('league_memberships').select('*');
       const { data: chalData } = await supabase.from('challenge_applications').select('*');
 
