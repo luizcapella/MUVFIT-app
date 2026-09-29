@@ -1,18 +1,18 @@
 // src/screens/AdminScreen.js
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { supabase } from '../../supabaseClient';
 
 export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetchDataFromSupabase, challenges, currentUser, profiles }) {
   
   // 1. ESTADOS PARA CONTROLE VISUAL DA SANFONA E REQUISITOS
-  const [isManagementOpen, setIsManagementOpen] = React.useState(false);
-  const [leagueRequests, setLeagueRequests] = React.useState([]);
-  const [challengeRequests, setChallengeRequests] = React.useState([]);
-  const [leagueMembers, setLeagueMembers] = React.useState([]);
+  const [isManagementOpen, setIsManagementOpen] = useState(false);
+  const [leagueRequests, setLeagueRequests] = useState([]);
+  const [challengeRequests, setChallengeRequests] = useState([]);
+  const [leagueMembers, setLeagueMembers] = useState([]);
 
   // 2. FUNÇÃO EFEITO: CARREGA AS SOLICITAÇÕES DA LIGA DO ADMIN EM TEMPO REAL
-  React.useEffect(() => {
+  useEffect(() => {
     if (currentUser?.is_admin || currentUser?.isAdmin) {
       loadManagementData();
     }
@@ -264,7 +264,6 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
     </ScrollView>
   );
 }
-
 const styles = StyleSheet.create({
   container: { padding: 16, backgroundColor: '#FAF9F6', paddingBottom: 60 },
   pageTitle: { fontSize: 16, fontWeight: 'bold', color: '#1E3A8A', marginTop: 14, marginBottom: 4 },
@@ -301,4 +300,3 @@ const styles = StyleSheet.create({
   btnReject: { backgroundColor: '#ef4444' },
   memberStatusTag: { fontSize: 11, fontWeight: 'bold', color: '#f97316', backgroundColor: '#ffedd5', paddingVertical: 2, paddingHorizontal: 6, borderRadius: 4 }
 });
-
