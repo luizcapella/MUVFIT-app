@@ -268,26 +268,29 @@ export default function App() {
 
   async function fetchDataFromSupabase() {
     try {
-          // Busca em tempo real da tabela novachallenges_v2
+       // Busca em tempo real da tabela nova challenges_v2
     const { data: challengesData, error: challengesError } = await supabase
       .from('challenges_v2')
       .select('*');
 
     if (!challengesError && challengesData) {
-      // MAPEAMENTO CRUCIAL: Se o banco usa creator_id, garantimos que o app também enxergue created_by para compatibilidade das listas
+      // Sincroniza o creator_id com a propriedade created_by usada pelas listas
       const mappedChallenges = challengesData.map(liga => ({
         ...liga,
-        created_by: liga.creator_id || liga.created_by
+        created_by: liga.creator_id || liga.created_by,
+        creator_id: liga.creator_id || liga.created_by
       }));
 
       setChallenges(mappedChallenges);
 
+      // CORREÇÃO: Pega o id do primeiro item [0] da lista de desafios válidos
       if (mappedChallenges.length > 0 && !activeChallengeId) {
         setActiveChallengeId(mappedChallenges[0].id);
       }
     } else {
       setChallenges([]);
     }
+
 
       const { data: membersData } = await supabase.from('memberships').select('*');
       if (membersData) setMemberships(membersData);
