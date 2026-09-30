@@ -7,11 +7,14 @@ import CustomPicker from '../components/CustomPicker';
 export default function DashboardScreen({
   currentUser,
   fetchDataFromSupabase,
-  challenges
+  challenges,
+  selectedProfileId
 }) {
   // Controle do modal de edição de perfil
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLeaguePickerOpen, setIsLeaguePickerOpen] = useState(false);
+  // Se não houver ID selecionado ou se o ID for igual ao meu, eu sou o dono do perfil
+  const isOwner = !selectedProfileId || selectedProfileId === currentUser?.id;
 
 
   // Estados dos campos do Perfil do Atleta
@@ -197,9 +200,11 @@ export default function DashboardScreen({
           <Text style={styles.athleteAgeLabel}>📅 Idade: {calculateComputedAge(profileBirthDate)}</Text>
           <Text style={styles.statusBadgeText}>⚙️ Status: <Text style={styles.statusHighlight}>Atleta Ativo</Text></Text>
           
-          <TouchableOpacity style={styles.editProfileTriggerBtn} onPress={() => setIsEditModalOpen(true)}>
-            <Text style={styles.editProfileTriggerBtnText}>✏️ EDITAR PERFIL</Text>
-          </TouchableOpacity>
+                    {isOwner && (
+            <TouchableOpacity style={styles.editProfileTriggerBtn} onPress={() => setIsEditModalOpen(true)}>
+              <Text style={styles.editProfileTriggerBtnText}>📝 EDITAR PERFIL</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
