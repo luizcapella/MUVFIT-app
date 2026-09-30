@@ -48,9 +48,8 @@ export default function App() {
   const [editGender, setEditGender] = useState('Masculino');
   const [editAvatar, setEditAvatar] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
-
   const [athletePerfScope, setAthletePerfScope] = useState('global');
-
+  const [selectedProfileId, setSelectedProfileId] = useState(null);
   const [weightHistoryList, setWeightHistoryList] = useState([]);
   const [targetWeightValue, setTargetWeightValue] = useState('75.0');
   const [isWeightChartModalOpen, setIsWeightChartModalOpen] = useState(false);
@@ -578,6 +577,29 @@ export default function App() {
             }}
           />
       )}
+          {currentScreen === 'atleta' && (
+            <DashboardScreen
+              currentUser={currentUser}
+              athletePerfScope={athletePerfScope}
+              setAthletePerfScope={setAthletePerfScope}
+              leagueRequests={leagueRequests}
+              challengeRequests={challengeRequests}
+              setIsWeightChartModalOpen={setIsWeightChartModalOpen}
+              setNewWeightValueInput={setNewWeightValueInput}
+              setIsModalityRadarModalOpen={setIsModalityRadarModalOpen}
+              setSelectedModalityPeriod={setSelectedModalityPeriod}
+              setIsKmChartModalOpen={setIsKmChartModalOpen}
+              setSelectedKmFilterActivity={setSelectedKmFilterActivity}
+              setSelectedKmPeriod={setSelectedKmPeriod}
+              setIsTimeChartModalOpen={setIsTimeChartModalOpen}
+              setSelectedTimePeriod={setSelectedTimePeriod}
+              selectedLeagueFilter={selectedLeagueFilter}
+              setSelectedAthleteFilter={setSelectedAthleteFilter}
+              fetchDataFromSupabase={fetchDataFromSupabase}
+              selectedProfileId={selectedProfileId}
+            />
+          )}
+
       {currentScreen === 'ligas' && (
         <LigasScreen
           challenges={challenges}
