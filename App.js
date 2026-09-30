@@ -269,9 +269,10 @@ export default function App() {
   async function fetchDataFromSupabase() {
     try {
            // Busca em tempo real da tabela nova challenges_v2
-    const { data: challengesData, error: challengesError } = await supabase
+       const { data: challengesData, error: challengesError } = await supabase
       .from('challenges_v2')
-      .select('*');
+      .select('*')
+      .order('created_at', { ascending: true });
 
     if (!challengesError && challengesData) {
       // Força a conversão do ID para texto comum para manter compatibilidade absoluta com o app
