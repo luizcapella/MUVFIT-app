@@ -1,8 +1,23 @@
 // src/screens/RankingScreen.js
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { supabase } from '../../supabaseClient';
 
 export default function RankingScreen({ memberships, currentUser, onNavigateToProfile }) {
+    const [profiles, setProfiles] = React.useState([]);
+
+  React.useEffect(() => {
+    async function loadProfiles() {
+      try {
+        const { data } = await supabase.from('profiles').select('*');
+        if (data) setProfiles(data);
+      } catch (err) {
+        console.log('Erro ao carregar perfis no ranking:', err);
+      }
+    }
+    loadProfiles();
+  }, []);
+
   // Ordena os atletas por pontos no ranking (do maior para o menor)
   const sortedRanking = [...memberships].sort((a, b) => {
     const ptsA = a.ranking_points || 0;
@@ -23,10 +38,14 @@ export default function RankingScreen({ memberships, currentUser, onNavigateToPr
       ) : (
         <View style={styles.rankingList}>
           {sortedRanking.map((member, index) => {
-            const isPodium = index < 3;
+                        const isPodium = index < 3;
             const isMe = member.user_id === currentUser?.id;
+            
+            // Encontra o perfil real deste atleta para puxar foto e apelido atualizados
+            const realProf = profiles?.find(p => p.id === member.user_id);
 
             return (
+
               <View 
                 key={member.id || index} 
                 style={[
@@ -44,7 +63,7 @@ export default function RankingScreen({ memberships, currentUser, onNavigateToPr
 
                 {/* 2. FOTO DO PERFIL */}
                 <Image 
-                  source={{ uri: member.user_avatar || 'https://placeholder.com' }} 
+                 source={{ uri: realProf?.avatar_url || 'https://placeholder.com' }}
                   style={styles.userAvatar} 
                 />
 
@@ -56,7 +75,7 @@ export default function RankingScreen({ memberships, currentUser, onNavigateToPr
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.userName, isMe && styles.userNameMe]}>
-                      {member.user_nickname || member.user_name || 'Atleta MuvFit'} {isMe && '(Você)'}
+                      {realProf?.nickname || 'Atleta MuvFit'} {isMe && '(Você)'}
                     </Text>
                   </TouchableOpacity>
 
