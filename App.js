@@ -3,12 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { supabase } from './supabaseClient';
 
-// Importação das Telas do Sistema
-import DashboardScreen from './screens/DashboardScreen';
-import RankingScreen from './screens/RankingScreen';
-import AdminScreen from './screens/AdminScreen';
-import FeedScreen from './screens/FeedScreen';
-import ConfigScreen from './screens/ConfigScreen';
+// Importação Correta das Telas do Sistema
+import DashboardScreen from './src/screens/DashboardScreen';
+import RankingScreen from './src/screens/RankingScreen';
+import AdminScreen from './src/screens/AdminScreen';
+import FeedScreen from './src/screens/FeedScreen';
+import ConfigScreen from './src/screens/ConfigScreen';
 
 // Componentes Customizados Globais
 const CustomPicker = ({ label, selectedValue, onValueChange, options }) => (
