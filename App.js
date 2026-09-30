@@ -531,7 +531,7 @@ export default function App() {
             options={challenges.map(c => ({ label: String(c?.title || 'Desafio'), value: String(c?.id || '') }))}
           />
         ) : (
-                    {/* 🔍 BARRA BRANCA DE PESQUISA INTEGRADA NA FAIXA AZUL */}
+                       {/* 🔍 BARRA BRANCA DE PESQUISA INTEGRADA NA FAIXA AZUL */}
           <TextInput
             style={{
               width: '100%',
@@ -553,6 +553,7 @@ export default function App() {
               }
             }}
           />
+
           <View style={{ padding: 10, backgroundColor: '#1e40af', borderRadius: 6, marginTop: 8 }}>
             <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: 'bold' }}>⏳ Carregando desafios disponíveis...</Text>
           </View>
