@@ -49,7 +49,7 @@ export default function LigasScreen({ challenges, memberships, currentUser, hand
     const nextStatus = currentStatus === 'Fechado' ? 'Aberto' : 'Fechado';
     try {
       const { error } = await supabase
-        .from('challenges')
+        .from('challenges_v2')
         .update({ status_inscription: nextStatus })
         .eq('id', challengeId);
 
