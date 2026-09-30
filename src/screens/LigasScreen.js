@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
   resultRowItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   resultItemName: { fontSize: 13, fontWeight: 'bold', color: '#334155' },
   userResultInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  userResultAvatar: { width: 28 height: 28, borderRadius: 14, backgroundColor: '#cbd5e1' },
+  userResultAvatar: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#cbd5e1' },
   resultActionBtn: { backgroundColor: '#f97316', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
   resultActionBtnText: { color: '#ffffff', fontSize: 11, fontWeight: 'bold' },
   noResultsText: { fontSize: 12, color: '#64748b', fontStyle: 'italic', textAlign: 'center', marginTop: 10 }
