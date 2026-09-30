@@ -112,7 +112,54 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
   return (
     <ScrollView contentContainerStyle={styles.container}>
       
-      {/* 1º NOVA ABA COLAPSÁVEL: GERENCIAMENTO DA LIGA/DESAFIO DA LIGA */}
+     
+      {/* 2º SEÇÃO MANTIDA INTEGRALMENTE: PAINEL DE MODERAÇÃO ADMINISTRATIVA */}
+      <Text style={styles.pageTitle}>🛡️ Painel de Moderação Administrativa</Text>
+      <Text style={styles.pageSubtitle}>Fiscalize as evidências de imagem para liberar a pontuação oficial.</Text>
+
+      {pendingWorkouts.length === 0 ? (
+        <Text style={styles.emptyText}>Não há treinos aguardando validação no momento. Bom descanso!</Text>
+      ) : (
+        pendingWorkouts.map((workout) => {
+          const userProfile = profiles?.find(p => p.id === workout.user_id);
+          return (
+            <View key={workout.id} style={styles.adminCard}>
+              <View style={styles.workoutHeader}>
+                <Text style={styles.userLabel}>Atleta ID:</Text>
+                <Text style={styles.userValue}>
+                  {userProfile?.nickname || workout.user_id.substring(0, 8)}...
+                </Text>
+              </View>
+
+              <Text style={styles.workoutInfo}><Text style={styles.boldText}>Atividade:</Text> {workout.activity}</Text>
+              <Text style={styles.workoutInfo}>
+                <Text style={styles.boldText}>Distância:</Text> {workout.km_distance} Km / <Text style={styles.boldText}>Tempo:</Text> {workout.time_spent ? `${workout.time_spent} min` : 'N/A'}
+              </Text>
+
+              <Text style={styles.labelMandatory}>📸 EVIDÊNCIA DA FOTO OBRIGATÓRIA:</Text>
+              {workout.evidence_image_url ? (
+                <Image source={{ uri: workout.evidence_image_url }} style={styles.evidenceImage} resizeMode="cover" />
+              ) : (
+                <Text style={styles.alertText}>⚠️ Treino enviado sem foto de evidência!</Text>
+              )}
+
+              <Text style={styles.pointsEarned}><Text style={styles.boldText}>🔥 Pontos:</Text> {workout.points_computed || 0} pts</Text>
+
+              <View style={styles.actionRow}>
+                <TouchableOpacity style={[styles.btn, styles.btnRejectOld]} onPress={() => handleModerateWorkout(workout.id, 'rejected')}>
+                  <Text style={styles.btnText}>❌ Rejeitar Treino</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={[styles.btn, styles.btnApproveOld]} onPress={() => handleModerateWorkout(workout.id, 'approved')}>
+                  <Text style={styles.btnText}>✅ Aprovar Treino</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        })
+      )}
+
+   {/* 1º NOVA ABA COLAPSÁVEL: GERENCIAMENTO DA LIGA/DESAFIO DA LIGA */}
       <TouchableOpacity 
         style={styles.accordionHeader} 
         onPress={() => setIsManagementOpen(!isManagementOpen)}
@@ -220,51 +267,6 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
         </View>
       )}
 
-      {/* 2º SEÇÃO MANTIDA INTEGRALMENTE: PAINEL DE MODERAÇÃO ADMINISTRATIVA */}
-      <Text style={styles.pageTitle}>🛡️ Painel de Moderação Administrativa</Text>
-      <Text style={styles.pageSubtitle}>Fiscalize as evidências de imagem para liberar a pontuação oficial.</Text>
-
-      {pendingWorkouts.length === 0 ? (
-        <Text style={styles.emptyText}>Não há treinos aguardando validação no momento. Bom descanso!</Text>
-      ) : (
-        pendingWorkouts.map((workout) => {
-          const userProfile = profiles?.find(p => p.id === workout.user_id);
-          return (
-            <View key={workout.id} style={styles.adminCard}>
-              <View style={styles.workoutHeader}>
-                <Text style={styles.userLabel}>Atleta ID:</Text>
-                <Text style={styles.userValue}>
-                  {userProfile?.nickname || workout.user_id.substring(0, 8)}...
-                </Text>
-              </View>
-
-              <Text style={styles.workoutInfo}><Text style={styles.boldText}>Atividade:</Text> {workout.activity}</Text>
-              <Text style={styles.workoutInfo}>
-                <Text style={styles.boldText}>Distância:</Text> {workout.km_distance} Km / <Text style={styles.boldText}>Tempo:</Text> {workout.time_spent ? `${workout.time_spent} min` : 'N/A'}
-              </Text>
-
-              <Text style={styles.labelMandatory}>📸 EVIDÊNCIA DA FOTO OBRIGATÓRIA:</Text>
-              {workout.evidence_image_url ? (
-                <Image source={{ uri: workout.evidence_image_url }} style={styles.evidenceImage} resizeMode="cover" />
-              ) : (
-                <Text style={styles.alertText}>⚠️ Treino enviado sem foto de evidência!</Text>
-              )}
-
-              <Text style={styles.pointsEarned}><Text style={styles.boldText}>🔥 Pontos:</Text> {workout.points_computed || 0} pts</Text>
-
-              <View style={styles.actionRow}>
-                <TouchableOpacity style={[styles.btn, styles.btnRejectOld]} onPress={() => handleModerateWorkout(workout.id, 'rejected')}>
-                  <Text style={styles.btnText}>❌ Rejeitar Treino</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={[styles.btn, styles.btnApproveOld]} onPress={() => handleModerateWorkout(workout.id, 'approved')}>
-                  <Text style={styles.btnText}>✅ Aprovar Treino</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          );
-        })
-      )}
     </ScrollView>
   );
 }
