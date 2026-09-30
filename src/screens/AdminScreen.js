@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { supabase } from '../../supabaseClient';
 
-export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetchDataFromSupabase, challenges, currentUser, profilesData }) {
+export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetchDataFromSupabase, challenges, currentUser, profilesData, selectedLeagueFilter }) {
   
   // 1. ESTADOS PARA CONTROLE VISUAL DA SANFONA E REQUISITOS
   const [isManagementOpen, setIsManagementOpen] = useState(false);
@@ -19,25 +19,73 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
     }
   }, [challenges, currentUser]);
 
-  async function loadManagementData() {
+    async function loadManagementData() {
+    // ITEM 4: Captura dinamicamente o ID da liga ativa no dropdown do topo
+    const currentLeagueId = challenges?.find(c => c.name === selectedLeagueFilter || c.id === selectedLeagueFilter)?.id;
+    if (!currentLeagueId) return;
+
     try {
-            const { data: profsData } = await supabase.from('profiles').select('*');
+      const { data: profsData } = await supabase.from('profiles').select('*');
       if (profsData) setProfiles(profsData);
-      const { data: memData } = await supabase.from('league_memberships').select('*');
-      const { data: chalData } = await supabase.from('challenge_applications').select('*');
 
-      if (memData) {
-        const requests = memData.filter(m => m.status === 'Aguardando Aprovação do Admin');
-        const approved = memData.filter(m => m.status !== 'Aguardando Aprovação do Admin');
+      // ITEM 4: Busca solicitações de entrada filtradas estritamente por esta liga
+      const { data: reqData } = await supabase
+        .from('league_memberships')
+        .select('*')
+        .eq('status', 'Aguardando Aprovação do Admin')
+        .eq('league_id', currentLeagueId);
+      if (reqData) setLeagueRequests(reqData);
 
-        setLeagueRequests(requests);
-        setLeagueMembers(approved);
-      }
-      if (chalData) {
-        setChallengeRequests(chalData.filter(c => c.status === 'Pendente'));
-      }
+      // ITEM 4: Busca solicitações de atletas ativos filtradas estritamente por esta liga
+      const { data: chalData } = await supabase
+        .from('challenge_applications')
+        .select('*')
+        .eq('status', 'Pendente')
+        .eq('league_id', currentLeagueId);
+      if (chalData) setChallengeRequests(chalData);
+
+      // ITEM 4: Busca a lista de membros já aprovados filtrados estritamente por esta liga
+      const { data: memData } = await supabase
+        .from('league_memberships')
+        .select('*')
+        .in('status', ['TELESPECTADOR', 'ATLETA PENDENTE', 'ATLETA ATIVO'])
+        .eq('league_id', currentLeagueId);
+      if (memData) setLeagueMembers(memData);
+
     } catch (err) {
-      console.log('Erro ao carregar moderação de ligas:', err);
+      console.log('Erro ao carregar dados de gerência por liga:', err);
+    }
+  }
+
+  // ITEM 3: Função para remover permanentemente um membro da liga com trava de segurança anti auto-remoção
+  async function handleRemoveMember(memberUserId, membershipId) {
+    if (memberUserId === currentUser?.id) {
+      alert("Você não pode remover a si mesmo! ❌");
+      return;
+    }
+
+    const confirmDelete = window.confirm("Tem certeza que deseja remover este membro permanentemente da Liga?");
+    if (!confirmDelete) return;
+
+    try {
+      // Remove da tabela de vinculação de membros
+      const { error: memError } = await supabase
+        .from('league_memberships')
+        .delete()
+        .eq('id', membershipId);
+
+      if (memError) throw memError;
+
+      // Limpa também qualquer solicitação de desafio pendente vinculada ao usuário
+      await supabase
+        .from('challenge_applications')
+        .delete()
+        .eq('user_id', memberUserId);
+
+      alert("Membro removido da liga com sucesso! 👤❌");
+      await loadManagementData();
+    } catch (err) {
+      alert("Erro ao remover membro: " + err.message);
     }
   }
 
@@ -250,16 +298,27 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
             leagueMembers.map((member) => {
               const userProf = profiles?.find(p => p.id === member.user_id);
               return (
-                <View key={member.id} style={styles.memberRow}>
-                  <View style={styles.userInfo}>
-                    <Image 
-                      source={{ uri: userProf?.avatar_url || 'https://placeholder.com' }} 
-                      style={styles.userAvatar} 
-                    />
-                    <Text style={styles.userNickname}>{userProf?.nickname || 'Atleta Anônimo'}</Text>
-                  </View>
-                  <Text style={styles.memberStatusTag}>{member.status}</Text>
+                              <View key={member.id} style={styles.memberRow}>
+                <View style={styles.userInfo}>
+                  <Image 
+                    source={{ uri: userProf?.avatar_url || 'https://placeholder.com' }} 
+                    style={styles.userAvatar} 
+                  />
+                  <Text style={styles.userNickname}>{userProf?.nickname || 'Atleta Anônimo'}</Text>
                 </View>
+                
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={styles.memberStatusTag}>{member.status}</Text>
+                  
+                  {/* ITEM 3: Botão Remover Seguro com Trava Anti Auto-Remoção */}
+                  <TouchableOpacity 
+                    style={[styles.actionBtn, { backgroundColor: '#EF4444', marginLeft: 8, paddingHorizontal: 10, paddingVertical: 6 }]} 
+                    onPress={() => handleRemoveMember(member.user_id, member.id)}
+                  >
+                    <Text style={[styles.btnText, { fontSize: 11 }]}>REMOVER</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
               );
             })
           )}
