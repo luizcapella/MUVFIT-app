@@ -595,6 +595,8 @@ export default function App() {
               setSelectedAthleteFilter={setSelectedAthleteFilter}
               fetchDataFromSupabase={fetchDataFromSupabase}
               selectedProfileId={selectedProfileId}
+              setSelectedAthleteFilter={setSelectedAthleteFilter}
+              selectedLeagueFilter={selectedLeagueFilter}
             />
           )}
 
