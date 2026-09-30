@@ -56,13 +56,11 @@ export default function App() {
   const [newWeightValueInput, setNewWeightValueInput] = useState('');
   const [newWeightDateInput, setNewWeightDateInput] = useState('Set/2026');
   const [isDeleteModeActive, setIsDeleteModeActive] = useState(false);
-
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   const [chartStartDateFilter, setChartStartDateFilter] = useState('Mar/2026');
   const [chartEndDateFilter, setChartEndDateFilter] = useState('Out/2026');
-
   const [isModalityRadarModalOpen, setIsModalityRadarModalOpen] = useState(false);
   const [selectedModalityPeriod, setSelectedModalityPeriod] = useState('Todos');
-
   const [isKmChartModalOpen, setIsKmChartModalOpen] = useState(false);
   const [selectedKmFilterActivity, setSelectedKmFilterActivity] = useState('Todos');
   const [selectedKmPeriod, setSelectedKmPeriod] = useState('Todos');
@@ -533,6 +531,28 @@ export default function App() {
             options={challenges.map(c => ({ label: String(c?.title || 'Desafio'), value: String(c?.id || '') }))}
           />
         ) : (
+                    {/* 🔍 BARRA BRANCA DE PESQUISA INTEGRADA NA FAIXA AZUL */}
+          <TextInput
+            style={{
+              width: '100%',
+              height: 38,
+              backgroundColor: '#FFFFFF',
+              borderRadius: 8,
+              paddingHorizontal: 12,
+              marginTop: 10,
+              fontSize: 13,
+              color: '#1e293b'
+            }}
+            placeholder="🔍 Pesquisar Atletas ou Ligas..."
+            placeholderTextColor="#94a3b8"
+            value={globalSearchQuery}
+            onChangeText={(text) => {
+              setGlobalSearchQuery(text);
+              if (typeof handleGlobalSearch === 'function') {
+                handleGlobalSearch(text);
+              }
+            }}
+          />
           <View style={{ padding: 10, backgroundColor: '#1e40af', borderRadius: 6, marginTop: 8 }}>
             <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: 'bold' }}>⏳ Carregando desafios disponíveis...</Text>
           </View>
