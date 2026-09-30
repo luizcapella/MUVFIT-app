@@ -531,34 +531,37 @@ export default function App() {
             options={challenges.map(c => ({ label: String(c?.title || 'Desafio'), value: String(c?.id || '') }))}
           />
         ) : (
-                       {/* 🔍 BARRA BRANCA DE PESQUISA INTEGRADA NA FAIXA AZUL */}
-          <TextInput
-            style={{
-              width: '100%',
-              height: 38,
-              backgroundColor: '#FFFFFF',
-              borderRadius: 8,
-              paddingHorizontal: 12,
-              marginTop: 10,
-              fontSize: 13,
-              color: '#1e293b'
-            }}
-            placeholder="🔍 Pesquisar Atletas ou Ligas..."
-            placeholderTextColor="#94a3b8"
-            value={globalSearchQuery}
-            onChangeText={(text) => {
-              setGlobalSearchQuery(text);
-              if (typeof handleGlobalSearch === 'function') {
-                handleGlobalSearch(text);
-              }
-            }}
-          />
 
           <View style={{ padding: 10, backgroundColor: '#1e40af', borderRadius: 6, marginTop: 8 }}>
             <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: 'bold' }}>⏳ Carregando desafios disponíveis...</Text>
           </View>
         )}
       </View>
+{/* 🔍 BARRA BRANCA DE PESQUISA INTEGRADA NA FAIXA AZUL */}
+      <TextInput
+        style={{
+          width: '90%',
+          height: 38,
+          backgroundColor: '#FFFFFF',
+          borderRadius: 8,
+          paddingHorizontal: 12,
+          marginTop: 10,
+          marginBottom: 10,
+          fontSize: 13,
+          color: '#1e293b',
+          alignSelf: 'center'
+        }}
+        placeholder="🔍 Pesquisar Atletas ou Ligas..."
+        placeholderTextColor="#94a3b8"
+        value={globalSearchQuery}
+        onChangeText={(text) => {
+          setGlobalSearchQuery(text);
+          if (typeof handleGlobalSearch === 'function') {
+            handleGlobalSearch(text);
+          }
+        }}
+      />
+
 
            {currentScreen === 'dashboard' && (
         <DashboardScreen
