@@ -591,12 +591,8 @@ export default function App() {
               setSelectedKmPeriod={setSelectedKmPeriod}
               setIsTimeChartModalOpen={setIsTimeChartModalOpen}
               setSelectedTimePeriod={setSelectedTimePeriod}
-              selectedLeagueFilter={selectedLeagueFilter}
-              setSelectedAthleteFilter={setSelectedAthleteFilter}
               fetchDataFromSupabase={fetchDataFromSupabase}
               selectedProfileId={selectedProfileId}
-              setSelectedAthleteFilter={setSelectedAthleteFilter}
-              selectedLeagueFilter={selectedLeagueFilter}
             />
           )}
 
