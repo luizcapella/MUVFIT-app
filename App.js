@@ -569,10 +569,16 @@ export default function App() {
         />
       )}
            {currentScreen === 'ranking' && (
-        <RankingScreen
-          memberships={memberships}
-          currentUser={currentUser}
-        />
+                 <RankingScreen
+            memberships={memberships}
+            currentUser={currentUser}
+            profiles={profiles}
+            onNavigateToProfile={(targetUserId) => {
+              // Só altera para edição se for o próprio usuário logado, caso contrário fica em modo leitura
+              setSelectedProfileId(targetUserId); 
+              setCurrentScreen("atleta");
+            }}
+          />
       )}
       {currentScreen === 'ligas' && (
         <LigasScreen
