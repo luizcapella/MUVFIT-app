@@ -573,6 +573,7 @@ export default function App() {
             memberships={memberships}
             currentUser={currentUser}
             onNavigateToProfile={(targetUserId) => {
+              setSelectedProfileId(targetUserId);
               setCurrentScreen("atleta");
             }}
           />
