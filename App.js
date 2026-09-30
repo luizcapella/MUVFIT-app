@@ -582,8 +582,6 @@ export default function App() {
               currentUser={currentUser}
               athletePerfScope={athletePerfScope}
               setAthletePerfScope={setAthletePerfScope}
-              leagueRequests={leagueRequests}
-              challengeRequests={challengeRequests}
               setIsWeightChartModalOpen={setIsWeightChartModalOpen}
               setNewWeightValueInput={setNewWeightValueInput}
               setIsModalityRadarModalOpen={setIsModalityRadarModalOpen}
