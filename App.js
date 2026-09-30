@@ -3,14 +3,15 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { supabase } from './supabaseClient';
 
-// Importação Correta das Telas do Sistema
+// Importação Oficial de Todas as Telas do Ecossistema MuvFit
 import DashboardScreen from './src/screens/DashboardScreen';
 import RankingScreen from './src/screens/RankingScreen';
 import AdminScreen from './src/screens/AdminScreen';
 import FeedScreen from './src/screens/FeedScreen';
 import ConfigScreen from './src/screens/ConfigScreen';
+import LigasScreen from './src/screens/LigasScreen';
 
-// Componentes Customizados Globais
+// Seletor Customizado do Cabeçalho Azul
 const CustomPicker = ({ label, selectedValue, onValueChange, options }) => (
   <View style={styles.pickerContainer}>
     <Text style={styles.pickerLabel}>{label}</Text>
@@ -73,14 +74,14 @@ export default function App() {
     loadAllUsersForSearch();
   }, []);
 
-  // --- REGRA DE ATUALIZAÇÃO DA PESQUISA DINÂMICA CONFORME FILTRO ---
+  // --- RECARREGA A PESQUISA QUANDO MUDAR A ABA DE FILTRO ---
   useEffect(() => {
     if (globalSearchQuery.trim()) {
       executeGlobalSearch(globalSearchQuery, globalSearchFilter);
     }
   }, [globalSearchFilter]);
 
-  // Lógica principal que processa a digitação e monta as duas listas do overlay
+  // Função dinâmica que processa a digitação na barra fixa e popula o overlay flutuante
   const executeGlobalSearch = (text, currentFilter) => {
     if (!text.trim()) {
       setGlobalSearchResults({ users: [], leagues: [] });
@@ -91,12 +92,12 @@ export default function App() {
     setGlobalSearchActive(true);
     const term = text.toLowerCase();
 
-    // 1. Filtra a lista de atletas cadastrados
+    // 1. Filtra Atletas pelo Apelido
     const matchedUsers = globalUsersList.filter(u => 
       u.nickname?.toLowerCase().includes(term)
     );
 
-    // 2. Filtra a lista de ligas/desafios cadastrados
+    // 2. Filtra Ligas/Desafios pelo Nome ou Título
     const matchedLeagues = (challenges || []).filter(l => 
       l.name?.toLowerCase().includes(term) || l.title?.toLowerCase().includes(term)
     );
@@ -138,7 +139,7 @@ export default function App() {
 
   async function fetchDataFromSupabase() {
     try {
-      // Carrega os desafios ordenados por data de criação para blindar o layout
+      // Carrega os desafios ordenados por data de criação para manter a ordem fixa
       const { data: chalData } = await supabase
         .from('challenges_v2')
         .select('*')
@@ -151,7 +152,7 @@ export default function App() {
         }
       }
 
-      // Carrega as inscrições e pontos do ranking associados
+      // Carrega as inscrições e pontos do ranking associados à liga ativa
       const currentLeague = activeChallengeId || (chalData && chalData[0]?.id);
       if (currentLeague) {
         const { data: memData } = await supabase
@@ -226,7 +227,6 @@ export default function App() {
             executeGlobalSearch(text, globalSearchFilter);
           }}
         />
-
         {/* 🟩 WINDOW OVERLAY (SÓ ABRE E FLUTUA POR CIMA DE TUDO SE HOUVER DIGITAÇÃO) */}
         {globalSearchActive && (
           <View style={styles.globalSearchOverlay}>
@@ -321,7 +321,7 @@ export default function App() {
             </ScrollView>
           </View>
         )}
-      </View>
+      </View> {/* Fim do topHeader */}
 
       {/* ⬜ 2. ÁREA BRANCA DE CONTEÚDO DINÂMICO (CORPO DO APP) */}
       <View style={styles.contentBody}>
@@ -342,7 +342,7 @@ export default function App() {
             setSelectedTimePeriod={setSelectedTimePeriod}
             selectedLeagueFilter={selectedLeagueFilter}
             fetchDataFromSupabase={fetchDataFromSupabase}
-            selectedProfileId={null} // null garante que abre o perfil do próprio dono logado
+            selectedProfileId={null} // null abre o próprio perfil logado
           />
         )}
 
@@ -363,20 +363,18 @@ export default function App() {
             setSelectedTimePeriod={setSelectedTimePeriod}
             selectedLeagueFilter={selectedLeagueFilter}
             fetchDataFromSupabase={fetchDataFromSupabase}
-            selectedProfileId={selectedProfileId} // Injeta o ID clicado no ranking ou na busca para ocultar as edições
+            selectedProfileId={selectedProfileId} // Injeta o ID clicado para travar modo leitura
           />
         )}
 
-        {/* ROTA DA TELA DE CLASSIFICAÇÃO / RANKING DA LIGA ATIVA */}
+        {/* 🏆 ROTA OFICIAL DA TELA DE LIGAS (CHAMA O COMPONENTE CORRETO E SEUS FILTROS) */}
         {currentScreen === 'ranking' && (
-          <RankingScreen
-            memberships={memberships}
+          <LigasScreen
             currentUser={currentUser}
-            selectedLeagueFilter={selectedLeagueFilter} // Entrega a liga do dropdown para isolar as pontuações e botões
-            onNavigateToProfile={(targetUserId) => {
-              setSelectedProfileId(targetUserId);
-              setCurrentScreen('atleta');
-            }}
+            desafios={challenges}
+            adesoes={memberships}
+            selectedLeagueFilter={selectedLeagueFilter}
+            setCurrentScreen={setCurrentScreen}
           />
         )}
 
@@ -384,7 +382,7 @@ export default function App() {
         {currentScreen === 'feed' && (
           <FeedScreen
             currentUser={currentUser}
-            selectedLeagueFilter={selectedLeagueFilter} // Garante o isolamento das fotos e comentários da liga ativa
+            selectedLeagueFilter={selectedLeagueFilter}
           />
         )}
 
@@ -393,7 +391,7 @@ export default function App() {
           <AdminScreen
             currentUser={currentUser}
             challenges={challenges}
-            selectedLeagueFilter={selectedLeagueFilter} // Entrega o dropdown para isolar as abas de membros e convites
+            selectedLeagueFilter={selectedLeagueFilter}
             fetchDataFromSupabase={fetchDataFromSupabase}
           />
         )}
@@ -406,7 +404,6 @@ export default function App() {
         )}
 
       </View> {/* Fim do contentBody */}
-
       {/* 🧭 3. BARRA DE NAVEGAÇÃO COMPLETA FIXA NO RODAPÉ */}
       <View style={styles.bottomNav}>
         <TouchableOpacity 
@@ -457,18 +454,18 @@ export default function App() {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#F8FAFC', // Fundo cinza claro confortável do app
+    backgroundColor: '#F8FAFC',
   },
   
   // Estilos da Faixa Azul Fixa Superior
   topHeader: {
-    backgroundColor: '#1E3A8A', // Azul escuro oficial
+    backgroundColor: '#1E3A8A',
     paddingHorizontal: 16,
     paddingTop: 40,
     paddingBottom: 16,
     borderBottomLeftRadius: 16,
     borderBottomRightRadius: 16,
-    zIndex: 9999, // Mantém a faixa azul mestre sempre empilhada no topo
+    zIndex: 9999,
     elevation: 6,
   },
   brandContainer: {
@@ -480,13 +477,13 @@ const styles = StyleSheet.create({
   brandTitle: {
     color: '#FFFFFF',
     fontSize: 20,
-    fontWeight: 'black',
+    fontWeight: '900',
     letterSpacing: 1,
   },
   brandSubtitle: {
     color: '#93C5FD',
     fontSize: 12,
-    fontWeight: 'medium',
+    fontWeight: '500',
   },
   logoutBtn: {
     backgroundColor: '#EF4444',
@@ -517,7 +514,7 @@ const styles = StyleSheet.create({
   // 🟩 WINDOW OVERLAY (PAINEL FLUTUANTE QUE SOBREPOE OS CARDS ABAIXO)
   globalSearchOverlay: {
     position: 'absolute',
-    top: 154, // Posiciona cirurgicamente logo abaixo da barra branca fixa
+    top: 154,
     left: 16,
     right: 16,
     backgroundColor: '#FFFFFF',
@@ -525,12 +522,12 @@ const styles = StyleSheet.create({
     padding: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    zIndex: 10000, // Força a janela a flutuar por cima de qualquer elemento
+    zIndex: 10000,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 6.68,
-    elevation: 12, // Sombra física projetada no Android por cima do conteúdo branco
+    elevation: 12,
   },
   overlayHeader: {
     flexDirection: 'row',
@@ -584,7 +581,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   overlayResultsScroll: {
-    maxHeight: 220, // Limita a janela de rolagem para não cobrir a tela inteira
+    maxHeight: 220,
     width: '100%',
   },
   overlayResultRow: {
@@ -619,13 +616,13 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
 
-  // Área Branca Principal
+  // Área Branca Principal de Conteúdo
   contentBody: {
     flex: 1,
     width: '100%',
     paddingHorizontal: 16,
     paddingTop: 12,
-    zIndex: 1, // Fica na camada base para sofrer a sobreposição da pesquisa
+    zIndex: 1,
   },
 
   // Estilos Globais do Dropdown
@@ -674,7 +671,7 @@ const styles = StyleSheet.create({
   loadingText: {
     color: '#FFFFFF',
     fontSize: 11,
-    fontWeight: 'medium',
+    fontWeight: '500',
   },
 
   // Estilos da Barra de Navegação Inferior (Rodapé)
