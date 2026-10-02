@@ -621,10 +621,10 @@ export default function App() {
           <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: 'bold' }}>⏳ Carregando desafios disponíveis...</Text>
         </View>
       )}
-              {globalSearchActive && (
+                        {globalSearchActive && (
             <View style={{
               position: 'absolute',
-              top: 145, // Ajusta a altura ideal logo abaixo da barra branca fixa
+              top: 145, // Fixa a altura milimétrica abaixo da barra branca
               left: 16,
               right: 16,
               backgroundColor: '#FFFFFF',
@@ -632,8 +632,8 @@ export default function App() {
               padding: 14,
               borderWidth: 1,
               borderColor: '#E2E8F0',
-              zIndex: 10000, // Força a janela a ficar na camada topo absoluta do app
-              elevation: 12, // Garante a projeção de sombra por cima dos itens de baixo
+              zIndex: 999999, // Força o empilhamento máximo sobre qualquer tela branca
+              elevation: 99, // Projeta sombra master no Android
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 6 },
               shadowOpacity: 0.35,
