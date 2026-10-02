@@ -574,7 +574,7 @@ export default function App() {
           </TouchableOpacity>
         </View>
 
-             {Array.isArray(challenges) && challenges.length > 0 ? (
+                  {Array.isArray(challenges) && challenges.length > 0 ? (
         <>
           <CustomPicker
             label="🎯 Selecione o Desafio:"
