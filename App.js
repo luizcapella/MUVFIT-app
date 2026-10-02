@@ -615,10 +615,10 @@ export default function App() {
             }}
           />
 
-          {globalSearchActive && (
+                   {globalSearchActive && (
             <View style={{
               position: 'absolute',
-              top: 155,
+              top: 145, // Ajusta a altura ideal logo abaixo da barra branca fixa
               left: 16,
               right: 16,
               backgroundColor: '#FFFFFF',
@@ -626,13 +626,14 @@ export default function App() {
               padding: 14,
               borderWidth: 1,
               borderColor: '#E2E8F0',
-              zIndex: 10000,
-              elevation: 12,
+              zIndex: 10000, // Força a janela a ficar na camada topo absoluta do app
+              elevation: 12, // Garante a projeção de sombra por cima dos itens de baixo
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 6 },
               shadowOpacity: 0.35,
               shadowRadius: 6.68,
             }}>
+
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', paddingBottom: 6 }}>
                 <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#1E3A8A' }}>Resultados Encontrados</Text>
                 <TouchableOpacity 
