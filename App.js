@@ -615,7 +615,13 @@ export default function App() {
             }}
           />
 
-                   {globalSearchActive && (
+        </>
+      ) : (
+        <View style={{ padding: 10, backgroundColor: '#1e40af', borderRadius: 6, marginTop: 8 }}>
+          <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: 'bold' }}>⏳ Carregando desafios disponíveis...</Text>
+        </View>
+      )}
+              {globalSearchActive && (
             <View style={{
               position: 'absolute',
               top: 145, // Ajusta a altura ideal logo abaixo da barra branca fixa
@@ -709,13 +715,7 @@ export default function App() {
               </ScrollView>
             </View>
           )}
-        </>
-      ) : (
-        <View style={{ padding: 10, backgroundColor: '#1e40af', borderRadius: 6, marginTop: 8 }}>
-          <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: 'bold' }}>⏳ Carregando desafios disponíveis...</Text>
         </View>
-      )}
-    </View>
 
            {currentScreen === 'dashboard' && (
         <DashboardScreen
