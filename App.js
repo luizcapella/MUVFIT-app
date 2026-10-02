@@ -64,6 +64,57 @@ export default function App() {
   const [isKmChartModalOpen, setIsKmChartModalOpen] = useState(false);
   const [selectedKmFilterActivity, setSelectedKmFilterActivity] = useState('Todos');
   const [selectedKmPeriod, setSelectedKmPeriod] = useState('Todos');
+  const [globalSearchFilter, setGlobalSearchFilter] = useState('Todos'); // 'Todos', 'Usuários', 'Ligas'
+  const [globalSearchActive, setGlobalSearchActive] = useState(false);
+  const [globalUsersList, setGlobalUsersList] = useState([]);
+  const [globalSearchResults, setGlobalSearchResults] = useState({ users: [], leagues: [] });
+
+  // Pré-carrega os atletas do Supabase para viabilizar a busca por apelido
+  useEffect(() => {
+    async function loadUsersForSearch() {
+      try {
+        const { data } = await supabase.from('profiles').select('id, nickname, avatar_url');
+        if (data) setGlobalUsersList(data);
+      } catch (err) {
+        console.log('Erro ao buscar atletas para pesquisa global:', err);
+      }
+    }
+    loadUsersForSearch();
+  }, []);
+
+  // Executa os filtros de busca assim que o usuário digita na barra fixa
+  const executeGlobalSearch = (text, currentFilter = globalSearchFilter) => {
+    if (!text.trim()) {
+      setGlobalSearchResults({ users: [], leagues: [] });
+      setGlobalSearchActive(false);
+      return;
+    }
+
+    setGlobalSearchActive(true);
+    const term = text.toLowerCase();
+
+    const matchedUsers = globalUsersList.filter(u => 
+      u.nickname?.toLowerCase().includes(term)
+    );
+
+    // Busca compatível tanto com 'challenges' quanto com qualquer variável de ligas do app
+    const leaguesSource = typeof challenges !== 'undefined' ? challenges : [];
+    const matchedLeagues = leaguesSource.filter(l => 
+      l.name?.toLowerCase().includes(term) || l.title?.toLowerCase().includes(term)
+    );
+
+    setGlobalSearchResults({
+      users: currentFilter === 'Ligas' ? [] : matchedUsers,
+      leagues: currentFilter === 'Usuários' ? [] : matchedLeagues
+    });
+  };
+
+  // Força a atualização dos resultados se o usuário alternar as abas de filtro
+  useEffect(() => {
+    if (globalSearchQuery.trim()) {
+      executeGlobalSearch(globalSearchQuery, globalSearchFilter);
+    }
+  }, [globalSearchFilter]);
 
   const [isTimeChartModalOpen, setIsTimeChartModalOpen] = useState(false);
   const [selectedTimePeriod, setSelectedTimePeriod] = useState('Todos');
