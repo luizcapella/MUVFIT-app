@@ -574,7 +574,7 @@ export default function App() {
           </TouchableOpacity>
         </View>
 
-                  {Array.isArray(challenges) && challenges.length > 0 ? (
+             {Array.isArray(challenges) && challenges.length > 0 && (
         <>
           <CustomPicker
             label="🎯 Selecione o Desafio:"
@@ -709,10 +709,6 @@ export default function App() {
             </View>
           )}
         </>
-      ) : (
-        <View style={{ padding: 10, backgroundColor: '#1e40af', borderRadius: 6, marginTop: 8 }}>
-          <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: 'bold' }}>⏳ Carregando desafios disponíveis...</Text>
-        </View>
       )}
 
            {currentScreen === 'dashboard' && (
