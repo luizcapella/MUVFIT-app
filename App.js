@@ -621,102 +621,7 @@ export default function App() {
           <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: 'bold' }}>⏳ Carregando desafios disponíveis...</Text>
         </View>
       )}
-                        {globalSearchActive && (
-            <View style={{
-              position: 'fixed',
-              top: 145, // Fixa a altura milimétrica abaixo da barra branca
-              left: 16,
-              right: 16,
-              backgroundColor: '#FFFFFF',
-              borderRadius: 12,
-              padding: 14,
-              borderWidth: 1,
-              borderColor: '#E2E8F0',
-              zIndex: 999999, // Força o empilhamento máximo sobre qualquer tela branca
-              elevation: 99, // Projeta sombra master no Android
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.35,
-              shadowRadius: 6.68,
-            }}>
-
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', paddingBottom: 6 }}>
-                <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#1E3A8A' }}>Resultados Encontrados</Text>
-                <TouchableOpacity 
-                  style={{ backgroundColor: '#FEE2E2', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}
-                  onPress={() => {
-                    setGlobalSearchQuery('');
-                    setGlobalSearchActive(false);
-                  }}
-                >
-                  <Text style={{ fontSize: 11, color: '#EF4444', fontWeight: 'bold' }}>Fechar X</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Abas de Filtros de Tags */}
-              <View style={{ flexDirection: 'row', gap: 6, marginBottom: 10 }}>
-                {['Todos', 'Usuários', 'Ligas'].map((filterName) => (
-                  <TouchableOpacity
-                    key={filterName}
-                    style={{
-                      flex: 1,
-                      paddingVertical: 6,
-                      borderRadius: 6,
-                      backgroundColor: globalSearchFilter === filterName ? '#1E3A8A' : '#F1F5F9',
-                      alignItems: 'center',
-                      borderWidth: 1,
-                      borderColor: '#E2E8F0'
-                    }}
-                    onPress={() => setGlobalSearchFilter(filterName)}
-                  >
-                    <Text style={{ fontSize: 11, fontWeight: 'bold', color: globalSearchFilter === filterName ? '#FFFFFF' : '#64748B' }}>
-                      {filterName}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {/* Resultados Roláveis */}
-              <ScrollView style={{ maxHeight: 200, width: '100%' }} nestedScrollEnabled={true}>
-                {(globalSearchResults?.leagues || []).map((liga) => (
-                  <TouchableOpacity 
-                    key={liga.id} 
-                    style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}
-                    onPress={() => {
-                      setActiveChallengeId(liga.id);
-                      setCurrentScreen('ranking');
-                      setGlobalSearchQuery('');
-                      setGlobalSearchActive(false);
-                    }}
-                  >
-                    <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#334155' }}>🏆 {liga.name || liga.title}</Text>
-                    <Text style={{ fontSize: 11, color: '#F97316', fontWeight: 'bold' }}>Ver Ranking →</Text>
-                  </TouchableOpacity>
-                ))}
-
-                {(globalSearchResults?.users || []).map((user) => (
-                  <TouchableOpacity 
-                    key={user.id} 
-                    style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}
-                    onPress={() => {
-                      setSelectedProfileId(user.id);
-                      setCurrentScreen('atleta');
-                      setGlobalSearchQuery('');
-                      setGlobalSearchActive(false);
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <Image source={{ uri: user.avatar_url || 'https://placeholder.com' }} style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: '#CBD5E1' }} />
-                      <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#334155' }}> {user.nickname || 'Atleta'}</Text>
-                    </View>
-                    <Text style={{ fontSize: 11, color: '#1E3A8A', fontWeight: 'bold' }}>Ver Perfil →</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-        </View>
-
+                        
            {currentScreen === 'dashboard' && (
         <DashboardScreen
           currentUser={currentUser}
@@ -854,7 +759,99 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
+          {globalSearchActive && (
+            <View style={{
+              position: 'absolute',
+              top: 145, // Alinhamento milimétrico logo abaixo da faixa azul do topo
+              left: 16,
+              right: 16,
+              backgroundColor: '#FFFFFF',
+              borderRadius: 12,
+              padding: 14,
+              borderWidth: 1,
+              borderColor: '#E2E8F0',
+              zIndex: 999999, // Prioridade máxima sobre todas as telas do app
+              elevation: 24,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.45,
+              shadowRadius: 10,
+            }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', paddingBottom: 6 }}>
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#1E3A8A' }}>Resultados Encontrados</Text>
+                <TouchableOpacity 
+                  style={{ backgroundColor: '#FEE2E2', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}
+                  onPress={() => {
+                    setGlobalSearchQuery('');
+                    setGlobalSearchActive(false);
+                  }}
+                >
+                  <Text style={{ fontSize: 11, color: '#EF4444', fontWeight: 'bold' }}>Fechar X</Text>
+                </TouchableOpacity>
+              </View>
 
+              {/* Abas de Filtros de Tags */}
+              <View style={{ flexDirection: 'row', gap: 6, marginBottom: 10 }}>
+                {['Todos', 'Usuários', 'Ligas'].map((filterName) => (
+                  <TouchableOpacity
+                    key={filterName}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 6,
+                      borderRadius: 6,
+                      backgroundColor: globalSearchFilter === filterName ? '#1E3A8A' : '#F1F5F9',
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: '#E2E8F0'
+                    }}
+                    onPress={() => setGlobalSearchFilter(filterName)}
+                  >
+                    <Text style={{ fontSize: 11, fontWeight: 'bold', color: globalSearchFilter === filterName ? '#FFFFFF' : '#64748B' }}>
+                      {filterName}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Resultados Roláveis */}
+              <ScrollView style={{ maxHeight: 200, width: '100%' }} nestedScrollEnabled={true}>
+                {(globalSearchResults?.leagues || []).map((liga) => (
+                  <TouchableOpacity 
+                    key={liga.id} 
+                    style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}
+                    onPress={() => {
+                      setActiveChallengeId(liga.id);
+                      setCurrentScreen('ranking');
+                      setGlobalSearchQuery('');
+                      setGlobalSearchActive(false);
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#334155' }}>🏆 {liga.name || liga.title}</Text>
+                    <Text style={{ fontSize: 11, color: '#F97316', fontWeight: 'bold' }}>Ver Ranking →</Text>
+                  </TouchableOpacity>
+                ))}
+
+                {(globalSearchResults?.users || []).map((user) => (
+                  <TouchableOpacity 
+                    key={user.id} 
+                    style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}
+                    onPress={() => {
+                      setSelectedProfileId(user.id);
+                      setCurrentScreen('atleta');
+                      setGlobalSearchQuery('');
+                      setGlobalSearchActive(false);
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Image source={{ uri: user.avatar_url || 'https://placeholder.com' }} style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: '#CBD5E1' }} />
+                      <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#334155' }}> {user.nickname || 'Atleta'}</Text>
+                    </View>
+                    <Text style={{ fontSize: 11, color: '#1E3A8A', fontWeight: 'bold' }}>Ver Perfil →</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
       <WorkoutModal
         isOpen={isWorkoutModalOpen}
