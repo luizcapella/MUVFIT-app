@@ -164,6 +164,10 @@ export default function App() {
 
   const [commentInputs, setCommentInputs] = useState({});
   const [isWorkoutModalOpen, setIsWorkoutModalOpen] = useState(false);
+  const [isWeightChartModalOpen, setIsWeightChartModalOpen] = useState(false);
+  const [isModalityRadarModalOpen, setIsModalityRadarModalOpen] = useState(false);
+  const [isKmChartModalOpen, setIsKmChartModalOpen] = useState(false);
+  const [isTimeChartModalOpen, setIsTimeChartModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState('💪 Musculação');
 
   const getTodayISO = () => {
