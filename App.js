@@ -878,7 +878,7 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff' },
+  container: { flex: 1, backgroundColor: '#ffffff', overflow: 'visible', zIndex: 9999 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1e3a8a' },
   loadingText: { color: '#ffffff', marginTop: 12, fontWeight: 'bold' },
   authContainer: { flex: 1, backgroundColor: '#1e3a8a' },
@@ -897,7 +897,7 @@ const styles = StyleSheet.create({
   primaryBtnText: { color: '#ffffff', fontSize: 14, fontWeight: 'bold' },
   toggleAuthBtn: { marginTop: 14, alignItems: 'center' },
   toggleAuthText: { fontSize: 12, fontWeight: 'bold', color: '#1e3a8a' },
-  topHeader: { padding: 16, backgroundColor: '#1e3a8a' },
+  topHeader: { padding: 16, backgroundColor: '#1e3a8a', overflow: 'visible', zIndex: 9999 },
   brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   brandTitle: { fontSize: 22, fontWeight: '900', color: '#f97316' },
   brandSubtitle: { fontSize: 11, fontWeight: 'bold', color: '#ffffff' },
