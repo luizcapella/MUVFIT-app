@@ -623,7 +623,7 @@ export default function App() {
       )}
                         {globalSearchActive && (
             <View style={{
-              position: 'absolute',
+              position: 'fixed',
               top: 145, // Fixa a altura milimétrica abaixo da barra branca
               left: 16,
               right: 16,
