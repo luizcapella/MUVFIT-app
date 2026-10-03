@@ -621,7 +621,25 @@ export default function App() {
           <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: 'bold' }}>⏳ Carregando desafios disponíveis...</Text>
         </View>
       )}
-                      
+                        {globalSearchActive && (
+            <View style={{
+              position: 'absolute',
+              top: 145, // Fixa a altura milimétrica abaixo da barra branca
+              left: 16,
+              right: 16,
+              backgroundColor: '#FFFFFF',
+              borderRadius: 12,
+              padding: 14,
+              borderWidth: 1,
+              borderColor: '#E2E8F0',
+              zIndex: 999999, // Força o empilhamento máximo sobre qualquer tela branca
+              elevation: 99, // Projeta sombra master no Android
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.35,
+              shadowRadius: 6.68,
+            }}>
+
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', paddingBottom: 6 }}>
                 <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#1E3A8A' }}>Resultados Encontrados</Text>
                 <TouchableOpacity 
@@ -835,24 +853,7 @@ export default function App() {
           <Text style={{ color: currentScreen === 'config' ? '#f97316' : '#ffffff', fontSize: 10, fontWeight: 'bold' }}>Config</Text>
         </TouchableOpacity>
       </View>
-            {globalSearchActive && (
-            <View style={{
-              position: 'absolute',
-              top: 105, // Fixa a altura milimétrica abaixo da barra branca
-              left: 16,
-              right: 16,
-              backgroundColor: '#FFFFFF',
-              borderRadius: 12,
-              padding: 14,
-              borderWidth: 1,
-              borderColor: '#E2E8F0',
-              zIndex: 999999, // Força o empilhamento máximo sobre qualquer tela branca
-              elevation: 99, // Projeta sombra master no Android
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.35,
-              shadowRadius: 6.68,
-            }}>
+
 
 
       <WorkoutModal
