@@ -118,13 +118,10 @@ export default function App() {
 
   const [isTimeChartModalOpen, setIsTimeChartModalOpen] = useState(false);
   const [selectedTimePeriod, setSelectedTimePeriod] = useState('Todos');
-
   const [personalGoals, setPersonalGoals] = useState([]);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [newGoalText, setNewGoalText] = useState('');
-
   const [isAllEvidencesModalOpen, setIsAllEvidencesModalOpen] = useState(false);
-
   const [subAbaConfig, setSubAbaConfig] = useState('conta');
   const [accountPhone, setAccountPhone] = useState('');
   const [accountNewPassword, setAccountNewPassword] = useState('');
@@ -143,31 +140,21 @@ export default function App() {
 
   const [viewedUser, setViewedUser] = useState('');
   const [currentScreen, setCurrentScreen] = useState('dashboard');
-
   const [challenges, setChallenges] = useState([]);
   const [memberships, setMemberships] = useState([]);
   const [feedPosts, setFeedPosts] = useState([]);
   const [pendingWorkouts, setPendingWorkouts] = useState([]);
-
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('all');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-
   const [activeChallengeId, setActiveChallengeId] = useState(null);
   const [selectedLeagueFilter, setSelectedLeagueFilter] = useState('all');
-
   const [isAdminContext, setIsAdminContext] = useState(true);
-
   const [dashSectionAdmin, setDashSectionAdmin] = useState(true);
   const [dashSectionInvites, setDashSectionInvites] = useState(true);
   const [dashSectionParticipant, setDashSectionParticipant] = useState(true);
-
   const [commentInputs, setCommentInputs] = useState({});
   const [isWorkoutModalOpen, setIsWorkoutModalOpen] = useState(false);
-  const [isWeightChartModalOpen, setIsWeightChartModalOpen] = useState(false);
-  const [isModalityRadarModalOpen, setIsModalityRadarModalOpen] = useState(false);
-  const [isKmChartModalOpen, setIsKmChartModalOpen] = useState(false);
-  const [isTimeChartModalOpen, setIsTimeChartModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState('💪 Musculação');
 
   const getTodayISO = () => {
