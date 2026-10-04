@@ -1035,17 +1035,14 @@ export default function App() {
                   const diff = weightHistoryList[weightHistoryList.length - 1].weight - weightHistoryList[0].weight;
                   return `${diff > 0 ? '+' : ''}${diff.toFixed(1)} kg`;
                 })()}
-              </Text>
-            </Text>
-                         </ScrollView>
+                </Text>
               </View>
-            </View>
-          )}
-        </View>
-      )}
-    </SafeAreaView>
-  );
-}
+            )}
+          </View>
+        </ScrollView>
+      </View>
+    </View>
+  )}
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff', overflow: 'visible', zIndex: 9999 },
