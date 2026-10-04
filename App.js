@@ -1037,15 +1037,12 @@ export default function App() {
                 })()}
               </Text>
             </Text>
-          </View>
-        </View>
-         )}
+                         </ScrollView>
+              </View>
+            </View>
+          )}
         </View>
       )}
-    </SafeAreaView>
-  );
-}
- )}
     </SafeAreaView>
   );
 }
