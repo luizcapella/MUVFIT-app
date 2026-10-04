@@ -172,7 +172,8 @@ export default function App() {
   const [endMinute, setEndMinute] = useState('00');
   const [kmInput, setKmInput] = useState('');
   const [workoutCaption, setWorkoutCaption] = useState('');
-
+  const [selectedWeightPeriod, setSelectedWeightPeriod] = useState(new Date().toISOString().substring(0, 7));
+  const [newWeightValueInput, setNewWeightValueInput] = useState('');
   const [photoStart, setPhotoStart] = useState(null);
   const [photoEvidence, setPhotoEvidence] = useState(null);
   const [photoEnd, setPhotoEnd] = useState(null);
