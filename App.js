@@ -170,21 +170,6 @@ export default function App() {
   const [startMinute, setStartMinute] = useState('00');
   const [endHour, setEndHour] = useState('08');
   const [endMinute, setEndMinute] = useState('00');
-    // Estados para os campos de preenchimento manual da janela de peso
-  const [newWeightValueInput, setNewWeightValueInput] = useState('');
-  const [selectedWeightPeriod, setSelectedWeightPeriod] = useState(new Date().toISOString().substring(0, 7));
-  const [weightMetaInput, setWeightMetaInput] = useState('');
-
-  // Função simulada de salvamento para registrar o peso no gráfico com risco zero de quebra
-  const handleRegisterWeight = () => {
-    if (!newWeightValueInput.trim()) {
-      alert('Por favor, digite um peso válido antes de registrar!');
-      return;
-    }
-    alert(`Sucesso! Peso de ${newWeightValueInput} kg registrado para o período ${selectedWeightPeriod}.`);
-    // Limpa o campo do input controladamente após o registro
-    setNewWeightValueInput('');
-  };
   const [kmInput, setKmInput] = useState('');
   const [workoutCaption, setWorkoutCaption] = useState('');
 
