@@ -974,66 +974,68 @@ export default function App() {
 
                   {/* 📊 GRÁFICO DE LINHAS ROLÁVEL (SVG INTEGRADO) */}
                   <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#1E3A8A', marginBottom: 8 }}>Linha de Evolução Histórica</Text>
+                            <View style={{ borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, overflow: 'hidden', backgroundColor: '#FFFFFF', padding: 10 }}>
+            {(!weightHistoryList || weightHistoryList.length === 0) ? (
+              /* 📭 CENÁRIO VAZIO: O gráfico nasce 100% limpo, sem dados automáticos */
+              <View style={{ height: 200, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 8 }}>
+                <Text style={{ fontSize: 24, marginBottom: 6 }}>⚖️</Text>
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#64748B' }}>Nenhum peso registrado ainda</Text>
+                <Text style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>Use os campos acima para iniciar seu histórico</Text>
+              </View>
+            ) : (
+              /* 📊 CENÁRIO DINÂMICO: Só renderiza os nós caso o usuário cadastre informações reais */
+              <ScrollView horizontal={true} showsHorizontalScrollIndicator={true} style={{ width: '100%' }}>
+                <View style={{ width: Math.max(500, weightHistoryList.length * 90), height: 200, paddingRight: 20, justifyContent: 'center', position: 'relative' }}>
                   
-                  <View style={{ borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, overflow: 'hidden', backgroundColor: '#FFFFFF', padding: 10 }}>
-                    <ScrollView horizontal={true} showsHorizontalScrollIndicator={true} style={{ width: '100%' }}>
-                      <View style={{ width: 500, height: 200, paddingRight: 20, justifyContent: 'center' }}>
-                        {/* Linhas de Grade de Fundo */}
-                        <View style={{ position: 'absolute', left: 30, right: 0, top: 20, bottom: 30, justifyContent: 'space-between' }}>
-                          {[1, 2, 3, 4].map((i) => <View key={i} style={{ height: 1, backgroundColor: '#F1F5F9', width: '100%' }} />)}
-                        </View>
-
-                                               {/* 📈 LINHA DE EVOLUÇÃO GRÁFICA (ESTRUTURA NATIVA WEB BLINDADA CONTRA BUGS) */}
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 120, paddingHorizontal: 10, position: 'relative' }}>
-                          
-                          {/* Nós e Valores sobre os Pontos de Evolução */}
-                          <View style={{ position: 'absolute', left: 40, bottom: 65, alignItems: 'center' }}>
-                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#334155', marginBottom: 2 }}>79.0</Text>
-                            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#1E3A8A', borderWidth: 2, borderColor: '#FFFFFF' }} />
-                          </View>
-
-                          <View style={{ position: 'absolute', left: 130, bottom: 85, alignItems: 'center' }}>
-                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#334155', marginBottom: 2 }}>78.5</Text>
-                            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#1E3A8A', borderWidth: 2, borderColor: '#FFFFFF' }} />
-                          </View>
-
-                          <View style={{ position: 'absolute', left: 220, bottom: 55, alignItems: 'center' }}>
-                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#334155', marginBottom: 2 }}>77.8</Text>
-                            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#1E3A8A', borderWidth: 2, borderColor: '#FFFFFF' }} />
-                          </View>
-
-                          <View style={{ position: 'absolute', left: 310, bottom: 105, alignItems: 'center' }}>
-                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#334155', marginBottom: 2 }}>78.4</Text>
-                            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#1E3A8A', borderWidth: 2, borderColor: '#FFFFFF' }} />
-                          </View>
-
-                          <View style={{ position: 'absolute', left: 400, bottom: 90, alignItems: 'center' }}>
-                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#334155', marginBottom: 2 }}>78.2</Text>
-                            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#1E3A8A', borderWidth: 2, borderColor: '#FFFFFF' }} />
-                          </View>
-                        </View>
-
-                        {/* Eixo X: Período de meses visíveis com rolagem horizontal lateral */}
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#CBD5E1', paddingTop: 8, paddingHorizontal: 15, marginTop: 10 }}>
-                          <Text style={{ color: '#64748B', fontSize: 10 }}>Mai/26</Text>
-                          <Text style={{ color: '#64748B', fontSize: 10 }}>Jun/26</Text>
-                          <Text style={{ color: '#64748B', fontSize: 10 }}>Jul/26</Text>
-                          <Text style={{ color: '#64748B', fontSize: 10 }}>Ago/26</Text>
-                          <Text style={{ color: '#64748B', fontSize: 10 }}>Set/26</Text>
-                        </View>
-                      </View>
-                    </ScrollView>
+                  {/* Linhas de Grade de Fundo */}
+                  <View style={{ position: 'absolute', left: 30, right: 0, top: 20, bottom: 30, justifyContent: 'space-between' }}>
+                    {[1, 2, 3, 4].map((i) => <View key={i} style={{ height: 1, backgroundColor: '#F1F5F9', width: '100%' }} />)}
                   </View>
 
-                                  {/* Informações de Progresso e Metas Consolidadas */}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, backgroundColor: '#F8FAFC', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0' }}>
-                    <Text style={{ fontSize: 13, color: '#334155', fontWeight: 'bold' }}>
-                      🎯 Meta: <Text style={{ color: '#1E3A8A' }}>{weightMetaInput ? `${weightMetaInput} kg` : 'Não definida'}</Text>
-                    </Text>
-                    <Text style={{ fontSize: 13, color: '#334155', fontWeight: 'bold' }}>
-                      📈 Progresso Total: <Text style={{ color: '#10B981' }}>-0.8 kg</Text>
-                    </Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 120, paddingHorizontal: 10, position: 'relative' }}>
+                    {weightHistoryList.slice(-5).map((item, index) => {
+                      const minW = Math.min(...weightHistoryList.map(w => w.weight)) - 5;
+                      const maxW = Math.max(...weightHistoryList.map(w => w.weight)) + 5;
+                      const range = maxW - minW || 1;
+                      const pct = ((item.weight - minW) / range) * 80;
+
+                      return (
+                        <View key={item.id || index} style={{ alignItems: 'center', width: 60 }}>
+                          <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#334155', marginBottom: 2 }}>
+                            {parseFloat(item.weight).toFixed(1)}
+                          </Text>
+                          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#1E3A8A', borderWidth: 2, borderColor: '#FFFFFF', marginBottom: pct }} />
+                          <Text style={{ color: '#64748B', fontSize: 10, position: 'absolute', bottom: -28 }}>
+                            {item.period ? item.period.split('-').reverse().join('/') : ''}
+                          </Text>
+                        </View>
+                      );
+                    })}
                   </View>
+                </View>
+              </ScrollView>
+            )}
+          </View>
+
+          {/* 🎯 RODAPÉ COM CÁLCULOS TOTALMENTE AUTOMÁTICOS EM TEMPO REAL */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, backgroundColor: '#F8FAFC', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0' }}>
+            <Text style={{ fontSize: 13, color: '#334155', fontWeight: 'bold' }}>
+              🎯 Meta: <Text style={{ color: '#1E3A8A' }}>{weightMetaInput ? `${weightMetaInput} kg` : 'Não definida'}</Text>
+            </Text>
+            <Text style={{ fontSize: 13, color: '#334155', fontWeight: 'bold' }}>
+              📈 Progresso Total: {' '}
+              <Text style={{ 
+                color: (!weightHistoryList || weightHistoryList.length < 2) ? '#64748B' : 
+                       (weightHistoryList[weightHistoryList.length - 1].weight <= weightHistoryList[0].weight ? '#10B981' : '#EF4444')
+              }}>
+                {(() => {
+                  if (!weightHistoryList || weightHistoryList.length < 2) return '0.0 kg';
+                  const diff = weightHistoryList[weightHistoryList.length - 1].weight - weightHistoryList[0].weight;
+                  return `${diff > 0 ? '+' : ''}${diff.toFixed(1)} kg`;
+                })()}
+              </Text>
+            </Text>
+          </View>
                 </ScrollView>
               </View>
             </View>
