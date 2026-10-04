@@ -8,7 +8,11 @@ export default function DashboardScreen({
   currentUser,
   fetchDataFromSupabase,
   challenges,
-  selectedProfileId
+  selectedProfileId,
+  setIsWeightChartModalOpen,
+  setIsModalityRadarModalOpen,
+  setIsKmChartModalOpen,
+  setIsTimeChartModalOpen
 }) {
   // Controle do modal de edição de perfil
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -294,6 +298,55 @@ export default function DashboardScreen({
           <Text style={styles.squareSubLabelLabel}>🚶 PASSOS</Text>
         </View>
       </View>
+          {/* 📊 SEÇÃO DE EVOLUÇÃO E ESTATÍSTICAS DO ATLETA (ABAIXO DOS CARDS DE PONTOS) */}
+          <View style={{ marginTop: 16, marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#1E3A8A', marginBottom: 12 }}>
+              📊 Evolução & Estatísticas do Atleta
+            </Text>
+
+            {/* Primeira Fileira (Peso e Modalidades) */}
+            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#E2E8F0', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3 }}
+                onPress={() => typeof setIsWeightChartModalOpen === 'function' && setIsWeightChartModalOpen(true)}
+              >
+                <Text style={{ fontSize: 20, marginBottom: 4 }}>⚖️</Text>
+                <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#1E293B' }}>Evolução de Peso</Text>
+                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>Ver histórico e gráficos</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#E2E8F0', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3 }}
+                onPress={() => typeof setIsModalityRadarModalOpen === 'function' && setIsModalityRadarModalOpen(true)}
+              >
+                <Text style={{ fontSize: 20, marginBottom: 4 }}>📊</Text>
+                <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#1E293B' }}>Modalidades</Text>
+                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>Top práticas em %</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Segunda Fileira (KM Total e Tempo) */}
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#E2E8F0', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3 }}
+                onPress={() => typeof setIsKmChartModalOpen === 'function' && setIsKmChartModalOpen(true)}
+              >
+                <Text style={{ fontSize: 20, marginBottom: 4 }}>🏃‍♂️</Text>
+                <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#1E293B' }}>KM Total Percorrido</Text>
+                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>Distância acumulada</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#E2E8F0', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3 }}
+                onPress={() => typeof setIsTimeChartModalOpen === 'function' && setIsTimeChartModalOpen(true)}
+              >
+                <Text style={{ fontSize: 20, marginBottom: 4 }}>⏱️</Text>
+                <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#1E293B' }}>Tempo de Atividade</Text>
+                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>Minutos em movimento</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
       {/* MODAL WINDOW: EDITAR PERFIL DO ATLETA */}
       <Modal visible={isEditModalOpen} animationType="slide" transparent={false}>
         <View style={styles.modalFullWrapper}>
