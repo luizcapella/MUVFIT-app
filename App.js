@@ -982,36 +982,44 @@ export default function App() {
                           {[1, 2, 3, 4].map((i) => <View key={i} style={{ height: 1, backgroundColor: '#F1F5F9', width: '100%' }} />)}
                         </View>
 
-                        {/* Exemplo de renderização SVG dinâmico simples para Web */}
-                        <svg style={{ width: '100%', height: '100%' }}>
-                          {/* Linha que une os pontos (Traçada dinamicamente se houver dois ou mais registros) */}
-                          <polyline
-                            fill="none"
-                            stroke="#F97316"
-                            strokeWidth="3"
-                            points="50,120 140,100 230,130 320,80 410,95"
-                          />
-                          {/* Nós/Pontos do Gráfico */}
-                          <circle cx="50" cy="120" r="5" fill="#1E3A8A" />
-                          <circle cx="140" cy="100" r="5" fill="#1E3A8A" />
-                          <circle cx="230" cy="130" r="5" fill="#1E3A8A" />
-                          <circle cx="320" cy="80" r="5" fill="#1E3A8A" />
-                          <circle cx="410" cy="95" r="5" fill="#1E3A8A" />
+                                               {/* 📈 LINHA DE EVOLUÇÃO GRÁFICA (ESTRUTURA NATIVA WEB BLINDADA CONTRA BUGS) */}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 120, paddingHorizontal: 10, position: 'relative' }}>
+                          
+                          {/* Nós e Valores sobre os Pontos de Evolução */}
+                          <View style={{ position: 'absolute', left: 40, bottom: 65, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#334155', marginBottom: 2 }}>79.0</Text>
+                            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#1E3A8A', borderWidth: 2, borderColor: '#FFFFFF' }} />
+                          </View>
 
-                          {/* Textos de valor em cima dos pontos */}
-                          <text x="40" y="110" fill="#334155" fontSize="11" fontWeight="bold">79.0</text>
-                          <text x="130" y="90" fill="#334155" fontSize="11" fontWeight="bold">78.5</text>
-                          <text x="220" y="120" fill="#334155" fontSize="11" fontWeight="bold">77.8</text>
-                          <text x="310" y="70" fill="#334155" fontSize="11" fontWeight="bold">78.4</text>
-                          <text x="400" y="85" fill="#334155" fontSize="11" fontWeight="bold">78.2</text>
+                          <View style={{ position: 'absolute', left: 130, bottom: 85, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#334155', marginBottom: 2 }}>78.5</Text>
+                            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#1E3A8A', borderWidth: 2, borderColor: '#FFFFFF' }} />
+                          </View>
 
-                          {/* Eixo X: Meses de Período (Últimos 5 meses visíveis com rolagem) */}
-                          <text x="35" y="185" fill="#64748B" fontSize="10">Mai/26</text>
-                          <text x="125" y="185" fill="#64748B" fontSize="10">Jun/26</text>
-                          <text x="215" y="185" fill="#64748B" fontSize="10">Jul/26</text>
-                          <text x="305" y="185" fill="#64748B" fontSize="10">Ago/26</text>
-                          <text x="395" y="185" fill="#64748B" fontSize="10">Set/26</text>
-                        </svg>
+                          <View style={{ position: 'absolute', left: 220, bottom: 55, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#334155', marginBottom: 2 }}>77.8</Text>
+                            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#1E3A8A', borderWidth: 2, borderColor: '#FFFFFF' }} />
+                          </View>
+
+                          <View style={{ position: 'absolute', left: 310, bottom: 105, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#334155', marginBottom: 2 }}>78.4</Text>
+                            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#1E3A8A', borderWidth: 2, borderColor: '#FFFFFF' }} />
+                          </View>
+
+                          <View style={{ position: 'absolute', left: 400, bottom: 90, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#334155', marginBottom: 2 }}>78.2</Text>
+                            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#1E3A8A', borderWidth: 2, borderColor: '#FFFFFF' }} />
+                          </View>
+                        </View>
+
+                        {/* Eixo X: Período de meses visíveis com rolagem horizontal lateral */}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#CBD5E1', paddingTop: 8, paddingHorizontal: 15, marginTop: 10 }}>
+                          <Text style={{ color: '#64748B', fontSize: 10 }}>Mai/26</Text>
+                          <Text style={{ color: '#64748B', fontSize: 10 }}>Jun/26</Text>
+                          <Text style={{ color: '#64748B', fontSize: 10 }}>Jul/26</Text>
+                          <Text style={{ color: '#64748B', fontSize: 10 }}>Ago/26</Text>
+                          <Text style={{ color: '#64748B', fontSize: 10 }}>Set/26</Text>
+                        </View>
                       </View>
                     </ScrollView>
                   </View>
