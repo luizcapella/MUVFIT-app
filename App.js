@@ -1039,20 +1039,13 @@ export default function App() {
             </Text>
           </View>
         </View>
-
-                                  {/* Informações de Progresso e Metas Consolidadas */}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, backgroundColor: '#F8FAFC', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0' }}>
-                    <Text style={{ fontSize: 13, color: '#334155', fontWeight: 'bold' }}>
-                      🎯 Meta: <Text style={{ color: '#1E3A8A' }}>{weightMetaInput ? `${weightMetaInput} kg` : 'Não definida'}</Text>
-                    </Text>
-                    <Text style={{ fontSize: 13, color: '#334155', fontWeight: 'bold' }}>
-                      📈 Progresso Total: <Text style={{ color: '#10B981' }}>-0.8 kg</Text>
-                    </Text>
-                  </View>
-                </ScrollView>
-              </View>
-            </View>
-          )}
+         )}
+        </View>
+      )}
+    </SafeAreaView>
+  );
+}
+ )}
     </SafeAreaView>
   );
 }
