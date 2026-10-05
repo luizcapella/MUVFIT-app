@@ -377,6 +377,27 @@ export default function App() {
         created_by: liga.creator_id || liga.created_by,
         creator_id: liga.creator_id || liga.created_by
       }));
+            // 🔄 CARREGAMENTO AUTOMÁTICO DO HISTÓRICO DE PESOS DO ATLETA (REAL-TIME)
+      if (userId) {
+        const { data: weightData, error: weightError } = await supabase
+          .from('athlete_weights')
+          .select('*')
+          .eq('user_id', userId);
+
+        if (!weightError && weightData) {
+          // Ordena cronologicamente os períodos para a linha do gráfico traçar corretamente
+          const historicoOrdenado = weightData.sort(
+            (a, b) => new Date(a.period + '-01') - new Date(b.period + '-01')
+          );
+          setWeightHistoryList(historicoOrdenado);
+
+          // Puxa automaticamente a última meta cadastrada pelo usuário para preencher o campo
+          const registroComMeta = [...weightData].reverse().find(w => w.meta !== null);
+          if (registroComMeta) {
+            setWeightMetaInput(String(registroComMeta.meta));
+          }
+        }
+      }
 
       setChallenges(mappedChallenges);
 
