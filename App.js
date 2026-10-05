@@ -164,6 +164,62 @@ export default function App() {
     const dd = String(today.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
   };
+  const handleRegisterWeight = async () => {
+    if (!newWeightValueInput || !newWeightValueInput.trim()) {
+      alert('Por favor, insira o valor do seu peso atual (kg) para realizar o registro.');
+      return;
+    }
+
+    const weightNum = parseFloat(newWeightValueInput);
+    if (isNaN(weightNum) || weightNum <= 0) {
+      alert('Por favor, digite um número válido e maior que zero para o peso.');
+      return;
+    }
+
+    const metaNum = weightMetaInput && weightMetaInput.trim() ? parseFloat(weightMetaInput) : null;
+    const targetPeriod = selectedWeightPeriod || new Date().toISOString().substring(0, 7);
+    const userId = currentUser?.id;
+
+    if (!userId) {
+      alert('Sessão do usuário não encontrada. Por favor, faça login novamente.');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('athlete_weights')
+        .insert([
+          {
+            user_id: userId,
+            weight: weightNum,
+            period: targetPeriod,
+            meta: metaNum
+          }
+        ])
+        .select();
+
+      if (error) throw error;
+
+      const novoRegistro = {
+        id: data?.[0]?.id || Date.now(),
+        weight: weightNum,
+        period: targetPeriod,
+        meta: metaNum
+      };
+
+      const historicoAtualizado = [...(weightHistoryList || []), novoRegistro].sort(
+        (a, b) => new Date(a.period + '-01') - new Date(b.period + '-01')
+      );
+
+      setWeightHistoryList(historicoAtualizado);
+      setNewWeightValueInput('');
+      alert('Histórico de peso e evolução salvos com sucesso no Supabase!');
+
+    } catch (err) {
+      console.error('Falha na persistência de dados:', err);
+      alert('Ocorreu um erro ao salvar no banco de dados. Tente novamente mais tarde.');
+    }
+  };
 
   const [workoutDate, setWorkoutDate] = useState(getTodayISO());
   const [startHour, setStartHour] = useState('07');
