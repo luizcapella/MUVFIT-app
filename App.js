@@ -355,6 +355,23 @@ export default function App() {
       console.log('Erro ao buscar perfil:', err);
     }
   }
+  
+  // 🎯 GATILHO DE REFRESH: Reexecuta a leitura automática assim que o perfil carregar na memória
+  useEffect(() => {
+    if (currentUserProfile && currentUserProfile.weight_history) {
+      try {
+        const parsedWeights = typeof currentUserProfile.weight_history === 'string' 
+          ? JSON.parse(currentUserProfile.weight_history) 
+          : currentUserProfile.weight_history;
+        
+        if (Array.isArray(parsedWeights) && typeof setWeightHistoryList === 'function') {
+          setWeightHistoryList(parsedWeights);
+        }
+      } catch (e) {
+        console.log('Erro no gatilho de tempo do peso:', e);
+      }
+    }
+  }, [currentUserProfile]);
 
   async function fetchDataFromSupabase() {
     try {
