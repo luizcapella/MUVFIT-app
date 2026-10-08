@@ -242,7 +242,6 @@ export default function App() {
       } catch (e) {
         console.log('Erro no gatilho de tempo do peso:', e);
       }
-    };
 
     carregarPesosDoPerfilPronto();
   }, [currentUserProfile]);
