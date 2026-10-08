@@ -14,6 +14,47 @@ export default function DashboardScreen({
   setIsKmChartModalOpen,
   setIsTimeChartModalOpen
 }) {
+
+    // 📦 Estado local isolado para armazenar o histórico de pesos na tela do atleta
+  const [weightHistoryList, setWeightHistoryList] = useState([]);
+
+  // 🔄 Esteira de Carregamento Nativa: Roda automaticamente no milissegundo em que a tela abre
+  useEffect(() => {
+    const fetchAthleteWeightsDirectly = async () => {
+      // Determina o ID do perfil ativo de forma cirúrgica (Dono ou Visitante)
+      const targetUserId = selectedProfileId || currentUser?.id;
+
+      if (!targetUserId) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('athlete_weights')
+          .select('*')
+          .eq('user_id', targetUserId);
+
+        if (error) throw error;
+
+        if (data) {
+          // Ordena de forma cronológica perfeita para o gráfico traçar as linhas sem erros
+          const sortedData = data.sort(
+            (a, b) => new Date(a.period + '-01') - new Date(b.period + '-01')
+          );
+          setWeightHistoryList(sortedData);
+
+          // Sincroniza de forma automática a última meta de peso cadastrada pelo atleta
+          const lastMetaRecord = [...data].reverse().find(w => w.meta !== null);
+          if (lastMetaRecord && typeof setWeightMetaInput === 'function') {
+            setWeightMetaInput(String(lastMetaRecord.meta));
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao carregar histórico de evolução de peso:', err);
+      }
+    };
+
+    fetchAthleteWeightsDirectly();
+  }, [selectedProfileId, currentUser?.id]);
+
   // Controle do modal de edição de perfil
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLeaguePickerOpen, setIsLeaguePickerOpen] = useState(false);
