@@ -12,18 +12,19 @@ export default function DashboardScreen({
   setIsWeightChartModalOpen,
   setIsModalityRadarModalOpen,
   setIsKmChartModalOpen,
-  setIsTimeChartModalOpen
+  setIsTimeChartModalOpen,
+  weightHistoryList,
+  setWeightHistoryList,
+  setWeightMetaInput
 }) {
 
-    // 📦 Estado local isolado para armazenar o histórico de pesos na tela do atleta
-  const [weightHistoryList, setWeightHistoryList] = useState([]);
+  //  Controle do modal de edição de perfil
+  const [isEditPerfilModalOpen, setIsEditPerfilModalOpen] = useState(false);
 
-  // 🔄 Esteira de Carregamento Nativa: Roda automaticamente no milissegundo em que a tela abre
+  // 🔄 Esteira de Carregamento Nativa: Alinhada com o gráfico do App.js
   useEffect(() => {
     const fetchAthleteWeightsDirectly = async () => {
-      // Determina o ID do perfil ativo de forma cirúrgica (Dono ou Visitante)
       const targetUserId = selectedProfileId || currentUser?.id;
-
       if (!targetUserId) return;
 
       try {
@@ -34,11 +35,12 @@ export default function DashboardScreen({
 
         if (error) throw error;
 
-        if (data) {
-          // Ordena de forma cronológica perfeita para o gráfico traçar as linhas sem erros
+        if (data && typeof setWeightHistoryList === 'function') {
+          // Ordena cronologicamente os pesos para o gráfico traçar a linha perfeitamente
           const sortedData = data.sort(
             (a, b) => new Date(a.period + '-01') - new Date(b.period + '-01')
           );
+          // Envia os dados direto para a memória do App.js alimentar o gráfico maior
           setWeightHistoryList(sortedData);
 
           // Sincroniza de forma automática a última meta de peso cadastrada pelo atleta
@@ -53,7 +55,7 @@ export default function DashboardScreen({
     };
 
     fetchAthleteWeightsDirectly();
-  }, [selectedProfileId, currentUser?.id]);
+  }, [selectedProfileId, currentUser?.id, setWeightHistoryList, setWeightMetaInput]);
 
   // Controle do modal de edição de perfil
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
