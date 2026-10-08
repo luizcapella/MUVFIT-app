@@ -377,12 +377,14 @@ export default function App() {
         created_by: liga.creator_id || liga.created_by,
         creator_id: liga.creator_id || liga.created_by
       }));
-            // 🔄 CARREGAMENTO AUTOMÁTICO DO HISTÓRICO DE PESOS DO ATLETA (REAL-TIME)
-         if (currentUser?.id) {
+                  // 🔄 CARREGAMENTO AUTOMÁTICO DO HISTÓRICO DE PESOS DO ATLETA (BLINDADO CONTRA REFRESH)
+      const activeUserId = currentUser?.id || (challengesData && currentSession?.user?.id) || (await supabase.auth.getSession()).data.session?.user?.id;
+      
+      if (activeUserId) {
         const { data: weightData, error: weightError } = await supabase
           .from('athlete_weights')
           .select('*')
-          .eq('user_id', currentUser.id);
+          .eq('user_id', activeUserId);
 
         if (!weightError && weightData) {
           // Ordena cronologicamente os períodos para a linha do gráfico traçar corretamente
