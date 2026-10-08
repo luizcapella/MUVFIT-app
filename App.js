@@ -378,11 +378,11 @@ export default function App() {
         creator_id: liga.creator_id || liga.created_by
       }));
             // 🔄 CARREGAMENTO AUTOMÁTICO DO HISTÓRICO DE PESOS DO ATLETA (REAL-TIME)
-      if (userId) {
+           if (currentUser?.id) {
         const { data: weightData, error: weightError } = await supabase
           .from('athlete_weights')
           .select('*')
-          .eq('user_id', userId);
+          .eq('user_id', currentUser.id);
 
         if (!weightError && weightData) {
           // Ordena cronologicamente os períodos para a linha do gráfico traçar corretamente
