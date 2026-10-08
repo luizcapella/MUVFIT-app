@@ -424,7 +424,6 @@ export default function App() {
       .from('challenge_applications')
       .select('*');
 
-
       const { data: membersData } = await supabase.from('memberships').select('*');
       if (membersData) setMemberships(membersData);
       const { data: feedData } = await supabase.from('feed_posts').select('*');
