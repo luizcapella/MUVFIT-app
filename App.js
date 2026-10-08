@@ -216,36 +216,6 @@ export default function App() {
     }
   };
 
-    // 🎯 GATILHO DE TEMPO AUTOMÁTICO: Só busca os pesos quando o perfil estiver carregado
-  useEffect(() => {
-    const carregarPesosDoPerfilPronto = async () => {
-      // 🛡️ Se o perfil ainda estiver carregando, para aqui e espera o milissegundo certo
-      if (!currentUserProfile || !currentUserProfile.id) return;
-
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('weight_history')
-          .eq('id', currentUserProfile.id)
-          .single();
-
-        if (!error && data && data.weight_history) {
-          const parsedWeights = typeof data.weight_history === 'string' 
-            ? JSON.parse(data.weight_history) 
-            : data.weight_history;
-          
-          if (Array.isArray(parsedWeights)) {
-            // Entrega os dados salvos direto para o gráfico renderizar na tela
-            setWeightHistoryList(parsedWeights);
-          }
-        }
-      } catch (e) {
-        console.log('Erro no gatilho de tempo do peso:', e);
-      }
-
-    carregarPesosDoPerfilPronto();
-  }, [currentUserProfile]);
-
   const [workoutDate, setWorkoutDate] = useState(getTodayISO());
   const [startHour, setStartHour] = useState('07');
   const [startMinute, setStartMinute] = useState('00');
