@@ -355,22 +355,37 @@ export default function App() {
       console.log('Erro ao buscar perfil:', err);
     }
   }
-  
-  // 🎯 GATILHO DE REFRESH: Reexecuta a leitura automática assim que o perfil carregar na memória
+
+    // 🎯 GATILHO DE SINCRONIZAÇÃO DEFINITIVO (BLINDADO CONTRA CACHE)
   useEffect(() => {
-    if (currentUserProfile && currentUserProfile.weight_history) {
+    const puxarPesosDaSessaoAtiva = async () => {
       try {
-        const parsedWeights = typeof currentUserProfile.weight_history === 'string' 
-          ? JSON.parse(currentUserProfile.weight_history) 
-          : currentUserProfile.weight_history;
-        
-        if (Array.isArray(parsedWeights) && typeof setWeightHistoryList === 'function') {
-          setWeightHistoryList(parsedWeights);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const activeId = sessionData?.session?.user?.id;
+
+        if (!activeId) return;
+
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('weight_history')
+          .eq('id', activeId)
+          .single();
+
+        if (!error && data && data.weight_history) {
+          const parsed = typeof data.weight_history === 'string'
+            ? JSON.parse(data.weight_history)
+            : data.weight_history;
+
+          if (Array.isArray(parsed) && typeof setWeightHistoryList === 'function') {
+            setWeightHistoryList(parsed);
+          }
         }
-      } catch (e) {
-        console.log('Erro no gatilho de tempo do peso:', e);
+      } catch (err) {
+        console.log('Erro na leitura da sessão de peso:', err);
       }
-    }
+    };
+
+    puxarPesosDaSessaoAtiva();
   }, [currentUserProfile]);
 
   async function fetchDataFromSupabase() {
