@@ -264,11 +264,15 @@ export default function App() {
     despertaEnabled: true, despertaLimitTime: '08:00', despertaPts: '3000'
   });
 
-  const [modalitySettings, setModalitySettings] = useState({
+    const [modalitySettings, setModalitySettings] = useState({
     '💪 Musculação': { enabled: true, scoringMode: 'simple', simplePts: '10000', simplePerMin: '60' },
-    '🏋️ Crossfit / Treino Funcional': { enabled: true, scoringMode: 'simple', simplePts: '10000', simplePerMin: '60' },
-    '🫀 Treino Aeróbico': { enabled: true, scoringMode: 'simple', simplePts: '10000', simplePerMin: '60' },
-    '🏃 Corrida': { enabled: true, scoringMode: 'kmSimple', kmSimplePts: '1000', kmPerX: '1' }
+    '🏋️ Crossfit / Funcional': { enabled: true, scoringMode: 'simple', simplePts: '10000', simplePerMin: '60' },
+    '🔥 Aeróbico': { enabled: true, scoringMode: 'simple', simplePts: '10000', simplePerMin: '60' },
+    '🏃 Corrida': { enabled: true, scoringMode: 'kmSimple', kmSimplePts: '1000', kmPerX: '1' },
+    '🚶 Caminhada': { enabled: true, scoringMode: 'kmSimple', kmSimplePts: '1000', kmPerX: '1' },
+    '🚴 Bike': { enabled: true, scoringMode: 'kmSimple', kmSimplePts: '1000', kmPerX: '1' },
+    '🥋 Lutas / Esportes Individuais': { enabled: true, scoringMode: 'simple', simplePts: '10000', simplePerMin: '60' },
+    '⚽ Esportes Coletivos': { enabled: true, scoringMode: 'simple', simplePts: '10000', simplePerMin: '60' }
   });
 
   const [tiebreakers, setTiebreakers] = useState([
