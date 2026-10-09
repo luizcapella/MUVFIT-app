@@ -386,7 +386,7 @@ export default function App() {
     };
 
     puxarPesosDaSessaoAtiva();
-  }, [currentUserProfile]);
+}, [currentUser]);
 
   async function fetchDataFromSupabase() {
     try {
