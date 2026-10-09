@@ -47,7 +47,8 @@ export default function WorkoutModal({
           { label: '🚶 Caminhada', value: '🚶 Caminhada' },
           { label: '🚴 Bike', value: '🚴 Bike' },
           { label: '🥋 Lutas / Esportes Individuais', value: '🥋 Lutas / Esportes Individuais' },
-          { label: '⚽ Esportes Coletivos', value: '⚽ Esportes Coletivos' }
+          { label: '⚽ Esportes Coletivos', value: '⚽ Esportes Coletivos' },
+          { label: '👣 Passos Diários', value: '👣 Passos Diários' }
             ]}
           />
 
