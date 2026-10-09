@@ -40,11 +40,14 @@ export default function WorkoutModal({
             selectedValue={selectedActivity}
             onValueChange={(val) => setSelectedActivity(val)}
             options={[
-              { label: '💪 Musculação', value: '💪 Musculação' },
-              { label: '🏋️ Crossfit / Funcional', value: '🏋️ Crossfit / Treino Funcional' },
-              { label: '🫀 Treino Aeróbico', value: '🫀 Treino Aeróbico' },
-              { label: '🏃 Corrida / Caminhada', value: '🏃 Corrida' },
-              { label: '🚴 Ciclismo', value: '🚴 Ciclismo' }
+          { label: '💪 Musculação', value: '💪 Musculação' },
+          { label: '🏋️ Crossfit / Funcional', value: '🏋️ Crossfit / Funcional' },
+          { label: '🔥 Aeróbico', value: '🔥 Aeróbico' },
+          { label: '🏃 Corrida', value: '🏃 Corrida' },
+          { label: '🚶 Caminhada', value: '🚶 Caminhada' },
+          { label: '🚴 Bike', value: '🚴 Bike' },
+          { label: '🥋 Lutas / Esportes Individuais', value: '🥋 Lutas / Esportes Individuais' },
+          { label: '⚽ Esportes Coletivos', value: '⚽ Esportes Coletivos' }
             ]}
           />
 
