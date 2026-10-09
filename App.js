@@ -265,14 +265,15 @@ export default function App() {
   });
 
     const [modalitySettings, setModalitySettings] = useState({
-    '💪 Musculação': { enabled: true, scoringMode: 'simple', simplePts: '10000', simplePerMin: '60' },
-    '🏋️ Crossfit / Funcional': { enabled: true, scoringMode: 'simple', simplePts: '10000', simplePerMin: '60' },
-    '🔥 Aeróbico': { enabled: true, scoringMode: 'simple', simplePts: '10000', simplePerMin: '60' },
-    '🏃 Corrida': { enabled: true, scoringMode: 'kmSimple', kmSimplePts: '1000', kmPerX: '1' },
-    '🚶 Caminhada': { enabled: true, scoringMode: 'kmSimple', kmSimplePts: '1000', kmPerX: '1' },
-    '🚴 Bike': { enabled: true, scoringMode: 'kmSimple', kmSimplePts: '1000', kmPerX: '1' },
-    '🥋 Lutas / Esportes Individuais': { enabled: true, scoringMode: 'simple', simplePts: '10000', simplePerMin: '60' },
-    '⚽ Esportes Coletivos': { enabled: true, scoringMode: 'simple', simplePts: '10000', simplePerMin: '60' }
+    '💪 Musculação': { enabled: true },
+    '🏋️ Crossfit / Funcional': { enabled: true },
+    '🔥 Aeróbico': { enabled: true },
+    '🏃 Corrida': { enabled: true },
+    '🚶 Caminhada': { enabled: true },
+    '🚴 Bike': { enabled: true },
+    '🥋 Lutas / Esportes Individuais': { enabled: true },
+    '⚽ Esportes Coletivos': { enabled: true },
+    '👣 Passos Diários': { enabled: true }
   });
 
   const [tiebreakers, setTiebreakers] = useState([
