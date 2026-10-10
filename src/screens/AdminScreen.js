@@ -418,6 +418,7 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                 {isRulesDropdownOpen && (
                   <View style={{ backgroundColor: '#FFFFFF' }}>
                     {[
+                      { id: 'Base da Liga', label: '📂 Base da Liga' },
                       { id: 'Musculação', label: '💪 Musculação' },
                       { id: 'Crossfit', label: '🏋️ Crossfit / Funcional' },
                       { id: 'Aeróbico', label: '🔥 Aeróbico' },
