@@ -352,7 +352,41 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
         </View>
       )}
 
-    </ScrollView>
+        {/* ⚙️ WINDOW MODAL: DEFINIÇÃO DE REGRAS DA LIGA / BASE DA LIGA */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isRulesModalOpen}
+        onRequestClose={() => setIsRulesModalOpen(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.6)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+          <View style={{ backgroundColor: '#FFFFFF', width: '100%', height: '90%', borderRadius: 12, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 }}>
+            
+            {/* 🔝 CABEÇALHO DO MODAL */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', marginBottom: 16 }}>
+              <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1E3A8A' }}>
+                ⚙️ REGRAS DA LIGA / BASE DA LIGA
+              </Text>
+              <TouchableOpacity 
+                onPress={() => setIsRulesModalOpen(false)}
+                style={{ backgroundColor: '#EF4444', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 6 }}
+              >
+                <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: 'bold' }}>Fechar</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* 📜 CONTEÚDO ROLÁVEL (ONDE VÃO AS REGRAS E CRITÉRIOS) */}
+            <ScrollView contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={true}>
+              
+              <Text style={{ color: '#64748B', fontSize: 13, textAlign: 'center', marginTop: 20 }}>
+                A estrutura da janela foi criada com sucesso! Pronta para receber os blocos de regras.
+              </Text>
+
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>  
+</ScrollView>
   );
 }
 const styles = StyleSheet.create({
