@@ -1156,10 +1156,20 @@ export default function App() {
                           <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#334155', marginBottom: 2 }}>
                             {parseFloat(item.weight).toFixed(1)}
                           </Text>
-                          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#1E3A8A', borderWidth: 2, borderColor: '#FFFFFF', marginBottom: pct }} />
-                          <Text style={{ color: '#64748B', fontSize: 10, position: 'absolute', bottom: -28 }}>
-                            {item.period ? item.period.split('-').reverse().join('/') : ''}
-                          </Text>
+                                         {/* 🔵 PONTO INTELIGENTE: VIRA (-) BOTÃO DE EXCLUSÃO SE HABILITADO */}
+                {isWeightDeleteMode ? (
+                  <TouchableOpacity
+                    onPress={() => handleDeleteWeightItem(item.id)}
+                    style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center', zIndex: 50, marginTop: -5 }}
+                  >
+                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: 'bold', marginTop: -2 }}>-</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#1E3A8A', borderWidth: 2, borderColor: '#FFFFFF' }} />
+                )}
+                <Text style={{ color: '#647488', fontSize: 10, position: 'absolute', top: 14 }}>
+                  {item.period ? item.period.split('-').reverse().join('/') : ''}
+                </Text>
                         </View>
                       );
                     })}
