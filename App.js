@@ -68,6 +68,8 @@ export default function App() {
   const [globalSearchActive, setGlobalSearchActive] = useState(false);
   const [globalUsersList, setGlobalUsersList] = useState([]);
   const [globalSearchResults, setGlobalSearchResults] = useState({ users: [], leagues: [] });
+  // 🗑️ Estado para controlar o modo de exclusão de registros de peso
+  const [isWeightDeleteMode, setIsWeightDeleteMode] = useState(false);
 
   // Pré-carrega os atletas do Supabase para viabilizar a busca por apelido
   useEffect(() => {
@@ -213,6 +215,24 @@ export default function App() {
     } catch (err) {
       console.error('Erro ao atualizar perfil:', err);
       alert('Falha ao salvar os dados no banco.');
+    }
+  };
+  // 🗑️ Função para excluir um peso específico do histórico JSON do perfil
+  const handleDeleteWeightItem = async (itemId) => {
+    if (!itemId) return;
+    const novaLista = (weightHistoryList || []).filter(item => item.id !== itemId);
+    try {
+      const userId = currentUser?.id;
+      if (!userId) return;
+      const { error } = await supabase
+        .from('profiles')
+        .update({ weight_history: novaLista })
+        .eq('id', userId);
+      if (error) throw error;
+      setWeightHistoryList(novaLista);
+    } catch (err) {
+      console.error('Erro ao excluir registro de peso:', err);
+      alert('Não foi possível excluir o registro.');
     }
   };
 
@@ -1065,6 +1085,36 @@ export default function App() {
                         >
                           <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 14 }}>💾 Registrar Peso</Text>
                         </TouchableOpacity>
+                                {/* 🛠️ CONTROLES DE EXCLUSÃO MINIMALISTA */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12, marginBottom: 16, paddingHorizontal: 4 }}>
+        <TouchableOpacity 
+          onPress={() => setIsWeightDeleteMode(!isWeightDeleteMode)}
+          style={{ width: 18, height: 18, borderWidth: 1.5, borderColor: '#1E3A8A', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: isWeightDeleteMode ? '#1E3A8A' : 'transparent' }}
+        >
+          {isWeightDeleteMode && <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 'bold' }}>✓</Text>}
+        </TouchableOpacity>
+        <Text style={{ fontSize: 13, color: '#1E3A8A', marginLeft: 8, fontWeight: '500' }}>Habilitar Excluir Peso</Text>
+      </View>
+
+      {/* 📋 LISTAGEM COMPACTA COM BOTÃO DE MENOS (-) QUANDO ATIVADO */}
+      {isWeightDeleteMode && weightHistoryList && weightHistoryList.length > 0 && (
+        <View style={{ backgroundColor: '#F8FAFC', borderRadius: 8, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
+          <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#64748B', marginBottom: 8 }}>Clique no (-) para remover:</Text>
+          {weightHistoryList.map((item) => (
+            <View key={item.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#EDF2F7' }}>
+              <Text style={{ fontSize: 13, color: '#334155', fontWeight: '500' }}>
+                {item.period} — <Text style={{ fontWeight: 'bold' }}>{item.weight} kg</Text> {item.meta ? `(Meta: ${item.meta} kg)` : ''}
+              </Text>
+              <TouchableOpacity 
+                onPress={() => handleDeleteWeightItem(item.id)}
+                style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' }}
+              >
+                <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: 'bold', marginTop: -2 }}>-</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
                       </View>
                     </View>
                   ) : (
