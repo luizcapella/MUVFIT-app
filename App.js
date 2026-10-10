@@ -1157,15 +1157,15 @@ export default function App() {
                             {parseFloat(item.weight).toFixed(1)}
                           </Text>
                                          {/* 🔵 PONTO INTELIGENTE: VIRA (-) BOTÃO DE EXCLUSÃO SE HABILITADO */}
-                {isWeightDeleteMode ? (
+                               {isWeightDeleteMode ? (
                   <TouchableOpacity
                     onPress={() => handleDeleteWeightItem(item.id)}
-                    style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center', zIndex: 50, marginTop: -5 }}
+                    style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center', position: 'absolute', zIndex: 99, bottom: pct - 11 }}
                   >
-                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: 'bold', marginTop: -2 }}>-</Text>
+                    <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: 'bold', marginTop: -3 }}>-</Text>
                   </TouchableOpacity>
                 ) : (
-                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#1E3A8A', borderWidth: 2, borderColor: '#FFFFFF' }} />
+                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#1E3A8A', borderWidth: 2, borderColor: '#FFFFFF', position: 'absolute', bottom: pct - 5 }} />
                 )}
                 <Text style={{ color: '#647488', fontSize: 10, position: 'absolute', top: 14 }}>
                   {item.period ? item.period.split('-').reverse().join('/') : ''}
