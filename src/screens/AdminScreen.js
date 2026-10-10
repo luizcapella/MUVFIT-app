@@ -11,6 +11,8 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
   const [challengeRequests, setChallengeRequests] = useState([]);
   const [leagueMembers, setLeagueMembers] = useState([]);
   const [profiles, setProfiles] = useState([]);
+    // ⚙️ Estado para controlar a abertura da janela de regras da liga
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
 
   // 2. FUNÇÃO EFEITO: CARREGA AS SOLICITAÇÕES DA LIGA DO ADMIN EM TEMPO REAL
   useEffect(() => {
@@ -164,6 +166,30 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
       {/* 2º SEÇÃO MANTIDA INTEGRALMENTE: PAINEL DE MODERAÇÃO ADMINISTRATIVA */}
       <Text style={styles.pageTitle}>🛡️ Painel de Moderação Administrativa</Text>
       <Text style={styles.pageSubtitle}>Fiscalize as evidências de imagem para liberar a pontuação oficial.</Text>
+      {/* ⚙️ BOTÃO MESTRE: EDITAR/DEFINIR REGRAS DA LIGA/DESAFIO DA LIGA */}
+      <TouchableOpacity
+        onPress={() => setIsRulesModalOpen(true)}
+        style={{
+          backgroundColor: '#EBF1FA',
+          borderRadius: 8,
+          paddingVertical: 14,
+          paddingHorizontal: 16,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 12,
+          borderWidth: 1,
+          borderColor: '#D0E0F5'
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Text style={{ fontSize: 18, marginRight: 10 }}>⚙️</Text>
+          <Text style={{ fontSize: 14, color: '#1E3A8A', fontWeight: '600' }}>
+            EDITAR/DEFINIR REGRAS DA LIGA/DESAFIO DA LIGA
+          </Text>
+        </View>
+        <Text style={{ fontSize: 14, color: '#1E3A8A', fontWeight: 'bold' }}>➔</Text>
+      </TouchableOpacity>
 
       {pendingWorkouts.length === 0 ? (
         <Text style={styles.emptyText}>Não há treinos aguardando validação no momento. Bom descanso!</Text>
@@ -199,7 +225,7 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                 </TouchableOpacity>
 
                 <TouchableOpacity style={[styles.btn, styles.btnApproveOld]} onPress={() => handleModerateWorkout(workout.id, 'approved')}>
-                  <Text style={styles.btnText}>✅ Aprovar Treino</Text>
+                  <Text style={styles.btnText}>✅  Treino</Text>
                 </TouchableOpacity>
               </View>
             </View>
