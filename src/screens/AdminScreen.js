@@ -13,6 +13,9 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
   const [profiles, setProfiles] = useState([]);
     // ⚙️ Estado para controlar a abertura da janela de regras da liga
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
+    // 📂 Estados de controle para o retângulo expansível de regras
+  const [isRulesDropdownOpen, setIsRulesDropdownOpen] = useState(false);
+  const [selectedRuleTab, setSelectedRuleTab] = useState('Base da Liga');
 
   // 2. FUNÇÃO EFEITO: CARREGA AS SOLICITAÇÕES DA LIGA DO ADMIN EM TEMPO REAL
   useEffect(() => {
@@ -375,12 +378,67 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
               </TouchableOpacity>
             </View>
 
-            {/* 📜 CONTEÚDO ROLÁVEL (ONDE VÃO AS REGRAS E CRITÉRIOS) */}
-            <ScrollView contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={true}>
+                       {/* 📜 CONTEÚDO ROLÁVEL COM RETÂNGULO EXPANSÍVEL */}
+            <ScrollView contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
               
-              <Text style={{ color: '#64748B', fontSize: 13, textAlign: 'center', marginTop: 20 }}>
-                A estrutura da janela foi criada com sucesso! Pronta para receber os blocos de regras.
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#64748B', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Selecione o Item para Configurar:
               </Text>
+
+              {/* 📦 RETÂNGULO MESTRE UNIFICADO */}
+              <View style={{ borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 8, backgroundColor: '#FFFFFF', overflow: 'hidden' }}>
+                
+                {/* 🔝 TOPO FIXO: SEMPRE DISPONÍVEL (BASE DA LIGA) */}
+                <TouchableOpacity
+                  onPress={() => setIsRulesDropdownOpen(!isRulesDropdownOpen)}
+                  style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, backgroundColor: '#F8FAFC', borderBottomWidth: isRulesDropdownOpen ? 1 : 0, borderColor: '#E2E8F0' }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 16, marginRight: 10 }}>📂</Text>
+                    <Text style={{ fontSize: 14, color: '#1E3A8A', fontWeight: '700' }}>Base da Liga</Text>
+                  </View>
+                  <Text style={{ fontSize: 12, color: '#64748B', transform: [{ rotate: isRulesDropdownOpen ? '90deg' : '0deg' }] }}>➔</Text>
+                </TouchableOpacity>
+
+                {/* 🔽 LISTA EXPANSÍVEL: RENDERIZA AS OUTRAS 9 OPÇÕES QUANDO ABERTO */}
+                {isRulesDropdownOpen && (
+                  <View style={{ backgroundColor: '#FFFFFF' }}>
+                    {[
+                      { id: 'Musculação', label: '💪 Musculação' },
+                      { id: 'Crossfit', label: '🏋️ Crossfit / Funcional' },
+                      { id: 'Aeróbico', label: '🔥 Aeróbico' },
+                      { id: 'Corrida', label: '🏃 Corrida' },
+                      { id: 'Caminhada', label: '🚶 Caminhada' },
+                      { id: 'Bike', label: '🚴 Bike' },
+                      { id: 'Lutas', label: '🥋 Lutas / Esportes Individuais' },
+                      { id: 'Esportes Coletivos', label: '⚽ Esportes Coletivos' },
+                      { id: 'Passos Diários', label: '👣 Passos Diários' }
+                    ].map((item) => (
+                      <TouchableOpacity
+                        key={item.id}
+                        onPress={() => {
+                          setSelectedRuleTab(item.id);
+                          setIsRulesDropdownOpen(false); // Fecha o menu ao escolher
+                        }}
+                        style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', backgroundColor: selectedRuleTab === item.id ? '#F0F5FF' : '#FFFFFF' }}
+                      >
+                        <Text style={{ fontSize: 14, color: '#334155', fontWeight: selectedRuleTab === item.id ? '600' : '400' }}>
+                          {item.label}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: '#94A3B8' }}>➔</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              {/* 🖥️ CONTAINER DE RENDERIZAÇÃO DINÂMICA */}
+              <View style={{ marginTop: 20, paddingHorizontal: 4 }}>
+                <Text style={{ fontSize: 12, color: '#94A3B8', fontStyle: 'italic', textAlign: 'center', marginTop: 10 }}>
+                  Item selecionado atual: {selectedRuleTab === 'Base da Liga' ? '📂 Base da Liga' : selectedRuleTab}
+                </Text>
+                {/* Aqui entrarão os blocos de campos específicos de cada item no próximo passo */}
+              </View>
 
             </ScrollView>
           </View>
