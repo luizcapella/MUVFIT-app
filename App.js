@@ -1095,25 +1095,6 @@ export default function App() {
         </TouchableOpacity>
         <Text style={{ fontSize: 13, color: '#1E3A8A', marginLeft: 8, fontWeight: '500' }}>Habilitar Excluir Peso</Text>
       </View>
-
-      {/* 📋 LISTAGEM COMPACTA COM BOTÃO DE MENOS (-) QUANDO ATIVADO */}
-      {isWeightDeleteMode && weightHistoryList && weightHistoryList.length > 0 && (
-        <View style={{ backgroundColor: '#F8FAFC', borderRadius: 8, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
-          <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#64748B', marginBottom: 8 }}>Clique no (-) para remover:</Text>
-          {weightHistoryList.map((item) => (
-            <View key={item.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#EDF2F7' }}>
-              <Text style={{ fontSize: 13, color: '#334155', fontWeight: '500' }}>
-                {item.period} — <Text style={{ fontWeight: 'bold' }}>{item.weight} kg</Text> {item.meta ? `(Meta: ${item.meta} kg)` : ''}
-              </Text>
-              <TouchableOpacity 
-                onPress={() => handleDeleteWeightItem(item.id)}
-                style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' }}
-              >
-                <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: 'bold', marginTop: -2 }}>-</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
       )}
                       </View>
                     </View>
