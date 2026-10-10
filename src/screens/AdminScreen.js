@@ -388,14 +388,28 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
               {/* 📦 RETÂNGULO MESTRE UNIFICADO */}
               <View style={{ borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 8, backgroundColor: '#FFFFFF', overflow: 'hidden' }}>
                 
-                {/* 🔝 TOPO FIXO: SEMPRE DISPONÍVEL (BASE DA LIGA) */}
+                              {/* 🔝 TOPO FIXO DINÂMICO: EXIBE O ITEM SELECIONADO ATUAL */}
                 <TouchableOpacity
                   onPress={() => setIsRulesDropdownOpen(!isRulesDropdownOpen)}
                   style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, backgroundColor: '#F8FAFC', borderBottomWidth: isRulesDropdownOpen ? 1 : 0, borderColor: '#E2E8F0' }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 16, marginRight: 10 }}>📂</Text>
-                    <Text style={{ fontSize: 14, color: '#1E3A8A', fontWeight: '700' }}>Base da Liga</Text>
+                    <Text style={{ fontSize: 16, marginRight: 10 }}>
+                      {selectedRuleTab === 'Base da Liga' ? '📂' :
+                       selectedRuleTab === 'Musculação' ? '💪' :
+                       selectedRuleTab === 'Crossfit' ? '🏋️' :
+                       selectedRuleTab === 'Aeróbico' ? '🔥' :
+                       selectedRuleTab === 'Corrida' ? '🏃' :
+                       selectedRuleTab === 'Caminhada' ? '🚶' :
+                       selectedRuleTab === 'Bike' ? '🚴' :
+                       selectedRuleTab === 'Lutas' ? '🥋' :
+                       selectedRuleTab === 'Esportes Coletivos' ? '⚽' : '👣'}
+                    </Text>
+                    <Text style={{ fontSize: 14, color: '#1E3A8A', fontWeight: '700' }}>
+                      {selectedRuleTab === 'Base da Liga' ? 'Base da Liga' :
+                       selectedRuleTab === 'Crossfit' ? 'Crossfit / Funcional' :
+                       selectedRuleTab === 'Lutas' ? 'Lutas / Esportes Individuais' : selectedRuleTab}
+                    </Text>
                   </View>
                   <Text style={{ fontSize: 12, color: '#64748B', transform: [{ rotate: isRulesDropdownOpen ? '90deg' : '0deg' }] }}>➔</Text>
                 </TouchableOpacity>
