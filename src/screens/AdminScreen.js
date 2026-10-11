@@ -49,6 +49,36 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
 
   // Controle para saber qual seletor ordinal (1º a 4º) está aberto no momento
   const [openOrdinalDropdown, setOpenOrdinalDropdown] = useState(null); // 'banco', 'passos', 'km', 'tempo'
+    // ⚽ FUNÇÃO INTELIGENTE: REORDENAMENTO DE CRITÉRIOS SEM DUPLICAR (DANÇA DAS CADEIRAS)
+  const handleMudarOrdem = (criterioId, novaOrdem) => {
+    // 1. Mapeia o estado atual de todos os critérios
+    const ordensAtuais = {
+      banco: bancoDesempateOrdem,
+      passos: passosDesempateOrdem,
+      km: kmDesempateOrdem,
+      tempo: tempoDesempateOrdem
+    };
+
+    // 2. Descobre quem é o dono atual da vaga que queremos ocupar
+    const donoAntigoId = Object.keys(ordensAtuais).find(key => ordensAtuais[key] === novaOrdem);
+
+    // 3. Se houver um dono antigo e não for o próprio critério clicado, faz a troca direta
+    if (donoAntigoId && donoAntigoId !== criterioId) {
+      const ordemAtualDoClicado = ordensAtuais[criterioId];
+      
+      // Passa a ordem antiga do clicado para o dono antigo
+      if (donoAntigoId === 'banco') setBancoDesempateOrdem(ordemAtualDoClicado);
+      if (donoAntigoId === 'passos') setPassosDesempateOrdem(ordemAtualDoClicado);
+      if (donoAntigoId === 'km') setKmDesempateOrdem(ordemAtualDoClicado);
+      if (donoAntigoId === 'tempo') setTempoDesempateOrdem(ordemAtualDoClicado);
+    }
+
+    // 4. Aplica a nova ordem ao critério que foi clicado pelo administrador
+    if (criterioId === 'banco') setBancoDesempateOrdem(novaOrdem);
+    if (criterioId === 'passos') setPassosDesempateOrdem(novaOrdem);
+    if (criterioId === 'km') setKmDesempateOrdem(novaOrdem);
+    if (criterioId === 'tempo') setTempoDesempateOrdem(novaOrdem);
+  };
 
   // 2. FUNÇÃO EFEITO: CARREGA AS SOLICITAÇÕES DA LIGA DO ADMIN EM TEMPO REAL
   useEffect(() => {
@@ -626,14 +656,12 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                     <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E3A8A', marginBottom: 12, textTransform: 'uppercase', marginTop: 16 }}>
                       4. Critérios de Desempate da Liga:
                     </Text>
-
                     {[
-                      { id: 'banco', label: '📊 Banco de Pontos', enabled: bancoDesempateEnabled, setEnabled: setBancoDesempateEnabled, ordem: bancoDesempateOrdem, setOrdem: setBancoDesempateOrdem, dependeTeto: true },
-                      { id: 'passos', label: '👣 Passos Diários', enabled: passosDesempateEnabled, setEnabled: setPassosDesempateEnabled, ordem: passosDesempateOrdem, setOrdem: setBancoDesempateOrdem, dependeTeto: false },
-                      { id: 'km', label: '🏃 KM Total Percorrido', enabled: kmDesempateEnabled, setEnabled: setKmDesempateEnabled, ordem: kmDesempateOrdem, setOrdem: setKmDesempateOrdem, dependeTeto: false },
-                      { id: 'tempo', label: '⏱️ Tempo em Atividade', enabled: tempoDesempateEnabled, setEnabled: setTempoDesempateEnabled, ordem: tempoDesempateOrdem, setOrdem: setTempoDesempateOrdem, dependeTeto: false }
+                      { id: 'banco', label: '📊 Banco de Pontos', enabled: bancoDesempateEnabled, setEnabled: setBancoDesempateEnabled, ordem: bancoDesempateOrdem, dependeTeto: true },
+                      { id: 'passos', label: '👣 Passos Diários', enabled: passosDesempateEnabled, setEnabled: setPassosDesempateEnabled, ordem: passosDesempateOrdem, dependeTeto: false },
+                      { id: 'km', label: '🏃 KM Total Percorrido', enabled: kmDesempateEnabled, setEnabled: setKmDesempateEnabled, ordem: kmDesempateOrdem, dependeTeto: false },
+                      { id: 'tempo', label: '⏱️ Tempo em Atividade', enabled: tempoDesempateEnabled, setEnabled: setTempoDesempateEnabled, ordem: tempoDesempateOrdem, dependeTeto: false }
                     ].map((crit) => {
-                      // Trava lógica: O Banco de Pontos só fica disponível se o Teto Diário estiver ativo
                       const desabilitadoPorRegra = crit.dependeTeto && !dailyPointsEnabled;
                       
                       return (
@@ -649,7 +677,7 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                             <Text style={{ fontSize: 13, color: '#334155', marginLeft: 8, fontWeight: '600' }}>{crit.label}</Text>
                           </View>
 
-                          {/* SELETOR ORDINAL COMPACTO QUE ABRE POR CIMA */}
+                          {/* SELETOR ORDINAL COMPACTO CORRIGIDO */}
                           {crit.enabled && !desabilitadoPorRegra && (
                             <View style={{ position: 'relative' }}>
                               <TouchableOpacity
@@ -665,7 +693,7 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                                     <TouchableOpacity
                                       key={num}
                                       onPress={() => {
-                                        crit.setOrdem(num);
+                                        handleMudarOrdem(crit.id, num); // Aciona a dança das cadeiras inteligente
                                         setOpenOrdinalDropdown(null);
                                       }}
                                       style={{ paddingVertical: 8, alignItems: 'center', backgroundColor: crit.ordem === num ? '#F0F5FF' : 'transparent', borderBottomWidth: num !== '4º' ? 0.5 : 0, borderBottomColor: '#E2E8F0' }}
