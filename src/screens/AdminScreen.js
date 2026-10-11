@@ -35,6 +35,27 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
   
   // 📝 MURAL DE INSTRUÇÕES
   const [muralText, setMuralText] = useState('');
+    // 🏋️ MEMÓRIA LOCAL: REGRAS DE MUSCULAÇÃO
+  const [muscTempoMinEnabled, setMuscTempoMinEnabled] = useState(false);
+  const [muscTempoMinMinutes, setMuscTempoMinMinutes] = useState('');
+  const [muscTempoMinPoints, setMuscTempoMinPoints] = useState('');
+  const [muscStepEnabled, setMuscStepEnabled] = useState(false);
+  const [muscStepsList, setMuscStepsList] = useState([{ id: 1, type: 'Entre', t1: '', t2: '', pts: '' }]);
+
+  // 🤸 MEMÓRIA LOCAL: REGRAS DE CROSSFIT / FUNCIONAL
+  const [crossTempoMinEnabled, setCrossTempoMinEnabled] = useState(false);
+  const [crossTempoMinMinutes, setCrossTempoMinMinutes] = useState('');
+  const [crossTempoMinPoints, setCrossTempoMinPoints] = useState('');
+  const [crossStepEnabled, setCrossStepEnabled] = useState(false);
+  const [crossStepsList, setCrossStepsList] = useState([{ id: 1, type: 'Entre', t1: '', t2: '', pts: '' }]);
+
+  // 🫀 MEMÓRIA LOCAL: REGRAS DE AERÓBICO
+  const [aeroTempoMinEnabled, setAeroTempoMinEnabled] = useState(false);
+  const [aeroTempoMinMinutes, setAeroTempoMinMinutes] = useState('');
+  const [aeroTempoMinPoints, setAeroTempoMinPoints] = useState('');
+  const [aeroStepEnabled, setAeroStepEnabled] = useState(false);
+  const [aeroStepsList, setAeroStepsList] = useState([{ id: 1, type: 'Entre', t1: '', t2: '', pts: '' }]);
+
   // 🏆 ESTADOS DOS CRITÉRIOS DE DESEMPATE
   const [bancoDesempateEnabled, setBancoDesempateEnabled] = useState(false);
   const [bancoDesempateOrdem, setBancoDesempateOrdem] = useState('1º');
