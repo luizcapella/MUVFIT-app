@@ -104,7 +104,17 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
 
   const [tempoDesempateEnabled, setTempoDesempateEnabled] = useState(false);
   const [tempoDesempateOrdem, setTempoDesempateOrdem] = useState('4º');
-    // 🟠 CONTROLE MESTRE: Habilitar/Desabilitar atividades no desafio
+     // 🥋 MEMÓRIA LOCAL: REGRAS DE LUTAS / ESPORTES INDIVIDUAIS
+  const [lutasTempoMinEnabled, setLutasTempoMinEnabled] = useState(false);
+  const [lutasTempoMinMinutes, setLutasTempoMinMinutes] = useState('');
+  const [lutasTempoMinPoints, setLutasTempoMinPoints] = useState('');
+
+  // ⚽ MEMÓRIA LOCAL: REGRAS DE ESPORTES COLETIVOS
+  const [coletivosTempoMinEnabled, setColetivosTempoMinEnabled] = useState(false);
+  const [coletivosTempoMinMinutes, setColetivosTempoMinMinutes] = useState('');
+  const [coletivosTempoMinPoints, setColetivosTempoMinPoints] = useState('');
+
+  // 🟠 CONTROLE MESTRE: Habilitar/Desabilitar atividades no desafio
   const [enabledActivities, setEnabledActivities] = useState({
     'Musculação': true,
     'Crossfit': true,
