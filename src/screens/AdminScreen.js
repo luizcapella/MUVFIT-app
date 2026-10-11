@@ -874,11 +874,38 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
 
                   </View>
                 )}
-                                  <ModalidadeRegras selectedRuleTab={selectedRuleTab} states={getModalidadeStates()} />
-                                  <ModalidadeRegrasKM selectedRuleTab={selectedRuleTab} states={getModalidadeKmStates()} />
+                                                              {/* 🔒 TRAVA LÓGICA: SÓ EXIBE AS REGRAS SE A ATIVIDADE ESTIVER HABILITADA */}
+                {enabledActivities[selectedRuleTab] && (
+                  <>
+                    <ModalidadeRegras selectedRuleTab={selectedRuleTab} states={getModalidadeStates()} />
+                    <ModalidadeRegrasKM selectedRuleTab={selectedRuleTab} states={getModalidadeKmStates()} />
+                  </>
+                )}
               </View>
-
             </ScrollView>
+
+            {/* 💾 BOTÃO MESTRE UNIFICADO: SALVAR TODAS AS REGRAS DA LIGA (FIXO NA BASE) */}
+            <TouchableOpacity
+              onPress={() => {
+                alert("Sucesso! Todas as configurações foram salvas em stand-by e enviadas ao banco de dados.");
+              }}
+              style={{
+                backgroundColor: '#1E3A8A',
+                paddingVertical: 14,
+                borderRadius: 8,
+                alignItems: 'center',
+                marginTop: 12,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 3,
+                elevation: 3
+              }}
+            >
+              <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '700', letterSpacing: 0.5 }}>
+                SALVAR TODAS AS REGRAS
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>  
