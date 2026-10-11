@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Modal, TextInput } from 'react-native';
 import { supabase } from '../../supabaseClient';
 import ModalidadeRegras from '../components/ModalidadeRegras';
+import ModalidadeRegrasKM from '../components/ModalidadeRegrasKM';
 
 export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetchDataFromSupabase, challenges, currentUser, profilesData, selectedLeagueFilter }) {
   
@@ -55,6 +56,41 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
   const [aeroTempoMinPoints, setAeroTempoMinPoints] = useState('');
   const [aeroStepEnabled, setAeroStepEnabled] = useState(false);
   const [aeroStepsList, setAeroStepsList] = useState([{ id: 1, type: 'Entre', t1: '', t2: '', pts: '' }]);
+    // 🏃 MEMÓRIA LOCAL: REGRAS DE CORRIDA
+  const [corrTempoMinEnabled, setCorrTempoMinEnabled] = useState(false);
+  const [corrTempoMinMinutes, setCorrTempoMinMinutes] = useState('');
+  const [corrTempoMinPoints, setCorrTempoMinPoints] = useState('');
+  const [corrStepTempoEnabled, setCorrStepTempoEnabled] = useState(false);
+  const [corrTimeStepsList, setCorrTimeStepsList] = useState([{ id: 1, type: 'Entre', t1: '', t2: '', pts: '' }]);
+  const [corrKmMinEnabled, setCorrKmMinEnabled] = useState(false);
+  const [corrKmMinDistance, setCorrKmMinDistance] = useState('');
+  const [corrKmMinPoints, setCorrKmMinPoints] = useState('');
+  const [corrStepKmEnabled, setCorrStepKmEnabled] = useState(false);
+  const [corrKmStepsList, setCorrKmStepsList] = useState([{ id: 1, type: 'Entre', k1: '', k2: '', pts: '' }]);
+
+  // 🚶 MEMÓRIA LOCAL: REGRAS DE CAMINHADA
+  const [camiTempoMinEnabled, setCamiTempoMinEnabled] = useState(false);
+  const [camiTempoMinMinutes, setCamiTempoMinMinutes] = useState('');
+  const [camiTempoMinPoints, setCamiTempoMinPoints] = useState('');
+  const [camiStepTempoEnabled, setCamiStepTempoEnabled] = useState(false);
+  const [camiTimeStepsList, setCamiTimeStepsList] = useState([{ id: 1, type: 'Entre', t1: '', t2: '', pts: '' }]);
+  const [camiKmMinEnabled, setCamiKmMinEnabled] = useState(false);
+  const [camiKmMinDistance, setCamiKmMinDistance] = useState('');
+  const [camiKmMinPoints, setCamiKmMinPoints] = useState('');
+  const [camiStepKmEnabled, setCamiStepKmEnabled] = useState(false);
+  const [camiKmStepsList, setCamiKmStepsList] = useState([{ id: 1, type: 'Entre', k1: '', k2: '', pts: '' }]);
+
+  // 🚴 MEMÓRIA LOCAL: REGRAS DE BIKE
+  const [bikeTempoMinEnabled, setBikeTempoMinEnabled] = useState(false);
+  const [bikeTempoMinMinutes, setBikeTempoMinMinutes] = useState('');
+  const [bikeTempoMinPoints, setBikeTempoMinPoints] = useState('');
+  const [bikeStepTempoEnabled, setBikeStepTempoEnabled] = useState(false);
+  const [bikeTimeStepsList, setBikeTimeStepsList] = useState([{ id: 1, type: 'Entre', t1: '', t2: '', pts: '' }]);
+  const [bikeKmMinEnabled, setBikeKmMinEnabled] = useState(false);
+  const [bikeKmMinDistance, setBikeKmMinDistance] = useState('');
+  const [bikeKmMinPoints, setBikeKmMinPoints] = useState('');
+  const [bikeStepKmEnabled, setBikeStepKmEnabled] = useState(false);
+  const [bikeKmStepsList, setBikeKmStepsList] = useState([{ id: 1, type: 'Entre', k1: '', k2: '', pts: '' }]);
 
   // 🏆 ESTADOS DOS CRITÉRIOS DE DESEMPATE
   const [bancoDesempateEnabled, setBancoDesempateEnabled] = useState(false);
@@ -117,6 +153,33 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
       setStepEnabled: isMusc ? setMuscStepEnabled : (isCross ? setCrossStepEnabled : setAeroStepEnabled),
       stepsList: isMusc ? muscStepsList : (isCross ? crossStepsList : aeroStepsList),
       setStepsList: isMusc ? setMuscStepsList : (isCross ? setCrossStepsList : setAeroStepsList)
+    };
+  };
+  // ⚙️ Função auxiliar para agrupar as variáveis das modalidades baseadas em KM
+  const getModalidadeKmStates = () => {
+    const isCorr = selectedRuleTab === 'Corrida';
+    const isCami = selectedRuleTab === 'Caminhada';
+    return {
+      tempoMinEnabled: isCorr ? corrTempoMinEnabled : (isCami ? camiTempoMinEnabled : bikeTempoMinEnabled),
+      setTempoMinEnabled: isCorr ? setCorrTempoMinEnabled : (isCami ? setCamiTempoMinEnabled : setBikeTempoMinEnabled),
+      tempoMinMinutes: isCorr ? corrTempoMinMinutes : (isCami ? camiTempoMinMinutes : bikeTempoMinMinutes),
+      setTempoMinMinutes: isCorr ? setCorrTempoMinMinutes : (isCami ? setCamiTempoMinMinutes : setBikeTempoMinMinutes),
+      tempoMinPoints: isCorr ? corrTempoMinPoints : (isCami ? camiTempoMinPoints : bikeTempoMinPoints),
+      setTempoMinPoints: isCorr ? setCorrTempoMinPoints : (isCami ? setCamiTempoMinPoints : setBikeTempoMinPoints),
+      stepTempoEnabled: isCorr ? corrStepTempoEnabled : (isCami ? camiStepTempoEnabled : bikeStepTempoEnabled),
+      setStepTempoEnabled: isCorr ? setCorrStepTempoEnabled : (isCami ? setCamiStepTempoEnabled : setBikeStepTempoEnabled),
+      timeStepsList: isCorr ? corrTimeStepsList : (isCami ? camiTimeStepsList : bikeTimeStepsList),
+      setTimeStepsList: isCorr ? setCorrTimeStepsList : (isCami ? setCamiTimeStepsList : setBikeTimeStepsList),
+      kmMinEnabled: isCorr ? corrKmMinEnabled : (isCami ? camiKmMinEnabled : bikeKmMinEnabled),
+      setKmMinEnabled: isCorr ? setCorrKmMinEnabled : (isCami ? setCamiKmMinEnabled : setBikeKmMinEnabled),
+      kmMinDistance: isCorr ? corrKmMinDistance : (isCami ? camiKmMinDistance : bikeKmMinDistance),
+      setKmMinDistance: isCorr ? setCorrKmMinDistance : (isCami ? setCamiKmMinDistance : setBikeKmMinDistance),
+      kmMinPoints: isCorr ? corrKmMinPoints : (isCami ? camiKmMinPoints : bikeKmMinPoints),
+      setKmMinPoints: isCorr ? setCorrKmMinPoints : (isCami ? setCamiKmMinPoints : setBikeKmMinPoints),
+      stepKmEnabled: isCorr ? corrStepKmEnabled : (isCami ? camiStepKmEnabled : bikeStepKmEnabled),
+      setStepKmEnabled: isCorr ? setCorrStepKmEnabled : (isCami ? setCamiStepKmEnabled : setBikeStepKmEnabled),
+      kmStepsList: isCorr ? corrKmStepsList : (isCami ? camiKmStepsList : bikeKmStepsList),
+      setKmStepsList: isCorr ? setCorrKmStepsList : (isCami ? setCamiKmStepsList : setBikeKmStepsList)
     };
   };
   
@@ -772,6 +835,7 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                   </View>
                 )}
                                   <ModalidadeRegras selectedRuleTab={selectedRuleTab} states={getModalidadeStates()} />
+                                  <ModalidadeRegrasKM selectedRuleTab={selectedRuleTab} states={getModalidadeKmStates()} />
               </View>
 
             </ScrollView>
