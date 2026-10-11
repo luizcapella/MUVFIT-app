@@ -34,6 +34,21 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
   
   // 📝 MURAL DE INSTRUÇÕES
   const [muralText, setMuralText] = useState('');
+  // 🏆 ESTADOS DOS CRITÉRIOS DE DESEMPATE
+  const [bancoDesempateEnabled, setBancoDesempateEnabled] = useState(false);
+  const [bancoDesempateOrdem, setBancoDesempateOrdem] = useState('1º');
+
+  const [passosDesempateEnabled, setPassosDesempateEnabled] = useState(false);
+  const [passosDesempateOrdem, setPassosDesempateOrdem] = useState('2º');
+
+  const [kmDesempateEnabled, setKmDesempateEnabled] = useState(false);
+  const [kmDesempateOrdem, setKmDesempateOrdem] = useState('3º');
+
+  const [tempoDesempateEnabled, setTempoDesempateEnabled] = useState(false);
+  const [tempoDesempateOrdem, setTempoDesempateOrdem] = useState('4º');
+
+  // Controle para saber qual seletor ordinal (1º a 4º) está aberto no momento
+  const [openOrdinalDropdown, setOpenOrdinalDropdown] = useState(null); // 'banco', 'passos', 'km', 'tempo'
 
   // 2. FUNÇÃO EFEITO: CARREGA AS SOLICITAÇÕES DA LIGA DO ADMIN EM TEMPO REAL
   useEffect(() => {
@@ -606,6 +621,65 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                         </View>
                       )}
                     </View>
+
+                    {/* 4. CRITÉRIOS DE DESEMPATE (ESTILO BRASILEIRÃO) */}
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E3A8A', marginBottom: 12, textTransform: 'uppercase', marginTop: 16 }}>
+                      4. Critérios de Desempate da Liga:
+                    </Text>
+
+                    {[
+                      { id: 'banco', label: '📊 Banco de Pontos', enabled: bancoDesempateEnabled, setEnabled: setBancoDesempateEnabled, ordem: bancoDesempateOrdem, setOrdem: setBancoDesempateOrdem, dependeTeto: true },
+                      { id: 'passos', label: '👣 Passos Diários', enabled: passosDesempateEnabled, setEnabled: setPassosDesempateEnabled, ordem: passosDesempateOrdem, setOrdem: setBancoDesempateOrdem, dependeTeto: false },
+                      { id: 'km', label: '🏃 KM Total Percorrido', enabled: kmDesempateEnabled, setEnabled: setKmDesempateEnabled, ordem: kmDesempateOrdem, setOrdem: setKmDesempateOrdem, dependeTeto: false },
+                      { id: 'tempo', label: '⏱️ Tempo em Atividade', enabled: tempoDesempateEnabled, setEnabled: setTempoDesempateEnabled, ordem: tempoDesempateOrdem, setOrdem: setTempoDesempateOrdem, dependeTeto: false }
+                    ].map((crit) => {
+                      // Trava lógica: O Banco de Pontos só fica disponível se o Teto Diário estiver ativo
+                      const desabilitadoPorRegra = crit.dependeTeto && !dailyPointsEnabled;
+                      
+                      return (
+                        <View key={crit.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10, backgroundColor: desabilitadoPorRegra ? '#F1F5F9' : '#FFFFFF', borderRadius: 6, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 8, zIndex: openOrdinalDropdown === crit.id ? 9999 : 1 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, opacity: desabilitadoPorRegra ? 0.5 : 1 }}>
+                            <TouchableOpacity
+                              disabled={desabilitadoPorRegra}
+                              onPress={() => crit.setEnabled(!crit.enabled)}
+                              style={{ width: 18, height: 18, borderWidth: 1.5, borderColor: '#1E3A8A', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: crit.enabled && !desabilitadoPorRegra ? '#1E3A8A' : 'transparent' }}
+                            >
+                              {crit.enabled && !desabilitadoPorRegra && <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 'bold' }}>✓</Text>}
+                            </TouchableOpacity>
+                            <Text style={{ fontSize: 13, color: '#334155', marginLeft: 8, fontWeight: '600' }}>{crit.label}</Text>
+                          </View>
+
+                          {/* SELETOR ORDINAL COMPACTO QUE ABRE POR CIMA */}
+                          {crit.enabled && !desabilitadoPorRegra && (
+                            <View style={{ position: 'relative' }}>
+                              <TouchableOpacity
+                                onPress={() => setOpenOrdinalDropdown(openOrdinalDropdown === crit.id ? null : crit.id)}
+                                style={{ width: 55, height: 32, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }}
+                              >
+                                <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E3A8A' }}>{crit.ordem}</Text>
+                              </TouchableOpacity>
+
+                              {openOrdinalDropdown === crit.id && (
+                                <View style={{ position: 'absolute', top: 34, right: 0, width: 55, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 2, elevation: 4, zIndex: 99999 }}>
+                                  {['1º', '2º', '3º', '4º'].map((num) => (
+                                    <TouchableOpacity
+                                      key={num}
+                                      onPress={() => {
+                                        crit.setOrdem(num);
+                                        setOpenOrdinalDropdown(null);
+                                      }}
+                                      style={{ paddingVertical: 8, alignItems: 'center', backgroundColor: crit.ordem === num ? '#F0F5FF' : 'transparent', borderBottomWidth: num !== '4º' ? 0.5 : 0, borderBottomColor: '#E2E8F0' }}
+                                    >
+                                      <Text style={{ fontSize: 12, fontWeight: crit.ordem === num ? '700' : '400', color: '#334155' }}>{num}</Text>
+                                    </TouchableOpacity>
+                                  ))}
+                                </View>
+                              )}
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })}
 
                     {/* 3. MURAL DE INSTRUÇÕES DA LIGA (MAX 500 CARACTERES) */}
                     <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E3A8A', marginTop: 10, marginBottom: 8, textTransform: 'uppercase' }}>
