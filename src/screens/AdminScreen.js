@@ -4,6 +4,7 @@ import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Modal, Tex
 import { supabase } from '../../supabaseClient';
 import ModalidadeRegras from '../components/ModalidadeRegras';
 import ModalidadeRegrasKM from '../components/ModalidadeRegrasKM';
+import ModalidadeRegrasTempo from '../components/ModalidadeRegrasTempo';
 
 export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetchDataFromSupabase, challenges, currentUser, profilesData, selectedLeagueFilter }) {
   
@@ -204,7 +205,19 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
       setKmStepsList: isCorr ? setCorrKmStepsList : (isCami ? setCamiKmStepsList : setBikeKmStepsList)
     };
   };
-  
+    // ⚙️ Função auxiliar para agrupar as variáveis das modalidades baseadas apenas em Tempo
+  const getModalidadeTempoStates = () => {
+    const isLutas = selectedRuleTab === 'Lutas';
+    return {
+      tempoMinEnabled: isLutas ? lutasTempoMinEnabled : coletivosTempoMinEnabled,
+      setTempoMinEnabled: isLutas ? setLutasTempoMinEnabled : setColetivosTempoMinEnabled,
+      tempoMinMinutes: isLutas ? lutasTempoMinMinutes : coletivosTempoMinMinutes,
+      setTempoMinMinutes: isLutas ? setLutasTempoMinMinutes : setColetivosTempoMinMinutes,
+      tempoMinPoints: isLutas ? lutasTempoMinPoints : coletivosTempoMinPoints,
+      setTempoMinPoints: isLutas ? setLutasTempoMinPoints : setColetivosTempoMinPoints
+    };
+  };
+
   // 2. FUNÇÃO EFEITO: CARREGA AS SOLICITAÇÕES DA LIGA DO ADMIN EM TEMPO REAL
   useEffect(() => {
     if (currentUser?.is_admin || currentUser?.isAdmin) {
@@ -887,8 +900,9 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                                                               {/* 🔒 TRAVA LÓGICA: SÓ EXIBE AS REGRAS SE A ATIVIDADE ESTIVER HABILITADA */}
                 {enabledActivities[selectedRuleTab] && (
                   <>
-                    <ModalidadeRegras selectedRuleTab={selectedRuleTab} states={getModalidadeStates()} />
+                     <ModalidadeRegras selectedRuleTab={selectedRuleTab} states={getModalidadeStates()} />
                     <ModalidadeRegrasKM selectedRuleTab={selectedRuleTab} states={getModalidadeKmStates()} />
+                    <ModalidadeRegrasTempo selectedRuleTab={selectedRuleTab} states={getModalidadeTempoStates()} />
                   </>
                 )}
               </View>
