@@ -104,6 +104,18 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
 
   const [tempoDesempateEnabled, setTempoDesempateEnabled] = useState(false);
   const [tempoDesempateOrdem, setTempoDesempateOrdem] = useState('4º');
+    // 🟠 CONTROLE MESTRE: Habilitar/Desabilitar atividades no desafio
+  const [enabledActivities, setEnabledActivities] = useState({
+    'Musculação': true,
+    'Crossfit': true,
+    'Aeróbico': true,
+    'Corrida': true,
+    'Caminhada': true,
+    'Bike': true,
+    'Lutas': true,
+    'Esportes Coletivos': true,
+    'Passos Diários': true
+  });
 
   // Controle para saber qual seletor ordinal (1º a 4º) está aberto no momento
   const [openOrdinalDropdown, setOpenOrdinalDropdown] = useState(null); // 'banco', 'passos', 'km', 'tempo'
@@ -618,6 +630,34 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                 <Text style={{ fontSize: 12, color: '#94A3B8', fontStyle: 'italic', textAlign: 'center', marginTop: 10 }}>
                   Item selecionado atual: {selectedRuleTab === 'Base da Liga' ? '📂 Base da Liga' : selectedRuleTab}
                 </Text>
+              {/* 🟠 CHECKBOX MESTRE: HABILITAR/DESABILITAR ATIVIDADE (EXCETO BASE DA LIGA) */}
+              {selectedRuleTab !== 'Base da Liga' && (
+                <TouchableOpacity
+                  onPress={() => {
+                    setEnabledActivities(prev => ({
+                      ...prev,
+                      [selectedRuleTab]: !prev[selectedRuleTab]
+                    }));
+                  }}
+                  style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12, marginBottom: 4, paddingHorizontal: 4 }}
+                >
+                  <View style={{
+                    width: 20,
+                    height: 20,
+                    borderWidth: 2,
+                    borderColor: '#FF6B00',
+                    borderRadius: 4,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: enabledActivities[selectedRuleTab] ? '#FF6B00' : 'transparent',
+                    marginRight: 10
+                  }}>
+                    {enabledActivities[selectedRuleTab] && <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' }}>✓</Text>}
+                  </View>
+                  <Text style={{ fontSize: 16, color: '#FF6B00', fontWeight: 'bold' }}>Habilitar Atividade</Text>
+                </TouchableOpacity>
+              )}
+
                                {/* 📂 INTERFACE DINÂMICA: CAMPOS DA BASE DA LIGA */}
                 {selectedRuleTab === 'Base da Liga' && (
                   <View style={{ marginTop: 16, padding: 12, backgroundColor: '#F8FAFC', borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0' }}>
