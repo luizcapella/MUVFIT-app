@@ -16,6 +16,24 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
     // 📂 Estados de controle para o retângulo expansível de regras
   const [isRulesDropdownOpen, setIsRulesDropdownOpen] = useState(false);
   const [selectedRuleTab, setSelectedRuleTab] = useState('Base da Liga');
+  // 📂 MEMÓRIA LOCAL: Configurações da Base da Liga
+  const [leagueDuration, setLeagueDuration] = useState('SEMANAL'); // SEMANAL, MENSAL, ANUAL
+  const [dailyPointsEnabled, setDailyPointsEnabled] = useState(false);
+  const [dailyPointsMax, setDailyPointsMax] = useState('');
+  
+  // 🪨 BÔNUS: O Inquebrável
+  const [bonusInquebravelEnabled, setBonusInquebravelEnabled] = useState(false);
+  const [bonusInquebravelDays, setBonusInquebravelDays] = useState('');
+  const [bonusInquebravelPoints, setBonusInquebravelPoints] = useState('');
+  
+  // ⏰ BÔNUS: O Desperta
+  const [bonusDespertaEnabled, setBonusDespertaEnabled] = useState(false);
+  const [bonusDespertaHour, setBonusDespertaHour] = useState('05');
+  const [bonusDespertaMin, setBonusDespertaMin] = useState('00');
+  const [bonusDespertaPoints, setBonusDespertaPoints] = useState('');
+  
+  // 📝 MURAL DE INSTRUÇÕES
+  const [muralText, setMuralText] = useState('');
 
   // 2. FUNÇÃO EFEITO: CARREGA AS SOLICITAÇÕES DA LIGA DO ADMIN EM TEMPO REAL
   useEffect(() => {
@@ -452,7 +470,165 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                 <Text style={{ fontSize: 12, color: '#94A3B8', fontStyle: 'italic', textAlign: 'center', marginTop: 10 }}>
                   Item selecionado atual: {selectedRuleTab === 'Base da Liga' ? '📂 Base da Liga' : selectedRuleTab}
                 </Text>
-                {/* Aqui entrarão os blocos de campos específicos de cada item no próximo passo */}
+                               {/* 📂 INTERFACE DINÂMICA: CAMPOS DA BASE DA LIGA */}
+                {selectedRuleTab === 'Base da Liga' && (
+                  <View style={{ marginTop: 16, padding: 12, backgroundColor: '#F8FAFC', borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0' }}>
+                    
+                    {/* 1. DETERMINAR PERÍODO DE DURAÇÃO */}
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E3A8A', marginBottom: 8, textTransform: 'uppercase' }}>
+                      1. Período de Duração do Desafio:
+                    </Text>
+                    <View style={{ flexDirection: 'row', backgroundColor: '#FFFFFF', borderRadius: 6, borderWidth: 1, borderColor: '#CBD5E1', padding: 4, marginBottom: 12 }}>
+                      {['SEMANAL', 'MENSAL', 'ANUAL'].map((periodo) => (
+                        <TouchableOpacity
+                          key={periodo}
+                          onPress={() => setLeagueDuration(periodo)}
+                          style={{ flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 4, backgroundColor: leagueDuration === periodo ? '#1E3A8A' : 'transparent' }}
+                        >
+                          <Text style={{ fontSize: 12, fontWeight: '700', color: leagueDuration === periodo ? '#FFFFFF' : '#64748B' }}>
+                            {periodo}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+
+                    {/* TEXTO EXPLICATIVO DO PERÍODO SELECIONADO */}
+                    <View style={{ backgroundColor: '#EFF6FF', padding: 10, borderRadius: 6, marginBottom: 20, borderWidth: 0.5, borderColor: '#BFDBFE' }}>
+                      <Text style={{ fontSize: 11, color: '#1E40AF', lineHeight: 16 }}>
+                        {leagueDuration === 'SEMANAL' && "🔹 REGRA: Termina sempre no próximo sábado às 23:59:00, independente do dia que foi criado. O pódio vai para o Feed e os pontos zeram no domingo às 00:00:00, reabrindo a inscrição para a próxima semana."}
+                        {leagueDuration === 'MENSAL' && "🔹 REGRA: Termina sempre no último dia do mês corrente às 23:59:00. O pódio vai para o Feed e os pontos zeram no dia 1º do próximo mês às 00:00:00, reabrindo a inscrição."}
+                        {leagueDuration === 'ANUAL' && "🔹 REGRA: Termina sempre no dia 31 de Dezembro às 23:59:00 do ano vigente. O pódio vai para o Feed e os pontos zeram no dia 1º de Janeiro às 00:00:00, reabrindo a inscrição."}
+                      </Text>
+                    </View>
+
+                    {/* 2. LIMITES E RECOMPENSAS (BASE DA LIGA) */}
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E3A8A', marginBottom: 12, textTransform: 'uppercase' }}>
+                      2. Limites e Bônus da Liga:
+                    </Text>
+
+                    {/* A. TETO DE PONTOS DIÁRIO */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, justifyContent: 'space-between', backgroundColor: '#FFFFFF', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#E2E8F0' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                        <TouchableOpacity
+                          onPress={() => setDailyPointsEnabled(!dailyPointsEnabled)}
+                          style={{ width: 18, height: 18, borderWidth: 1.5, borderColor: '#1E3A8A', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: dailyPointsEnabled ? '#1E3A8A' : 'transparent' }}
+                        >
+                          {dailyPointsEnabled && <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 'bold' }}>✓</Text>}
+                        </TouchableOpacity>
+                        <Text style={{ fontSize: 13, color: '#334155', marginLeft: 8, fontWeight: '600' }}>Teto de Pontos Diário</Text>
+                      </View>
+                      {dailyPointsEnabled && (
+                        <TextInput
+                          value={dailyPointsMax}
+                          onChangeText={setDailyPointsMax}
+                          placeholder="Ex: 15000"
+                          keyboardType="numeric"
+                          style={{ width: 90, height: 34, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, paddingHorizontal: 8, fontSize: 13, color: '#334155', textAlign: 'center', backgroundColor: '#F8FAFC' }}
+                        />
+                      )}
+                    </View>
+
+                    {/* B. BÔNUS: O INQUEBRÁVEL */}
+                    <View style={{ marginBottom: 16, backgroundColor: '#FFFFFF', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#E2E8F0' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: bonusInquebravelEnabled ? 10 : 0 }}>
+                        <TouchableOpacity
+                          onPress={() => setBonusInquebravelEnabled(!bonusInquebravelEnabled)}
+                          style={{ width: 18, height: 18, borderWidth: 1.5, borderColor: '#1E3A8A', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: bonusInquebravelEnabled ? '#1E3A8A' : 'transparent' }}
+                        >
+                          {bonusInquebravelEnabled && <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 'bold' }}>✓</Text>}
+                        </TouchableOpacity>
+                        <Text style={{ fontSize: 13, color: '#334155', marginLeft: 8, fontWeight: '600' }}>🪨 O Inquebrável (Dias Consecutivos)</Text>
+                      </View>
+                      {bonusInquebravelEnabled && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <TextInput
+                            value={bonusInquebravelDays}
+                            onChangeText={setBonusInquebravelDays}
+                            placeholder="Qtd Dias (X)"
+                            keyboardType="numeric"
+                            style={{ flex: 0.48, height: 34, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, paddingHorizontal: 8, fontSize: 12, color: '#334155', textAlign: 'center' }}
+                          />
+                          <TextInput
+                            value={bonusInquebravelPoints}
+                            onChangeText={setBonusInquebravelPoints}
+                            placeholder="Pontos (Z)"
+                            keyboardType="numeric"
+                            style={{ flex: 0.48, height: 34, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, paddingHorizontal: 8, fontSize: 12, color: '#334155', textAlign: 'center' }}
+                          />
+                        </View>
+                      )}
+                    </View>
+                    {/* C. BÔNUS: O DESPERTA */}
+                    <View style={{ marginBottom: 16, backgroundColor: '#FFFFFF', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#E2E8F0' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: bonusDespertaEnabled ? 12 : 0 }}>
+                        <TouchableOpacity
+                          onPress={() => setBonusDespertaEnabled(!bonusDespertaEnabled)}
+                          style={{ width: 18, height: 18, borderWidth: 1.5, borderColor: '#1E3A8A', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: bonusDespertaEnabled ? '#1E3A8A' : 'transparent' }}
+                        >
+                          {bonusDespertaEnabled && <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 'bold' }}>✓</Text>}
+                        </TouchableOpacity>
+                        <Text style={{ fontSize: 13, color: '#334155', marginLeft: 8, fontWeight: '600' }}>⏰ O Desperta (Treino Matinal)</Text>
+                      </View>
+                      {bonusDespertaEnabled && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                          
+                          {/* SELETOR DE HORÁRIO EM PEQUENOS QUADRADOS COM SETAS */}
+                          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 0.5 }}>
+                            {/* Bloco Hora */}
+                            <View style={{ alignItems: 'center' }}>
+                              <TouchableOpacity onPress={() => setBonusDespertaHour(prev => String(Math.min(23, Number(prev) + 1)).padStart(2, '0'))} style={{ padding: 2 }}><Text style={{ fontSize: 10, color: '#1E3A8A' }}>▲</Text></TouchableOpacity>
+                              <View style={{ width: 34, height: 28, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
+                                <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>{bonusDespertaHour}</Text>
+                              </View>
+                              <TouchableOpacity onPress={() => setBonusDespertaHour(prev => String(Math.max(0, Number(prev) - 1)).padStart(2, '0'))} style={{ padding: 2 }}><Text style={{ fontSize: 10, color: '#1E3A8A' }}>▼</Text></TouchableOpacity>
+                            </View>
+                            
+                            <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#64748B', marginHorizontal: 6 }}>:</Text>
+                            
+                            {/* Bloco Minuto */}
+                            <View style={{ alignItems: 'center' }}>
+                              <TouchableOpacity onPress={() => setBonusDespertaMin(prev => String(Math.min(59, Number(prev) + 5)).padStart(2, '0'))} style={{ padding: 2 }}><Text style={{ fontSize: 10, color: '#1E3A8A' }}>▲</Text></TouchableOpacity>
+                              <View style={{ width: 34, height: 28, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
+                                <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>{bonusDespertaMin}</Text>
+                              </View>
+                              <TouchableOpacity onPress={() => setBonusDespertaMin(prev => String(Math.max(0, Number(prev) - 5)).padStart(2, '0'))} style={{ padding: 2 }}><Text style={{ fontSize: 10, color: '#1E3A8A' }}>▼</Text></TouchableOpacity>
+                            </View>
+                          </View>
+                          
+                          {/* Caixa de Pontuação do Desperta */}
+                          <TextInput
+                            value={bonusDespertaPoints}
+                            onChangeText={setBonusDespertaPoints}
+                            placeholder="Pontos (F)"
+                            keyboardType="numeric"
+                            style={{ flex: 0.45, height: 34, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, paddingHorizontal: 8, fontSize: 12, color: '#334155', textAlign: 'center' }}
+                          />
+                        </View>
+                      )}
+                    </View>
+
+                    {/* 3. MURAL DE INSTRUÇÕES DA LIGA (MAX 500 CARACTERES) */}
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E3A8A', marginTop: 10, marginBottom: 8, textTransform: 'uppercase' }}>
+                      3. Mural de Instruções do Desafio:
+                    </Text>
+                    <View style={{ backgroundColor: '#FFFFFF', borderRadius: 6, borderWidth: 1, borderColor: '#CBD5E1', padding: 4 }}>
+                      <TextInput
+                        value={muralText}
+                        onChangeText={(txt) => { if(txt.length <= 500) muralText && setMuralText(txt); }}
+                        placeholder="Digite as regras, valores em dinheiro, diretrizes das fotos comprobatórias, etc..."
+                        placeholderTextColor="#94A3B8"
+                        multiline={true}
+                        numberOfLines={4}
+                        style={{ minHeight: 80, paddingHorizontal: 8, paddingVertical: 6, fontSize: 13, color: '#334155', textAlignVertical: 'top' }}
+                      />
+                      {/* CONTADOR DINÂMICO DE CARACTERES NO RODAPÉ */}
+                      <Text style={{ fontSize: 11, textAlign: 'right', color: muralText.length >= 450 ? '#EF4444' : '#94A3B8', fontWeight: '600', paddingRight: 4, paddingBottom: 2 }}>
+                        {muralText.length} / 500 caract.
+                      </Text>
+                    </View>
+
+                  </View>
+                )}
               </View>
 
             </ScrollView>
