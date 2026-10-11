@@ -49,30 +49,6 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
 
   // Controle para saber qual seletor ordinal (1º a 4º) está aberto no momento
   const [openOrdinalDropdown, setOpenOrdinalDropdown] = useState(null); // 'banco', 'passos', 'km', 'tempo'
-    // 🏋️ MEMÓRIA LOCAL: REGRAS DE MUSCULAÇÃO
-  const [muscTempoMinEnabled, setMuscTempoMinEnabled] = useState(false);
-  const [muscTempoMinMinutes, setMuscTempoMinMinutes] = useState('');
-  const [muscTempoMinPoints, setMuscTempoMinPoints] = useState('');
-  const [muscStepEnabled, setMuscStepEnabled] = useState(false);
-  const [muscStepsList, setMuscStepsList] = useState([{ id: 1, type: 'Entre', t1: '', t2: '', pts: '' }]);
-
-  // 🤸 MEMÓRIA LOCAL: REGRAS DE CROSSFIT / FUNCIONAL
-  const [crossTempoMinEnabled, setCrossTempoMinEnabled] = useState(false);
-  const [crossTempoMinMinutes, setCrossTempoMinMinutes] = useState('');
-  const [crossTempoMinPoints, setCrossTempoMinPoints] = useState('');
-  const [crossStepEnabled, setCrossStepEnabled] = useState(false);
-  const [crossStepsList, setCrossStepsList] = useState([{ id: 1, type: 'Entre', t1: '', t2: '', pts: '' }]);
-
-  // 🫀 MEMÓRIA LOCAL: REGRAS DE AERÓBICO
-  const [aeroTempoMinEnabled, setAeroTempoMinEnabled] = useState(false);
-  const [aeroTempoMinMinutes, setAeroTempoMinMinutes] = useState('');
-  const [aeroTempoMinPoints, setAeroTempoMinPoints] = useState('');
-  const [aeroStepEnabled, setAeroStepEnabled] = useState(false);
-  const [aeroStepsList, setAeroStepsList] = useState([{ id: 1, type: 'Entre', t1: '', t2: '', pts: '' }]);
-
-  // Controle global para os dropdowns internos de tipo de step ("Entre" / "Acima")
-  const [openStepTypeDropdown, setOpenStepTypeDropdown] = useState(null); // ex: 'musc-1', 'cross-2'
-
     // ⚽ FUNÇÃO INTELIGENTE: REORDENAMENTO DE CRITÉRIOS SEM DUPLICAR (DANÇA DAS CADEIRAS)
   const handleMudarOrdem = (criterioId, novaOrdem) => {
     // 1. Mapeia o estado atual de todos os critérios
@@ -82,23 +58,6 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
       km: kmDesempateOrdem,
       tempo: tempoDesempateOrdem
     };
-  // ⚙️ FUNÇÃO AUXILIAR PARA RETORNAR OS ESTADOS DE PONTA DA MODALIDADE SELECIONADA
-  const getModalidadeStates = () => {
-    const isMusc = selectedRuleTab === 'Musculação';
-    const isCross = selectedRuleTab === 'Crossfit';
-    return {
-      tempoMinEnabled: isMusc ? muscTempoMinEnabled : (isCross ? crossTempoMinEnabled : aeroTempoMinEnabled),
-      setTempoMinEnabled: isMusc ? setMuscTempoMinEnabled : (isCross ? setCrossTempoMinEnabled : setAeroTempoMinEnabled),
-      tempoMinMinutes: isMusc ? muscTempoMinMinutes : (isCross ? crossTempoMinMinutes : aeroTempoMinMinutes),
-      setTempoMinMinutes: isMusc ? setMuscTempoMinMinutes : (isCross ? setCrossTempoMinMinutes : setAeroTempoMinMinutes),
-      tempoMinPoints: isMusc ? muscTempoMinPoints : (isCross ? crossTempoMinPoints : aeroTempoMinPoints),
-      setTempoMinPoints: isMusc ? setMuscTempoMinPoints : (isCross ? setCrossTempoMinPoints : setAeroTempoMinPoints),
-      stepEnabled: isMusc ? muscStepEnabled : (isCross ? crossStepEnabled : aeroStepEnabled),
-      setStepEnabled: isMusc ? setMuscStepEnabled : (isCross ? setCrossStepEnabled : setAeroStepEnabled),
-      stepsList: isMusc ? muscStepsList : (isCross ? crossStepsList : aeroStepsList),
-      setStepsList: isMusc ? setMuscStepsList : (isCross ? setCrossStepsList : setAeroStepsList)
-    };
-  };
 
     // 2. Descobre quem é o dono atual da vaga que queremos ocupar
     const donoAntigoId = Object.keys(ordensAtuais).find(key => ordensAtuais[key] === novaOrdem);
@@ -771,144 +730,6 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                     </View>
 
                   </View>
-                               {/* 🏋️🤸🔥 INTERFACE DINÂMICA CORRIGIDA: MUSCULAÇÃO, CROSSFIT E AERÓBICO */}
-                {['Musculação', 'Crossfit', 'Aeróbico'].includes(selectedRuleTab) && (
-                  <View style={{ marginTop: 16, padding: 12, backgroundColor: '#F8FAFC', borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0' }}>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E3A8A', marginBottom: 12, textTransform: 'uppercase' }}>
-                      Regras de Pontuação: {selectedRuleTab === 'Crossfit' ? 'Crossfit / Funcional' : selectedRuleTab}
-                    </Text>
-
-                    {/* ITEM A: TEMPO MÍNIMO */}
-                    <View style={{ marginBottom: 16, backgroundColor: '#FFFFFF', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#E2E8F0' }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <TouchableOpacity
-                          onPress={() => {
-                            const st = getModalidadeStates();
-                            st.setTempoMinEnabled(!st.tempoMinEnabled);
-                            if (!st.tempoMinEnabled) st.setStepEnabled(false);
-                          }}
-                          style={{ width: 18, height: 18, borderWidth: 1.5, borderColor: '#1E3A8A', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: getModalidadeStates().tempoMinEnabled ? '#1E3A8A' : 'transparent' }}
-                        >
-                          {getModalidadeStates().tempoMinEnabled && <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 'bold' }}>✓</Text>}
-                        </TouchableOpacity>
-                        <Text style={{ fontSize: 13, color: '#334155', marginLeft: 8, fontWeight: '600' }}>a. Tempo Mínimo Proporcional</Text>
-                      </View>
-
-                      {getModalidadeStates().tempoMinEnabled && (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 6, borderTopWidth: 0.5, borderTopColor: '#E2E8F0' }}>
-                          <TextInput
-                            value={getModalidadeStates().tempoMinMinutes}
-                            onChangeText={getModalidadeStates().setTempoMinMinutes}
-                            placeholder="Tempo (min)"
-                            keyboardType="numeric"
-                            style={{ flex: 0.45, height: 34, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, paddingHorizontal: 8, fontSize: 12, color: '#334155', textAlign: 'center', backgroundColor: '#FFFFFF' }}
-                          />
-                          <Text style={{ fontSize: 14, color: '#64748B', fontWeight: 'bold' }}>=</Text>
-                          <TextInput
-                            value={getModalidadeStates().tempoMinPoints}
-                            onChangeText={getModalidadeStates().setTempoMinPoints}
-                            placeholder="Pontos (W)"
-                            keyboardType="numeric"
-                            style={{ flex: 0.45, height: 34, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, paddingHorizontal: 8, fontSize: 12, color: '#334155', textAlign: 'center', backgroundColor: '#FFFFFF' }}
-                          />
-                        </View>
-                      )}
-                    </View>
-
-                    {/* ITEM B: STEP DE TEMPO */}
-                    <View style={{ backgroundColor: '#FFFFFF', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#E2E8F0' }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <TouchableOpacity
-                          onPress={() => {
-                            const st = getModalidadeStates();
-                            st.setStepEnabled(!st.stepEnabled);
-                            if (!st.stepEnabled) st.setTempoMinEnabled(false);
-                          }}
-                          style={{ width: 18, height: 18, borderWidth: 1.5, borderColor: '#1E3A8A', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: getModalidadeStates().stepEnabled ? '#1E3A8A' : 'transparent' }}
-                        >
-                          {getModalidadeStates().stepEnabled && <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 'bold' }}>✓</Text>}
-                        </TouchableOpacity>
-                        <Text style={{ fontSize: 13, color: '#334155', marginLeft: 8, fontWeight: '600' }}>b. Step de Tempo Progressivo</Text>
-                      </View>
-
-                      {getModalidadeStates().stepEnabled && (
-                        <View style={{ marginTop: 10, paddingTop: 6, borderTopWidth: 0.5, borderTopColor: '#E2E8F0' }}>
-                          {getModalidadeStates().stepsList.map((step, idx) => (
-                            <View key={step.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                              
-                              <View style={{ width: 75, height: 32, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC', marginRight: 6 }}>
-                                <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#1E3A8A' }}>{step.type}</Text>
-                              </View>
-
-                              <TextInput
-                                value={step.t1}
-                                onChangeText={(v) => { const st = getModalidadeStates(); const u = [...st.stepsList]; u[idx].t1 = v; st.setStepsList(u); }}
-                                placeholder="Min"
-                                keyboardType="numeric"
-                                style={{ width: 45, height: 32, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, textAlign: 'center', fontSize: 11, marginRight: 4, backgroundColor: '#FFFFFF' }}
-                              />
-
-                              {step.type === 'Entre' && (
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                  <Text style={{ fontSize: 11, color: '#64748B', marginRight: 4 }}>e</Text>
-                                  <TextInput
-                                    value={step.t2}
-                                    onChangeText={(v) => { const st = getModalidadeStates(); const u = [...st.stepsList]; u[idx].t2 = v; st.setStepsList(u); }}
-                                    placeholder="Min"
-                                    keyboardType="numeric"
-                                    style={{ width: 45, height: 32, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, textAlign: 'center', fontSize: 11, marginRight: 4, backgroundColor: '#FFFFFF' }}
-                                  />
-                                </View>
-                              )}
-
-                              <Text style={{ fontSize: 11, color: '#64748B', marginRight: 4 }}>=</Text>
-
-                              <TextInput
-                                value={step.pts}
-                                onChangeText={(v) => { const st = getModalidadeStates(); const u = [...st.stepsList]; u[idx].pts = v; st.setStepsList(u); }}
-                                placeholder="Pontos"
-                                keyboardType="numeric"
-                                style={{ flex: 1, height: 32, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, textAlign: 'center', fontSize: 11, backgroundColor: '#FFFFFF' }}
-                              />
-
-                              <TouchableOpacity
-                                onPress={() => { const st = getModalidadeStates(); st.setStepsList(st.stepsList.filter(s => s.id !== step.id)); }}
-                                style={{ marginLeft: 6, width: 22, height: 22, borderRadius: 11, backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center' }}
-                              >
-                                <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: 'bold', marginTop: -2 }}>×</Text>
-                              </TouchableOpacity>
-                            </View>
-                          ))}
-
-                          <TouchableOpacity
-                            onPress={() => {
-                              const st = getModalidadeStates();
-                              if (st.stepsList.length >= 5) { alert("Você já utilizou o limite de 5 steps"); return; }
-                              const novoId = st.stepsList.length > 0 ? Math.max(...st.stepsList.map(s => s.id)) + 1 : 1;
-                              st.setStepsList([...st.stepsList, { id: novoId, type: 'Entre', t1: '', t2: '', pts: '' }]);
-                            }}
-                            style={{ backgroundColor: '#1E3A8A', paddingVertical: 8, borderRadius: 4, alignItems: 'center', marginTop: 6 }}
-                          >
-                            <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>+ Add Step</Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-                )}
-                            <TouchableOpacity
-                              onPress={handleAddStepItem}
-                              style={{ backgroundColor: '#1E3A8A', paddingVertical: 8, borderRadius: 4, alignItems: 'center', marginTop: 6 }}
-                            >
-                              <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>+ Add Step</Text>
-                            </TouchableOpacity>
-                          </View>
-                        )}
-                      </View>
-
-                    </View>
-                  );
-                })()}
                 )}
               </View>
 
