@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Modal, TextInput } from 'react-native';
 import { supabase } from '../../supabaseClient';
+import ModalidadeRegras from '../components/ModalidadeRegras';
 
 export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetchDataFromSupabase, challenges, currentUser, profilesData, selectedLeagueFilter }) {
   
@@ -80,6 +81,24 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
     if (criterioId === 'tempo') setTempoDesempateOrdem(novaOrdem);
   };
 
+    // ⚙️ Função auxiliar para agrupar as variáveis das modalidades
+  const getModalidadeStates = () => {
+    const isMusc = selectedRuleTab === 'Musculação';
+    const isCross = selectedRuleTab === 'Crossfit';
+    return {
+      tempoMinEnabled: isMusc ? muscTempoMinEnabled : (isCross ? crossTempoMinEnabled : aeroTempoMinEnabled),
+      setTempoMinEnabled: isMusc ? setMuscTempoMinEnabled : (isCross ? setCrossTempoMinEnabled : setAeroTempoMinEnabled),
+      tempoMinMinutes: isMusc ? muscTempoMinMinutes : (isCross ? crossTempoMinMinutes : aeroTempoMinMinutes),
+      setTempoMinMinutes: isMusc ? setMuscTempoMinMinutes : (isCross ? setCrossTempoMinMinutes : setAeroTempoMinMinutes),
+      tempoMinPoints: isMusc ? muscTempoMinPoints : (isCross ? crossTempoMinPoints : aeroTempoMinPoints),
+      setTempoMinPoints: isMusc ? setMuscTempoMinPoints : (isCross ? setCrossTempoMinPoints : setAeroTempoMinPoints),
+      stepEnabled: isMusc ? muscStepEnabled : (isCross ? crossStepEnabled : aeroStepEnabled),
+      setStepEnabled: isMusc ? setMuscStepEnabled : (isCross ? setCrossStepEnabled : setAeroStepEnabled),
+      stepsList: isMusc ? muscStepsList : (isCross ? crossStepsList : aeroStepsList),
+      setStepsList: isMusc ? setMuscStepsList : (isCross ? setCrossStepsList : setAeroStepsList)
+    };
+  };
+  
   // 2. FUNÇÃO EFEITO: CARREGA AS SOLICITAÇÕES DA LIGA DO ADMIN EM TEMPO REAL
   useEffect(() => {
     if (currentUser?.is_admin || currentUser?.isAdmin) {
@@ -731,6 +750,7 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
 
                   </View>
                 )}
+                                  <ModalidadeRegras selectedRuleTab={selectedRuleTab} states={getModalidadeStates()} />
               </View>
 
             </ScrollView>
