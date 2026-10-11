@@ -115,6 +115,10 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
   const [coletivosTempoMinMinutes, setColetivosTempoMinMinutes] = useState('');
   const [coletivosTempoMinPoints, setColetivosTempoMinPoints] = useState('');
 
+    // 👣 MEMÓRIA LOCAL: REGRAS DE PASSOS DIÁRIOS
+  const [passosMultEnabled, setPassosMultEnabled] = useState(false);
+  const [passosMultValue, setPassosMultValue] = useState('0.1');
+
   // 🟠 CONTROLE MESTRE: Habilitar/Desabilitar atividades no desafio
   const [enabledActivities, setEnabledActivities] = useState({
     'Musculação': true,
