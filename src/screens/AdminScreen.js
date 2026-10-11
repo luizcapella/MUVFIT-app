@@ -5,6 +5,7 @@ import { supabase } from '../../supabaseClient';
 import ModalidadeRegras from '../components/ModalidadeRegras';
 import ModalidadeRegrasKM from '../components/ModalidadeRegrasKM';
 import ModalidadeRegrasTempo from '../components/ModalidadeRegrasTempo';
+import ModalidadeRegrasPassos from '../components/ModalidadeRegrasPassos';
 
 export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetchDataFromSupabase, challenges, currentUser, profilesData, selectedLeagueFilter }) {
   
@@ -219,6 +220,15 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
       setTempoMinMinutes: isLutas ? setLutasTempoMinMinutes : setColetivosTempoMinMinutes,
       tempoMinPoints: isLutas ? lutasTempoMinPoints : coletivosTempoMinPoints,
       setTempoMinPoints: isLutas ? setLutasTempoMinPoints : setColetivosTempoMinPoints
+    };
+  };
+  // ⚙️ Função auxiliar para agrupar as variáveis da modalidade de Passos Diários
+  const getModalidadePassosStates = () => {
+    return {
+      passosMultEnabled,
+      setPassosMultEnabled,
+      passosMultValue,
+      setPassosMultValue
     };
   };
 
@@ -907,6 +917,7 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                      <ModalidadeRegras selectedRuleTab={selectedRuleTab} states={getModalidadeStates()} />
                     <ModalidadeRegrasKM selectedRuleTab={selectedRuleTab} states={getModalidadeKmStates()} />
                     <ModalidadeRegrasTempo selectedRuleTab={selectedRuleTab} states={getModalidadeTempoStates()} />
+                    <ModalidadeRegrasPassos selectedRuleTab={selectedRuleTab} states={getModalidadePassosStates()} />
                   </>
                 )}
               </View>
