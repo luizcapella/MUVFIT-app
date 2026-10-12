@@ -120,6 +120,21 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
   const [passosMultEnabled, setPassosMultEnabled] = useState(false);
   const [passosMultValue, setPassosMultValue] = useState('0.1');
 
+    // ➕ MEMÓRIA LOCAL: ADICIONAR PONTOS MANUALMENTE
+  const [isAdminManualPointsOpen, setIsAdminManualPointsOpen] = useState(false);
+  const [manualLigaSelecionada, setManualLigaSelecionada] = useState(null);
+  const [manualAtletaSelecionado, setManualAtletaSelecionado] = useState(null);
+  const [manualModalidade, setManualModalidade] = useState(null);
+  const [manualData, setManualData] = useState(new Date().toISOString().split('T')[0]);
+  const [manualTempo, setManualTempo] = useState('');
+  const [manualDistancia, setManualDistancia] = useState('');
+  const [manualPontos, setManualPontos] = useState('');
+  const [manualBonusInquebravel, setManualBonusInquebravel] = useState(false);
+  const [manualBonusDesperta, setManualBonusDesperta] = useState(false);
+
+  // Controles de abertura dos dropdowns internos de seleção
+  const [openManualDropdown, setOpenManualDropdown] = useState(null); // 'liga', 'atleta', 'modalidade'
+
   // 🟠 CONTROLE MESTRE: Habilitar/Desabilitar atividades no desafio
   const [enabledActivities, setEnabledActivities] = useState({
     'Musculação': true,
