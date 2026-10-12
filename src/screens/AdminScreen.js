@@ -613,15 +613,27 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
         </View>
       )}
 
-              {/* 🎯 2º NOVA ABA COLAPSÁVEL: ADICIONAR PONTOS MANUALMENTE */}
-              <AdminPontosManuais 
-                isOpen={isAdminManualPointsOpen}
-                setIsOpen={setIsAdminManualPointsOpen}
-                states={getAdminManualPointsStates()}
-                enabledActivities={enabledActivities}
-                ligasDisponiveis={challenges || []}
-                atletasAtivos={leagueMembers || []}
-              />
+                           {/* 🎯 2º NOVA ABA COLAPSÁVEL: ADICIONAR PONTOS MANUALMENTE */}
+              <TouchableOpacity
+                onPress={() => setIsAdminManualPointsOpen(!isAdminManualPointsOpen)}
+                style={styles.accordionHeader}
+              >
+                <Text style={styles.accordionTitle}>➕ Adicionar Pontos Manualmente</Text>
+                <Text style={styles.accordionArrow}>{isAdminManualPointsOpen ? '▲' : '▼'}</Text>
+              </TouchableOpacity>
+
+              {isAdminManualPointsOpen && (
+                <View style={styles.accordionContent}>
+                  <AdminPontosManuais 
+                    isOpen={isAdminManualPointsOpen}
+                    setIsOpen={setIsAdminManualPointsOpen}
+                    states={getAdminManualPointsStates()}
+                    enabledActivities={enabledActivities}
+                    ligasDisponiveis={challenges || []}
+                    atletasAtivos={leagueMembers || []}
+                  />
+                </View>
+              )}
 
         {/* ⚙️ WINDOW MODAL: DEFINIÇÃO DE REGRAS DA LIGA / BASE DA LIGA */}
       <Modal
