@@ -6,6 +6,7 @@ import ModalidadeRegras from '../components/ModalidadeRegras';
 import ModalidadeRegrasKM from '../components/ModalidadeRegrasKM';
 import ModalidadeRegrasTempo from '../components/ModalidadeRegrasTempo';
 import ModalidadeRegrasPassos from '../components/ModalidadeRegrasPassos';
+import AdminPontosManuais from '../components/AdminPontosManuais';
 
 export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetchDataFromSupabase, challenges, currentUser, profilesData, selectedLeagueFilter }) {
   
@@ -237,6 +238,33 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
       setTempoMinPoints: isLutas ? setLutasTempoMinPoints : setColetivosTempoMinPoints
     };
   };
+
+    // ⚙️ Função auxiliar para agrupar as variáveis de Adição Manual de Pontos
+  const getAdminManualPointsStates = () => {
+    return {
+      openManualDropdown,
+      setOpenManualDropdown,
+      manualLigaSelecionada,
+      setManualLigaSelecionada,
+      manualAtletaSelecionado,
+      setManualAtletaSelecionado,
+      manualModalidade,
+      setManualModalidade,
+      manualData,
+      setManualData,
+      manualTempo,
+      setManualTempo,
+      manualDistancia,
+      setManualDistancia,
+      manualPontos,
+      setManualPontos,
+      manualBonusInquebravel,
+      setManualBonusInquebravel,
+      manualBonusDesperta,
+      setManualBonusDesperta
+    };
+  };
+
   // ⚙️ Função auxiliar para agrupar as variáveis da modalidade de Passos Diários
   const getModalidadePassosStates = () => {
     return {
@@ -584,6 +612,16 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
 
         </View>
       )}
+
+              {/* 🎯 2º NOVA ABA COLAPSÁVEL: ADICIONAR PONTOS MANUALMENTE */}
+              <AdminPontosManuais 
+                isOpen={isAdminManualPointsOpen}
+                setIsOpen={setIsAdminManualPointsOpen}
+                states={getAdminManualPointsStates()}
+                enabledActivities={enabledActivities}
+                ligasDisponiveis={challenges || []}
+                atletasAtivos={leagueMembers || []}
+              />
 
         {/* ⚙️ WINDOW MODAL: DEFINIÇÃO DE REGRAS DA LIGA / BASE DA LIGA */}
       <Modal
