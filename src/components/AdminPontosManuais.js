@@ -148,42 +148,43 @@ export default function AdminPontosManuais({
           )}
         </View>
 
-                     {/* d. SELETOR DE DATA VISUAL NATIVO (CALENDÁRIO FUNCIONAL) */}
+                  {/* d. SELETOR DE DATA VISUAL NATIVO (CALENDÁRIO FUNCIONAL) */}
         <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155', marginBottom: 4 }}>d. Data da Atividade *</Text>
         
-        {/* Botão Principal que exibe a data atual */}
-        <TouchableOpacity
-          onPress={() => setShowDatePicker(true)}
-          style={{ height: 38, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 6, justifyContent: 'center', paddingHorizontal: 12, backgroundColor: '#FFFFFF', marginBottom: 12 }}
-        >
-          <Text style={{ fontSize: 13, color: '#1E3A8A', fontWeight: '700' }}>
-            📅 {states.manualData ? states.manualData : 'Clique para selecionar o dia...'}
-          </Text>
-        </TouchableOpacity>
+        <View style={{ position: 'relative', marginBottom: 12 }}>
+          <TouchableOpacity
+            onPress={() => setShowDatePicker(!showDatePicker)}
+            style={{ height: 38, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 6, justifyContent: 'center', paddingHorizontal: 12, backgroundColor: '#FFFFFF' }}
+          >
+            <Text style={{ fontSize: 13, color: '#1E3A8A', fontWeight: '700' }}>
+              📅 {states.manualData ? states.manualData : 'Clique para selecionar o dia...'}
+            </Text>
+          </TouchableOpacity>
 
-        {/* Input de Data nativo oculto que é disparado pelo clique */}
-        {showDatePicker && (
-          <input
-            type="date"
-            value={states.manualData}
-            onChange={(e) => {
-              if (e.target.value) {
-                states.setManualData(e.target.value);
-              }
-              setShowDatePicker(false); // Fecha o calendário após escolher
-            }}
-            style={{
-              position: 'absolute',
-              top: 40,
-              left: 12,
-              right: 12,
-              opacity: 0, // Invisível para que o clique use a folha nativa do navegador/celular
-              height: 38,
-              zIndex: 99999
-            }}
-            autoFocus={true}
-          />
-        )}
+          {showDatePicker && (
+            <input
+              type="date"
+              value={states.manualData}
+              onChange={(e) => {
+                if (e.target.value) {
+                  states.setManualData(e.target.value);
+                }
+                setShowDatePicker(false);
+              }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                opacity: 0,
+                width: '100%',
+                height: '100%',
+                zIndex: 99999
+              }}
+            />
+          )}
+        </View>
 
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
           {/* e. TEMPO DA ATIVIDADE */}
