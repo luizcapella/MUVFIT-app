@@ -10,6 +10,8 @@ export default function AdminPontosManuais({
   atletasAtivos = []     // Receberá os atletas do banco filtrados
 }) {
 
+    const [showDatePicker, setShowDatePicker] = useState(false);
+
   if (!isOpen || !states) return null;
 
   const modalidadesLista = [
@@ -145,35 +147,43 @@ export default function AdminPontosManuais({
             </View>
           )}
         </View>
-               {/* d. SELETOR DE DATA VISUAL NATIVO (CALENDÁRIO CLICÁVEL) */}
+
+                     {/* d. SELETOR DE DATA VISUAL NATIVO (CALENDÁRIO FUNCIONAL) */}
         <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155', marginBottom: 4 }}>d. Data da Atividade *</Text>
+        
+        {/* Botão Principal que exibe a data atual */}
         <TouchableOpacity
-          onPress={async () => {
-            try {
-              const { action, year, month, day } = await Promise.resolve({ action: 'dateSetAction', year: 2026, month: 9, day: 12 });
-              if (action !== 'dismissedAction') {
-                const dataFormatada = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                states.setManualData(dataFormatada);
-              }
-            } catch ({ code, message }) {
-              console.warn('Não foi possível abrir o seletor de data:', message);
-            }
-          }}
-          style={{ 
-            height: 38, 
-            borderWidth: 1, 
-            borderColor: '#CBD5E1', 
-            borderRadius: 6, 
-            justifyContent: 'center', 
-            paddingHorizontal: 12, 
-            backgroundColor: '#FFFFFF', 
-            marginBottom: 12 
-          }}
+          onPress={() => setShowDatePicker(true)}
+          style={{ height: 38, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 6, justifyContent: 'center', paddingHorizontal: 12, backgroundColor: '#FFFFFF', marginBottom: 12 }}
         >
           <Text style={{ fontSize: 13, color: '#1E3A8A', fontWeight: '700' }}>
             📅 {states.manualData ? states.manualData : 'Clique para selecionar o dia...'}
           </Text>
         </TouchableOpacity>
+
+        {/* Input de Data nativo oculto que é disparado pelo clique */}
+        {showDatePicker && (
+          <input
+            type="date"
+            value={states.manualData}
+            onChange={(e) => {
+              if (e.target.value) {
+                states.setManualData(e.target.value);
+              }
+              setShowDatePicker(false); // Fecha o calendário após escolher
+            }}
+            style={{
+              position: 'absolute',
+              top: 40,
+              left: 12,
+              right: 12,
+              opacity: 0, // Invisível para que o clique use a folha nativa do navegador/celular
+              height: 38,
+              zIndex: 99999
+            }}
+            autoFocus={true}
+          />
+        )}
 
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
           {/* e. TEMPO DA ATIVIDADE */}
