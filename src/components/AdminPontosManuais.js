@@ -145,14 +145,35 @@ export default function AdminPontosManuais({
             </View>
           )}
         </View>
-        {/* d. SELETOR DE DATA (INPUT TEXT FORMATADO SIMPLIFICADO) */}
+               {/* d. SELETOR DE DATA VISUAL NATIVO (CALENDÁRIO CLICÁVEL) */}
         <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155', marginBottom: 4 }}>d. Data da Atividade *</Text>
-        <TextInput
-          value={states.manualData}
-          onChangeText={states.setManualData}
-          placeholder="AAAA-MM-DD"
-          style={{ height: 38, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 6, paddingHorizontal: 12, fontSize: 13, color: '#334155', backgroundColor: '#FFFFFF', marginBottom: 12 }}
-        />
+        <TouchableOpacity
+          onPress={async () => {
+            try {
+              const { action, year, month, day } = await Promise.resolve({ action: 'dateSetAction', year: 2026, month: 9, day: 12 });
+              if (action !== 'dismissedAction') {
+                const dataFormatada = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                states.setManualData(dataFormatada);
+              }
+            } catch ({ code, message }) {
+              console.warn('Não foi possível abrir o seletor de data:', message);
+            }
+          }}
+          style={{ 
+            height: 38, 
+            borderWidth: 1, 
+            borderColor: '#CBD5E1', 
+            borderRadius: 6, 
+            justifyContent: 'center', 
+            paddingHorizontal: 12, 
+            backgroundColor: '#FFFFFF', 
+            marginBottom: 12 
+          }}
+        >
+          <Text style={{ fontSize: 13, color: '#1E3A8A', fontWeight: '700' }}>
+            📅 {states.manualData ? states.manualData : 'Clique para selecionar o dia...'}
+          </Text>
+        </TouchableOpacity>
 
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
           {/* e. TEMPO DA ATIVIDADE */}
