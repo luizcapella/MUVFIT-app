@@ -142,7 +142,7 @@ export default function WorkoutModal({
                     onChange={(e) => setEndMinute(e.target.value)}
                     style={{ height: 30, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, backgroundColor: '#FFFFFF', paddingHorizontal: 4, fontSize: 12, fontWeight: '700', color: '#1E3A8A', outline: 'none' }}
                   >
-                    {listaMinutos.map(m => <option key={`em-${m}`} value={m}>{m}</option>)}
+                                        {listaMinutos.map(m => <option key={`em-${m}`} value={m}>{m}</option>)}
                   </select>
                 </View>
               </View>
@@ -154,6 +154,7 @@ export default function WorkoutModal({
                 </Text>
               </View>
             </View>
+          )}
 
           {/* CAMPO DE KM (SE FOR CORRIDA OU PEDAL) */}
           {showKmInput && (
