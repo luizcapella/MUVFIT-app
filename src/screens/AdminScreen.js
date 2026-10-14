@@ -36,7 +36,11 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
   const [bonusDespertaHour, setBonusDespertaHour] = useState('05');
   const [bonusDespertaMin, setBonusDespertaMin] = useState('00');
   const [bonusDespertaPoints, setBonusDespertaPoints] = useState('');
-  
+
+    // 🔒 TRAVA DE REPETIÇÃO DE MODALIDADE (LIMITES DA LIGA)
+  const [travaRepeticaoEnabled, setTravaRepeticaoEnabled] = useState(false);
+  const [travaRepeticaoMax, setTravaRepeticaoMax] = useState('1');
+
   // 📝 MURAL DE INSTRUÇÕES
   const [muralText, setMuralText] = useState('');
     // 🏋️ MEMÓRIA LOCAL: REGRAS DE MUSCULAÇÃO
@@ -861,7 +865,50 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                       </View>
                       {bonusDespertaEnabled && (
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                          
+
+                                    {/* /* D. TRAVA DE REPETIÇÃO DE MODALIDADE */ */}
+          <View style={{ marginBottom: 16, backgroundColor: '#FFFFFF', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#E2E8F0' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TouchableOpacity
+                  onPress={() => setTravaRepeticaoEnabled(!travaRepeticaoEnabled)}
+                  style={{ width: 18, height: 18, borderWidth: 1.5, borderColor: '#1E3A8A', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: travaRepeticaoEnabled ? '#1E3A8A' : 'transparent' }}
+                >
+                  {travaRepeticaoEnabled && <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 'bold' }}>✓</Text>}
+                </TouchableOpacity>
+                <Text style={{ fontSize: 13, color: '#334155', marginLeft: 8, fontWeight: '600' }}>🔒 Trava de Repetição de Modalidade</Text>
+              </View>
+
+              {travaRepeticaoEnabled && (
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <select
+                    value={travaRepeticaoMax}
+                    onChange={(e) => setTravaRepeticaoMax(e.target.value)}
+                    style={{
+                      height: 28,
+                      borderWidth: 1,
+                      borderColor: '#CBD5E1',
+                      borderRadius: 4,
+                      backgroundColor: '#F8FAFC',
+                      paddingHorizontal: 6,
+                      fontSize: 12,
+                      fontWeight: '700',
+                      color: '#1E3A8A',
+                      cursor: 'pointer',
+                      marginRight: 6,
+                      outline: 'none'
+                    }}
+                  >
+                    {['1', '2', '3', '4', '5'].map(num => (
+                      <option key={num} value={num}>{num}</option>
+                    ))}
+                  </select>
+                  <Text style={{ fontSize: 12, color: '#64748B', fontWeight: '700' }}>x ao dia</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
                           {/* SELETOR DE HORÁRIO EM PEQUENOS QUADRADOS COM SETAS */}
                           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 0.5 }}>
                             {/* Bloco Hora */}
