@@ -27,7 +27,10 @@ export default function WorkoutModal({
       <View style={styles.container}>
         {/* CABEÇALHO DO MODAL */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>🏋️ Registrar Novo Exercício</Text>
+          <Text style={styles.headerTitle}>REGISTRAR TREINO NA LIGA [NOME DA LIGA]</Text>
+                <View style={{ marginTop: 6, paddingHorizontal: 2 }}>
+              <Text style={{ fontSize: 13, color: '#FF6B00', fontWeight: 'bold' }}>📜 Regras Ativas:</Text>
+            </View>
           <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
             <Text style={styles.closeBtnText}>Fechar ✕</Text>
           </TouchableOpacity>
