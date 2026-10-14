@@ -23,7 +23,24 @@ export default function WorkoutModal({
 }) {
   const showKmInput = selectedActivity.includes('🏃') || selectedActivity.includes('🚴');
   const [showDatePicker, setShowDatePicker] = useState(false);
-  
+    // ⏱️ MEMÓRIA LOCAL: HORÁRIOS DE INÍCIO E FIM DO TREINO
+  const [startHour, setStartHour] = useState('08');
+  const [startMinute, setStartMinute] = useState('00');
+  const [endHour, setEndHour] = useState('09');
+  const [endMinute, setEndMinute] = useState('00');
+  // 🧮 CALCULO AUTOMÁTICO DE TEMPO TOTAL EM MINUTOS
+  const calcularTempoTotal = () => {
+    const inicioAbsoluto = (parseInt(startHour) * 60) + parseInt(startMinute);
+    const fimAbsoluto = (parseInt(endHour) * 60) + parseInt(endMinute);
+    let diferenca = fimAbsoluto - inicioAbsoluto;
+    if (diferenca <= 0) diferenca += 1440; // Trava automática de virada de dia (24h)
+    return diferenca;
+  };
+
+  // Matrizes de opções para as roletas
+  const listaHoras = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+  const listaMinutos = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+
   return (
     <Modal visible={isOpen} animationType="slide" transparent={false}>
       <View style={styles.container}>
@@ -79,6 +96,64 @@ export default function WorkoutModal({
                 cursor: 'pointer'
               }}
             />
+          </View>
+
+          {/* ⏱️ BLOCO DE HORÁRIOS E CÁLCULO DE TEMPO (OCULTO EM PASSOS DIÁRIOS) */}
+          {selectedActivity !== 'Passos Diários' && (
+            <View style={{ marginBottom: 12, backgroundColor: '#F8FAFC', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0' }}>
+              <Text style={[styles.label, { marginBottom: 8, fontSize: 13 }]}>⏰ Horário de Início e Fim da Atividade:</Text>
+              
+              {/* INTERFACE DE SELEÇÃO: HORÁRIO INÍCIO */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <Text style={{ fontSize: 12, color: '#475569', fontWeight: '600' }}>Horário de Início:</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <select
+                    value={startHour}
+                    onChange={(e) => setStartHour(e.target.value)}
+                    style={{ height: 30, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, backgroundColor: '#FFFFFF', paddingHorizontal: 4, fontSize: 12, fontWeight: '700', color: '#1E3A8A', outline: 'none' }}
+                  >
+                    {listaHoras.map(h => <option key={`sh-${h}`} value={h}>{h}</option>)}
+                  </select>
+                  <Text style={{ marginHorizontal: 4, fontWeight: 'bold', color: '#64748B' }}>:</Text>
+                  <select
+                    value={startMinute}
+                    onChange={(e) => setStartMinute(e.target.value)}
+                    style={{ height: 30, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, backgroundColor: '#FFFFFF', paddingHorizontal: 4, fontSize: 12, fontWeight: '700', color: '#1E3A8A', outline: 'none' }}
+                  >
+                    {listaMinutos.map(m => <option key={`sm-${m}`} value={m}>{m}</option>)}
+                  </select>
+                </View>
+              </View>
+
+              {/* INTERFACE DE SELEÇÃO: HORÁRIO TÉRMINO */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <Text style={{ fontSize: 12, color: '#475569', fontWeight: '600' }}>Horário de Término:</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <select
+                    value={endHour}
+                    onChange={(e) => setEndHour(e.target.value)}
+                    style={{ height: 30, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, backgroundColor: '#FFFFFF', paddingHorizontal: 4, fontSize: 12, fontWeight: '700', color: '#1E3A8A', outline: 'none' }}
+                  >
+                    {listaHoras.map(h => <option key={`eh-${h}`} value={h}>{h}</option>)}
+                  </select>
+                  <Text style={{ marginHorizontal: 4, fontWeight: 'bold', color: '#64748B' }}>:</Text>
+                  <select
+                    value={endMinute}
+                    onChange={(e) => setEndMinute(e.target.value)}
+                    style={{ height: 30, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, backgroundColor: '#FFFFFF', paddingHorizontal: 4, fontSize: 12, fontWeight: '700', color: '#1E3A8A', outline: 'none' }}
+                  >
+                    {listaMinutos.map(m => <option key={`em-${m}`} value={m}>{m}</option>)}
+                  </select>
+                </View>
+              </View>
+
+              {/* ⏳ AMPULHETA: TEMPO TOTAL CALCULADO */}
+              <View style={{ marginTop: 4, paddingTop: 6, borderTopWidth: 0.5, borderTopColor: '#CBD5E1', flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontSize: 13, color: '#16A34A', fontWeight: '700' }}>
+                  ⏳ Tempo total Calculado: {calcularTempoTotal()} minutos
+                </Text>
+              </View>
+            </View>
           </View>
 
           {/* CAMPO DE KM (SE FOR CORRIDA OU PEDAL) */}
