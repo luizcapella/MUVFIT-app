@@ -866,6 +866,41 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                       {bonusDespertaEnabled && (
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
 
+                          {/* SELETOR DE HORÁRIO EM PEQUENOS QUADRADOS COM SETAS */}
+                          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 0.5 }}>
+                            {/* Bloco Hora */}
+                            <View style={{ alignItems: 'center' }}>
+                              <TouchableOpacity onPress={() => setBonusDespertaHour(prev => String(Math.min(23, Number(prev) + 1)).padStart(2, '0'))} style={{ padding: 2 }}><Text style={{ fontSize: 10, color: '#1E3A8A' }}>▲</Text></TouchableOpacity>
+                              <View style={{ width: 34, height: 28, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
+                                <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>{bonusDespertaHour}</Text>
+                              </View>
+                              <TouchableOpacity onPress={() => setBonusDespertaHour(prev => String(Math.max(0, Number(prev) - 1)).padStart(2, '0'))} style={{ padding: 2 }}><Text style={{ fontSize: 10, color: '#1E3A8A' }}>▼</Text></TouchableOpacity>
+                            </View>
+                            
+                            <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#64748B', marginHorizontal: 6 }}>:</Text>
+                            
+                            {/* Bloco Minuto */}
+                            <View style={{ alignItems: 'center' }}>
+                              <TouchableOpacity onPress={() => setBonusDespertaMin(prev => String(Math.min(59, Number(prev) + 5)).padStart(2, '0'))} style={{ padding: 2 }}><Text style={{ fontSize: 10, color: '#1E3A8A' }}>▲</Text></TouchableOpacity>
+                              <View style={{ width: 34, height: 28, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
+                                <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>{bonusDespertaMin}</Text>
+                              </View>
+                              <TouchableOpacity onPress={() => setBonusDespertaMin(prev => String(Math.max(0, Number(prev) - 5)).padStart(2, '0'))} style={{ padding: 2 }}><Text style={{ fontSize: 10, color: '#1E3A8A' }}>▼</Text></TouchableOpacity>
+                            </View>
+                          </View>
+                          
+                          {/* Caixa de Pontuação do Desperta */}
+                          <TextInput
+                            value={bonusDespertaPoints}
+                            onChangeText={setBonusDespertaPoints}
+                            placeholder="Pontos (F)"
+                            keyboardType="numeric"
+                            style={{ flex: 0.45, height: 34, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, paddingHorizontal: 8, fontSize: 12, color: '#334155', textAlign: 'center' }}
+                          />
+                        </View>
+                      )}
+                    </View>
+
               {/* 🔒 TRAVA DE REPETIÇÃO DE MODALIDADE (NATIVA) */}
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <TouchableOpacity
@@ -905,41 +940,6 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                   <Text style={{ fontSize: 12, color: '#64748B', fontWeight: '700' }}>ao dia</Text>
                 </View>
               )}
-
-                          {/* SELETOR DE HORÁRIO EM PEQUENOS QUADRADOS COM SETAS */}
-                          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 0.5 }}>
-                            {/* Bloco Hora */}
-                            <View style={{ alignItems: 'center' }}>
-                              <TouchableOpacity onPress={() => setBonusDespertaHour(prev => String(Math.min(23, Number(prev) + 1)).padStart(2, '0'))} style={{ padding: 2 }}><Text style={{ fontSize: 10, color: '#1E3A8A' }}>▲</Text></TouchableOpacity>
-                              <View style={{ width: 34, height: 28, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
-                                <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>{bonusDespertaHour}</Text>
-                              </View>
-                              <TouchableOpacity onPress={() => setBonusDespertaHour(prev => String(Math.max(0, Number(prev) - 1)).padStart(2, '0'))} style={{ padding: 2 }}><Text style={{ fontSize: 10, color: '#1E3A8A' }}>▼</Text></TouchableOpacity>
-                            </View>
-                            
-                            <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#64748B', marginHorizontal: 6 }}>:</Text>
-                            
-                            {/* Bloco Minuto */}
-                            <View style={{ alignItems: 'center' }}>
-                              <TouchableOpacity onPress={() => setBonusDespertaMin(prev => String(Math.min(59, Number(prev) + 5)).padStart(2, '0'))} style={{ padding: 2 }}><Text style={{ fontSize: 10, color: '#1E3A8A' }}>▲</Text></TouchableOpacity>
-                              <View style={{ width: 34, height: 28, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
-                                <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155' }}>{bonusDespertaMin}</Text>
-                              </View>
-                              <TouchableOpacity onPress={() => setBonusDespertaMin(prev => String(Math.max(0, Number(prev) - 5)).padStart(2, '0'))} style={{ padding: 2 }}><Text style={{ fontSize: 10, color: '#1E3A8A' }}>▼</Text></TouchableOpacity>
-                            </View>
-                          </View>
-                          
-                          {/* Caixa de Pontuação do Desperta */}
-                          <TextInput
-                            value={bonusDespertaPoints}
-                            onChangeText={setBonusDespertaPoints}
-                            placeholder="Pontos (F)"
-                            keyboardType="numeric"
-                            style={{ flex: 0.45, height: 34, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, paddingHorizontal: 8, fontSize: 12, color: '#334155', textAlign: 'center' }}
-                          />
-                        </View>
-                      )}
-                    </View>
 
                     {/* 4. CRITÉRIOS DE DESEMPATE (ESTILO BRASILEIRÃO) */}
                     <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E3A8A', marginBottom: 12, textTransform: 'uppercase', marginTop: 16 }}>
