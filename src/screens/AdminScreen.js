@@ -901,7 +901,9 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                       )}
                     </View>
 
-              {/* 🔒 TRAVA DE REPETIÇÃO DE MODALIDADE (NATIVA) */}
+                      {/* /* D. TRAVA DE REPETIÇÃO DE MODALIDADE */ */}
+          <View style={{ marginBottom: 16, backgroundColor: '#FFFFFF', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#E2E8F0' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <TouchableOpacity
                   onPress={() => setTravaRepeticaoEnabled(!travaRepeticaoEnabled)}
@@ -909,7 +911,7 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                 >
                   {travaRepeticaoEnabled && <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 'bold' }}>✓</Text>}
                 </TouchableOpacity>
-                <Text style={{ fontSize: 13, color: '#334155', fontWeight: '600' }}>🔒 Trava de Repetição:</Text>
+                <Text style={{ fontSize: 13, color: '#334155', fontWeight: '600' }}>🔒 Trava de Repetição de Modalidade</Text>
               </View>
 
               {travaRepeticaoEnabled && (
@@ -939,6 +941,7 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                   </TouchableOpacity>
                   <Text style={{ fontSize: 12, color: '#64748B', fontWeight: '700' }}>ao dia</Text>
                 </View>
+               </View>
               )}
 
                     {/* 4. CRITÉRIOS DE DESEMPATE (ESTILO BRASILEIRÃO) */}
