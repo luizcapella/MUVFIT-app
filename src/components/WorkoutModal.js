@@ -21,7 +21,7 @@ export default function WorkoutModal({
   onSubmit,
   submitting
 }) {
-  const showKmInput = selectedActivity.includes('🏃') || selectedActivity.includes('🚴');
+  const showKmInput = ['Corrida', 'Caminhada', 'Bike'].includes(selectedActivity);
   const [showDatePicker, setShowDatePicker] = useState(false);
     // ⏱️ MEMÓRIA LOCAL: HORÁRIOS DE INÍCIO E FIM DO TREINO
   const [startHour, setStartHour] = useState('08');
@@ -156,18 +156,18 @@ export default function WorkoutModal({
             </View>
           )}
 
-          {/* CAMPO DE KM (SE FOR CORRIDA OU PEDAL) */}
+                   {/* 🏃 DISTÂNCIA PERCORRIDA CONDICIONAL (SÓ PARA CORRIDA, CAMINHADA E BIKE) */}
           {showKmInput && (
-            <>
-              <Text style={styles.label}>🏃 Distância Percorrida (Km):</Text>
+            <View style={{ marginBottom: 12 }}>
+              <Text style={styles.label}>🏃 Distância Percorrida (em KM):</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { height: 40, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 6, backgroundColor: '#FFFFFF', paddingHorizontal: 12, fontSize: 13, color: '#334155', marginTop: 4 }]}
                 value={kmInput}
                 onChangeText={setKmInput}
+                placeholder="Digite a distância percorrida (Ex: 5.5)"
                 keyboardType="numeric"
-                placeholder="Ex: 5.2"
               />
-            </>
+            </View>
           )}
 
           {/* COMENTÁRIOS ADICIONAIS */}
