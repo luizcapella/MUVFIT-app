@@ -901,7 +901,7 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                       )}
                     </View>
 
-                      {/* /* D. TRAVA DE REPETIÇÃO DE MODALIDADE */ */}
+                                {/* /* D. TRAVA DE REPETIÇÃO DE MODALIDADE */ */}
           <View style={{ marginBottom: 16, backgroundColor: '#FFFFFF', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#E2E8F0' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -941,8 +941,9 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                   </TouchableOpacity>
                   <Text style={{ fontSize: 12, color: '#64748B', fontWeight: '700' }}>ao dia</Text>
                 </View>
-               </View>
               )}
+            </View>
+          </View>
 
                     {/* 4. CRITÉRIOS DE DESEMPATE (ESTILO BRASILEIRÃO) */}
                     <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E3A8A', marginBottom: 12, textTransform: 'uppercase', marginTop: 16 }}>
