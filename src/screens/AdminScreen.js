@@ -866,48 +866,45 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                       {bonusDespertaEnabled && (
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
 
-                                    {/* /* D. TRAVA DE REPETIÇÃO DE MODALIDADE */ */}
-          <View style={{ marginBottom: 16, backgroundColor: '#FFFFFF', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#E2E8F0' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              {/* 🔒 TRAVA DE REPETIÇÃO DE MODALIDADE (NATIVA) */}
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <TouchableOpacity
                   onPress={() => setTravaRepeticaoEnabled(!travaRepeticaoEnabled)}
-                  style={{ width: 18, height: 18, borderWidth: 1.5, borderColor: '#1E3A8A', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: travaRepeticaoEnabled ? '#1E3A8A' : 'transparent' }}
+                  style={{ width: 18, height: 18, borderWidth: 1.5, borderColor: '#1E3A8A', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: travaRepeticaoEnabled ? '#1E3A8A' : 'transparent', marginRight: 8 }}
                 >
                   {travaRepeticaoEnabled && <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 'bold' }}>✓</Text>}
                 </TouchableOpacity>
-                <Text style={{ fontSize: 13, color: '#334155', marginLeft: 8, fontWeight: '600' }}>🔒 Trava de Repetição de Modalidade</Text>
+                <Text style={{ fontSize: 13, color: '#334155', fontWeight: '600' }}>🔒 Trava de Repetição:</Text>
               </View>
 
               {travaRepeticaoEnabled && (
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <select
-                    value={travaRepeticaoMax}
-                    onChange={(e) => setTravaRepeticaoMax(e.target.value)}
-                    style={{
-                      height: 28,
-                      borderWidth: 1,
-                      borderColor: '#CBD5E1',
-                      borderRadius: 4,
-                      backgroundColor: '#F8FAFC',
-                      paddingHorizontal: 6,
-                      fontSize: 12,
-                      fontWeight: '700',
-                      color: '#1E3A8A',
-                      cursor: 'pointer',
-                      marginRight: 6,
-                      outline: 'none'
+                  <TouchableOpacity
+                    onPress={() => {
+                      const atual = parseInt(travaRepeticaoMax) || 1;
+                      setTravaRepeticaoMax(String(atual > 1 ? atual - 1 : 5));
                     }}
+                    style={{ width: 28, height: 28, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }}
                   >
-                    {['1', '2', '3', '4', '5'].map(num => (
-                      <option key={num} value={num}>{num}</option>
-                    ))}
-                  </select>
-                  <Text style={{ fontSize: 12, color: '#64748B', fontWeight: '700' }}>x ao dia</Text>
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#64748B' }}>-</Text>
+                  </TouchableOpacity>
+                  
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E3A8A', paddingHorizontal: 10 }}>
+                    {travaRepeticaoMax}x
+                  </Text>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      const atual = parseInt(travaRepeticaoMax) || 1;
+                      setTravaRepeticaoMax(String(atual < 5 ? atual + 1 : 1));
+                    }}
+                    style={{ width: 28, height: 28, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC', marginRight: 6 }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#64748B' }}>+</Text>
+                  </TouchableOpacity>
+                  <Text style={{ fontSize: 12, color: '#64748B', fontWeight: '700' }}>ao dia</Text>
                 </View>
               )}
-            </View>
-          </View>
 
                           {/* SELETOR DE HORÁRIO EM PEQUENOS QUADRADOS COM SETAS */}
                           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 0.5 }}>
