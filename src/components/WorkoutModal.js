@@ -1,5 +1,5 @@
 // src/components/WorkoutModal.js
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, ActivityIndicator } from 'react-native';
 import CustomPicker from './CustomPicker';
 import RegrasAtivasPapiro from './RegrasAtivasPapiro';
@@ -22,7 +22,8 @@ export default function WorkoutModal({
   submitting
 }) {
   const showKmInput = selectedActivity.includes('🏃') || selectedActivity.includes('🚴');
-
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  
   return (
     <Modal visible={isOpen} animationType="slide" transparent={false}>
       <View style={styles.container}>
@@ -54,14 +55,31 @@ export default function WorkoutModal({
             ]}
           />
 
-          {/* CAMPO DE DATA DO EXERCÍCIO */}
-          <Text style={styles.label}>📅 Data do Exercício (AAAA-MM-DD):</Text>
-          <TextInput
-            style={styles.input}
-            value={workoutDate}
-            onChangeText={setWorkoutDate}
-            placeholder="Ex: 2026-09-27"
-          />
+                    {/* 📅 SELETOR DE DATA VISUAL NATIVO (CALENDÁRIO CLICÁVEL) */}
+          <Text style={styles.label}>📅 Data do Treino (AAAA-MM-DD):</Text>
+          <View style={{ marginBottom: 12, height: 40, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 6, backgroundColor: '#FFFFFF', justifyContent: 'center', paddingHorizontal: 8 }}>
+            <input
+              type="date"
+              value={workoutDate}
+              onChange={(e) => {
+                if (e.target.value) {
+                  setWorkoutDate(e.target.value);
+                }
+              }}
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                outline: 'none',
+                backgroundColor: 'transparent',
+                fontSize: '13px',
+                fontFamily: 'sans-serif',
+                fontWeight: '700',
+                color: '#1E3A8A',
+                cursor: 'pointer'
+              }}
+            />
+          </View>
 
           {/* CAMPO DE KM (SE FOR CORRIDA OU PEDAL) */}
           {showKmInput && (
