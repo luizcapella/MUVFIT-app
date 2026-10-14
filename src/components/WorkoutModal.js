@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, ActivityIndicator } from 'react-native';
 import CustomPicker from './CustomPicker';
+import RegrasAtivasPapiro from './RegrasAtivasPapiro';
 
 export default function WorkoutModal({
   isOpen,
@@ -28,15 +29,13 @@ export default function WorkoutModal({
         {/* CABEÇALHO DO MODAL */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>REGISTRAR TREINO NA LIGA [NOME DA LIGA]</Text>
-                <View style={{ marginTop: 6, paddingHorizontal: 2 }}>
-              <Text style={{ fontSize: 13, color: '#FF6B00', fontWeight: 'bold' }}>📜 Regras Ativas:</Text>
-            </View>
           <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
             <Text style={styles.closeBtnText}>Fechar ✕</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent}>
+              <RegrasAtivasPapiro selectedActivity={selectedActivity} />
           {/* SELETOR DE MODALIDADE */}
           <CustomPicker
             label="💪 Escolha a Atividade:"
