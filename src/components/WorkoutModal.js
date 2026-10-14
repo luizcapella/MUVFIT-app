@@ -154,7 +154,6 @@ export default function WorkoutModal({
                 </Text>
               </View>
             </View>
-          </View>
 
           {/* CAMPO DE KM (SE FOR CORRIDA OU PEDAL) */}
           {showKmInput && (
