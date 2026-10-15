@@ -2,26 +2,22 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 
 export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = [] }) {
-  const [periodoSelecionado, setPeriodoSelecionado] = useState('atual');
-
-  if (!isOpen) return null;
-
-  // 1. GERAÇÃO DINÂMICA DE FILTROS TEMPORAIS SEM NENHUM DADO FIXO
   const dataAtual = new Date();
   const anoAtual = dataAtual.getFullYear();
-  const mesAtual = dataAtual.getMonth();
+
+  // 🎛️ CONTROLES INTERATIVOS DO SEU PERÍODO CUSTOMIZADO
+  const [anoSelecionado, setAnoSelecionado] = useState(String(anoAtual));
+  const [mesDe, setMesDe] = useState(String(dataAtual.getMonth() + 1)); // Mês atual automático
+  const [mesAte, setMesAte] = useState(String(dataAtual.getMonth() + 1));
+
+  if (!isOpen) return null;
 
   const nomesMeses = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ];
 
-  const opcoesMesesDinamicos = [];
-  for (let m = 0; m <= mesAtual; m++) {
-    opcoesMesesDinamicos.push({ valor: `${m + 1}-${anoAtual}`, label: `📅 ${nomesMeses[m]} / ${anoAtual}` });
-  }
-
-  // Lista mestre com as 8 modalidades oficiais e suas respectivas cores
+  // Lista mestre com todas as 8 modalidades oficiais com seus emojis preservados
   const mapaModalidadesOficiais = [
     { nome: '💪 Musculação', cor: '#3B82F6' },
     { nome: '🏋️ Crossfit/Funcional', cor: '#22C55E' },
@@ -33,10 +29,16 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
     { nome: '⚽ Esportes Coletivos', cor: '#78350F' }
   ];
 
-  // Filtragem estrita: retira 'Passos Diários'
-  const treinosValidos = dadosSupabase.filter(
-    t => t.activity && !t.activity.includes('Passos Diários')
-  );
+  // Filtragem estrita baseada nas datas reais dos treinos e no intervalo selecionado
+  const treinosValidos = dadosSupabase.filter((t) => {
+    if (!t.activity || t.activity.includes('Passos Diários') || !t.date) return false;
+    
+    const [anoTreino, mesTreino] = t.date.split('-');
+    if (anoTreino !== anoSelecionado) return false;
+    
+    const mTreino = parseInt(mesTreino);
+    return mTreino >= parseInt(mesDe) && mTreino <= parseInt(mesAte);
+  });
 
   const totalTreinos = treinosValidos.length;
   const contagemModalidades = {};
@@ -48,7 +50,7 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
     }
   });
 
-  // Garante que todas as 8 modalidades apareçam marcando 0% caso não existam dados
+  // Montagem da lista final de exibição com as 8 modalidades marcando 0% se vazio
   const distribuicaoPraticas = mapaModalidadesOficiais.map((item) => {
     const qtd = contagemModalidades[item.nome] || 0;
     const porc = totalTreinos > 0 ? Math.round((qtd / totalTreinos) * 100) : 0;
@@ -72,20 +74,10 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
   }
 
   return (
-    /* 🔴 BLINDAGEM WEB MESTRE: IGNORA FILTROS ANTERIORES E SOBREPÕE AS BORDAS AZUIS */
     <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100vw',
-      height: '100vh',
-      backgroundColor: 'rgba(0, 0, 0, 0.65)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 999999999, // Elevado ao extremo global
-      padding: '16px',
-      boxSizing: 'border-box'
+      position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+      backgroundColor: 'rgba(0, 0, 0, 0.65)', display: 'flex', justifyContent: 'center', alignItems: 'center',
+      zIndex: 999999999, padding: '16px', boxSizing: 'border-box'
     }}>
       {/* CORPO DO MODAL */}
       <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, width: '100%', maxWidth: 420, padding: 16, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 15 }}>
@@ -98,38 +90,56 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
           </TouchableOpacity>
         </View>
 
-        {/* 1. SELETOR DE PERÍODO TOTALMENTE AUTOMATIZADO E DINÂMICO */}
-        <View style={{ borderWidth: 1, borderColor: '#F97316', borderRadius: 8, padding: 4, marginBottom: 20, backgroundColor: '#FFFFFF' }}>
-          <Text style={{ position: 'absolute', top: -8, left: 12, backgroundColor: '#FFFFFF', paddingHorizontal: 4, fontSize: 10, color: '#F97316', fontWeight: '700', zIndex: 10 }}>
-            Selecione o Período
-          </Text>
-          <select
-            value={periodoSelecionado}
-            onChange={(e) => setPeriodoSelecionado(e.target.value)}
-            style={{ width: '100%', border: 'none', backgroundColor: 'transparent', padding: '6px', fontSize: '13px', fontWeight: '600', color: '#334155', outline: 'none', cursor: 'pointer' }}
-          >
-            <optgroup label="🏆 Ligas Disponíveis">
-              <option value="atual">📅 Período: Atual da Liga</option>
-              <option value="anterior">📅 Período: Liga Anterior</option>
-            </optgroup>
-            
-            <optgroup label="📆 Filtro Mensal Progressivo">
-              {opcoesMesesDinamicos.map((opt) => (
-                <option key={opt.valor} value={opt.valor}>{opt.label}</option>
+        {/* 🎛️ FILTROS INTERATIVOS COMBINADOS (MATANDO A LISTA GIGANTE) */}
+        <View style={{ backgroundColor: '#F8FAFC', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#F97316', marginBottom: 20 }}>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: '#F97316', marginBottom: 6 }}>📆 Selecione o Período Customizado:</Text>
+          
+          <View style={{ flexDirection: 'row', gap: 6 }}>
+            {/* Filtro de Ano */}
+            <select
+              value={anoSelecionado}
+              onChange={(e) => setAnoSelecionado(e.target.value)}
+              style={{ flex: 1, height: '32px', borderRadius: '4px', border: '1px solid #CBD5E1', padding: '4px', fontSize: '12px', fontWeight: '700', color: '#334155', outline: 'none', cursor: 'pointer' }}
+            >
+              <option value={String(anoAtual)}>{anoAtual}</option>
+              <option value={String(anoAtual - 1)}>{anoAtual - 1}</option>
+            </select>
+
+            {/* Filtro Mês DE */}
+            <select
+              value={mesDe}
+              onChange={(e) => setMesDe(e.target.value)}
+              style={{ flex: 1.2, height: '32px', borderRadius: '4px', border: '1px solid #CBD5E1', padding: '4px', fontSize: '11px', fontWeight: '600', color: '#334155', outline: 'none', cursor: 'pointer' }}
+            >
+              {nomesMeses.map((nome, i) => (
+                <option key={`de-${i}`} value={String(i + 1)}>De: {nome}</option>
               ))}
-            </optgroup>
-            
-            <optgroup label="📊 Consolidado Anual Automático">
-              <option value={`geral-${anoAtual}`}>📊 Geral / {anoAtual}</option>
-            </optgroup>
-          </select>
+            </select>
+
+            {/* Filtro Mês ATÉ */}
+            <select
+              value={mesAte}
+              onChange={(e) => {
+                if (parseInt(e.target.value) >= parseInt(mesDe)) {
+                  setMesAte(e.target.value);
+                }
+              }}
+              style={{ flex: 1.2, height: '32px', borderRadius: '4px', border: '1px solid #CBD5E1', padding: '4px', fontSize: '11px', fontWeight: '600', color: '#334155', outline: 'none', cursor: 'pointer' }}
+            >
+              {nomesMeses.map((nome, i) => (
+                <option key={`ate-${i}`} value={String(i + 1)} disabled={i + 1 < parseInt(mesDe)}>
+                  Até: {nome}
+                </option>
+              ))}
+            </select>
+          </View>
         </View>
 
         <Text style={{ fontSize: 14, fontWeight: '700', color: '#334155', textAlign: 'center', marginBottom: 16 }}>
           Distribuição de Práticas
         </Text>
 
-        {/* 2. GRÁFICO PIZZA EM BRANCO/CINZA NEUTRO */}
+        {/* GRÁFICO PIZZA */}
         <View style={{ alignItems: 'center', marginBottom: 20 }}>
           <div style={{
             width: '180px',
@@ -140,7 +150,7 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
           }} />
         </View>
 
-        {/* 3. LEGENDAS COLORIDAS FIXAS COM AS 8 MODALIDADES EXIBINDO 0% */}
+        {/* LEGENDAS COLORIDAS FIXAS COM 0% */}
         <ScrollView style={{ maxHeight: 160 }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 6 }}>
             {distribuicaoPraticas.map((fatia, index) => (
