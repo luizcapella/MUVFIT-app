@@ -5,6 +5,7 @@ import { supabase } from '../../supabaseClient';
 import CustomPicker from '../components/CustomPicker';
 import AthleteGoals from '../components/AthleteGoals';
 import AthleteGallery from '../components/AthleteGallery';
+import ModalidadesGrafico from '../components/ModalidadesGrafico';
 
 export default function DashboardScreen({
   currentUser,
@@ -19,6 +20,9 @@ export default function DashboardScreen({
   setWeightHistoryList,
   setWeightMetaInput
 }) {
+
+  // Controle de Gráfico de Modalidade mais Praticada
+    const [modalityRadarModalOpen, setModalityRadarModalOpen] = useState(false);
 
   // Controle de Galeria do Atleta
     const [isAthleteGalleryOpen, setIsAthleteGalleryOpen] = useState(false);
@@ -455,6 +459,11 @@ export default function DashboardScreen({
             </View>
           )}
 
+          {/* 📊 INTERFACE DO GRÁFICO DE PIZZA: MODALIDADES MAIS PRATICADAS */}
+          <ModalidadesGrafico 
+            isOpen={modalityRadarModalOpen} 
+            onClose={() => typeof setModalityRadarModalOpen === 'function' && setModalityRadarModalOpen(false)} 
+          />
 
       {/* MODAL WINDOW: EDITAR PERFIL DO ATLETA */}
       <Modal visible={isEditModalOpen} animationType="slide" transparent={false}>
