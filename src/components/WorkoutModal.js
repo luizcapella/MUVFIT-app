@@ -17,12 +17,17 @@ export default function WorkoutModal({
   setKmInput,
   handleTriggerPhoto,
   photoEvidence,
+  photoEvidence2,
+  photoEvidence3,
   setPhotoEvidence,
   onSubmit,
   submitting
 }) {
   const showKmInput = selectedActivity.includes('Corrida') || selectedActivity.includes('Caminhada') || selectedActivity.includes('Bike');
   const [showDatePicker, setShowDatePicker] = useState(false);
+    // 📸 MEMÓRIA LOCAL: ADICIONAIS DA CENTRAL DE EVIDÊNCIAS (FOTO 2 E FOTO 3)
+  const [photoEvidence2, setPhotoEvidence2] = useState(null);
+  const [photoEvidence3, setPhotoEvidence3] = useState(null);
     // ⏱️ MEMÓRIA LOCAL: HORÁRIOS DE INÍCIO E FIM DO TREINO
   const [startHour, setStartHour] = useState('08');
   const [startMinute, setStartMinute] = useState('00');
@@ -192,19 +197,98 @@ export default function WorkoutModal({
             numberOfLines={3}
           />
 
-          {/* SEÇÃO DA FOTO OBRIGATÓRIA (EVIDÊNCIA) */}
-          <Text style={styles.label}>📸 Comprovante do Exercício (Obrigatório):</Text>
-          <TouchableOpacity 
-            style={[styles.photoBtn, photoEvidence && styles.photoBtnSuccess]} 
-            onPress={() => handleTriggerPhoto('camera', setPhotoEvidence)}
-          >
-            <Text style={styles.photoBtnText}>
-              {photoEvidence ? '✅ Foto Carregada com Sucesso!' : '📷 Tirar Foto / Enviar Evidência'}
-            </Text>
-          </TouchableOpacity>
+                           {/* 📸 CENTRAL TRIPÉ DE EVIDÊNCIAS FOTOGRÁFICAS (A, B E C) */}
+          <Text style={[styles.label, { marginBottom: 8, marginTop: 12 }]}>📸 Comprovantes e Evidências do Treino:</Text>
+
+          {/* 🔴 EVIDÊNCIA A: OBRIGATÓRIA */}
+          <View style={{ marginBottom: 14, backgroundColor: '#FFFFFF', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#E2E8F0' }}>
+            <Text style={{ fontSize: 12, color: '#334155', fontWeight: '700', marginBottom: 6 }}>a. Evidência de Treino 1 (Obrigatório) *</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                <TouchableOpacity
+                  onPress={() => handleTriggerPhoto('camera', setPhotoEvidence)}
+                  style={{ backgroundColor: '#1E3A8A', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 4 }}
+                >
+                  <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>📸 Tirar Foto</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleTriggerPhoto('gallery', setPhotoEvidence)}
+                  style={{ backgroundColor: '#0284C7', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 4 }}
+                >
+                  <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>🖼️ Galeria</Text>
+                </TouchableOpacity>
+              </View>
+              {photoEvidence && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <img src={photoEvidence} style={{ width: 34, height: 34, borderRadius: 4, backgroundColor: '#CBD5E1' }} alt="Evidência 1" />
+                  <TouchableOpacity onPress={() => setPhotoEvidence(null)} style={{ backgroundColor: '#EF4444', width: 24, height: 24, borderRadius: 4, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 'bold' }}>🗑️</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* 🟡 EVIDÊNCIA B: OPCIONAL */}
+          <View style={{ marginBottom: 14, backgroundColor: '#FFFFFF', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#E2E8F0' }}>
+            <Text style={{ fontSize: 12, color: '#334155', fontWeight: '700', marginBottom: 6 }}>b. Evidência de Treino 2 (Opcional)</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                <TouchableOpacity
+                  onPress={() => handleTriggerPhoto('camera', setPhotoEvidence2)}
+                  style={{ backgroundColor: '#1E3A8A', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 4 }}
+                >
+                  <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>📸 Tirar Foto</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleTriggerPhoto('gallery', setPhotoEvidence2)}
+                  style={{ backgroundColor: '#0284C7', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 4 }}
+                >
+                  <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>🖼️ Galeria</Text>
+                </TouchableOpacity>
+              </View>
+              {photoEvidence2 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <img src={photoEvidence2} style={{ width: 34, height: 34, borderRadius: 4, backgroundColor: '#CBD5E1' }} alt="Evidência 2" />
+                  <TouchableOpacity onPress={() => setPhotoEvidence2(null)} style={{ backgroundColor: '#EF4444', width: 24, height: 24, borderRadius: 4, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 'bold' }}>🗑️</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* 🟡 EVIDÊNCIA C: OPCIONAL */}
+          <View style={{ marginBottom: 16, backgroundColor: '#FFFFFF', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#E2E8F0' }}>
+            <Text style={{ fontSize: 12, color: '#334155', fontWeight: '700', marginBottom: 6 }}>c. Evidência de Treino 3 (Opcional)</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                <TouchableOpacity
+                  onPress={() => handleTriggerPhoto('camera', setPhotoEvidence3)}
+                  style={{ backgroundColor: '#1E3A8A', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 4 }}
+                >
+                  <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>📸 Tirar Foto</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleTriggerPhoto('gallery', setPhotoEvidence3)}
+                  style={{ backgroundColor: '#0284C7', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 4 }}
+                >
+                  <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>🖼️ Galeria</Text>
+                </TouchableOpacity>
+              </View>
+              {photoEvidence3 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <img src={photoEvidence3} style={{ width: 34, height: 34, borderRadius: 4, backgroundColor: '#CBD5E1' }} alt="Evidência 3" />
+                  <TouchableOpacity onPress={() => setPhotoEvidence3(null)} style={{ backgroundColor: '#EF4444', width: 24, height: 24, borderRadius: 4, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 'bold' }}>🗑️</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </View>
 
           {/* BOTÃO FINAL DE SALVAR */}
-          <TouchableOpacity style={styles.submitBtn} onPress={onSubmit} disabled={submitting}>
+          <TouchableOpacity style={styles.submitBtn} onPress={onSubmit} disabled={submitting || !photoEvidence}>
             {submitting ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
