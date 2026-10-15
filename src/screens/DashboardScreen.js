@@ -400,7 +400,7 @@ export default function DashboardScreen({
 
               <TouchableOpacity
                 style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#E2E8F0', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3 }}
-                onPress={() => typeof setIsModalityRadarModalOpen === 'function' && setIsModalityRadarModalOpen(true)}
+                onPress={() => setModalityRadarModalOpen(true)}
               >
                 <Text style={{ fontSize: 20, marginBottom: 4 }}>📊</Text>
                 <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#1E293B' }}>Modalidades</Text>
