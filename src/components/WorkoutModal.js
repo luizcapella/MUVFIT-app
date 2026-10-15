@@ -21,7 +21,7 @@ export default function WorkoutModal({
   onSubmit,
   submitting
 }) {
-  const showKmInput = ['Corrida', 'Caminhada', 'Bike'].includes(selectedActivity);
+  const showKmInput = selectedActivity.includes('Corrida') || selectedActivity.includes('Caminhada') || selectedActivity.includes('Bike');
   const [showDatePicker, setShowDatePicker] = useState(false);
     // ⏱️ MEMÓRIA LOCAL: HORÁRIOS DE INÍCIO E FIM DO TREINO
   const [startHour, setStartHour] = useState('08');
@@ -98,12 +98,11 @@ export default function WorkoutModal({
             />
           </View>
 
-          {/* ⏱️ BLOCO DE HORÁRIOS E CÁLCULO DE TEMPO (OCULTO EM PASSOS DIÁRIOS) */}
-          {selectedActivity !== 'Passos Diários' && (
+                   {/* ⏱️ BLOCO DE HORÁRIOS E CÁLCULO DE TEMPO (FICA OCULTO EM PASSOS DIÁRIOS) */}
+          {!selectedActivity.includes('Passos Diários') && (
             <View style={{ marginBottom: 12, backgroundColor: '#F8FAFC', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0' }}>
               <Text style={[styles.label, { marginBottom: 8, fontSize: 13 }]}>⏰ Horário de Início e Fim da Atividade:</Text>
               
-              {/* INTERFACE DE SELEÇÃO: HORÁRIO INÍCIO */}
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                 <Text style={{ fontSize: 12, color: '#475569', fontWeight: '600' }}>Horário de Início:</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -125,7 +124,6 @@ export default function WorkoutModal({
                 </View>
               </View>
 
-              {/* INTERFACE DE SELEÇÃO: HORÁRIO TÉRMINO */}
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                 <Text style={{ fontSize: 12, color: '#475569', fontWeight: '600' }}>Horário de Término:</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -142,12 +140,11 @@ export default function WorkoutModal({
                     onChange={(e) => setEndMinute(e.target.value)}
                     style={{ height: 30, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 4, backgroundColor: '#FFFFFF', paddingHorizontal: 4, fontSize: 12, fontWeight: '700', color: '#1E3A8A', outline: 'none' }}
                   >
-                                        {listaMinutos.map(m => <option key={`em-${m}`} value={m}>{m}</option>)}
+                    {listaMinutos.map(m => <option key={`em-${m}`} value={m}>{m}</option>)}
                   </select>
                 </View>
               </View>
 
-              {/* ⏳ AMPULHETA: TEMPO TOTAL CALCULADO */}
               <View style={{ marginTop: 4, paddingTop: 6, borderTopWidth: 0.5, borderTopColor: '#CBD5E1', flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={{ fontSize: 13, color: '#16A34A', fontWeight: '700' }}>
                   ⏳ Tempo total Calculado: {calcularTempoTotal()} minutos
@@ -156,7 +153,7 @@ export default function WorkoutModal({
             </View>
           )}
 
-                   {/* 🏃 DISTÂNCIA PERCORRIDA CONDICIONAL (SÓ PARA CORRIDA, CAMINHADA E BIKE) */}
+          {/* 🏃 DISTÂNCIA PERCORRIDA CONDICIONAL (SÓ PARA CORRIDA, CAMINHADA E BIKE) */}
           {showKmInput && (
             <View style={{ marginBottom: 12 }}>
               <Text style={styles.label}>🏃 Distância Percorrida (em KM):</Text>
@@ -165,6 +162,20 @@ export default function WorkoutModal({
                 value={kmInput}
                 onChangeText={setKmInput}
                 placeholder="Digite a distância percorrida (Ex: 5.5)"
+                keyboardType="numeric"
+              />
+            </View>
+          )}
+
+          {/* 👣 CAIXA EXCLUSIVA DE PASSOS (SÓ SE EXPANDE SE FOR SELECIONADO PASSOS DIÁRIOS) */}
+          {selectedActivity.includes('Passos Diários') && (
+            <View style={{ marginBottom: 12 }}>
+              <Text style={styles.label}>👣 Quantidade de Passos Registrados:</Text>
+              <TextInput
+                style={[styles.input, { height: 40, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 6, backgroundColor: '#FFFFFF', paddingHorizontal: 12, fontSize: 13, color: '#334155', marginTop: 4 }]}
+                value={typeof stepsInput !== 'undefined' ? stepsInput : kmInput} // Evita quebra caso a variável mude de nome
+                onChangeText={typeof setStepsInput !== 'undefined' ? setStepsInput : setKmInput}
+                placeholder="Digite a quantidade total de passos (Ex: 10000)"
                 keyboardType="numeric"
               />
             </View>
