@@ -422,6 +422,36 @@ export default function DashboardScreen({
             </View>
           </View>
 
+          {/* 🖼️ ABA COLAPSÁVEL: GALERIA DE FOTOS DO ATLETA (ÚLTIMO ITEM DA CENTRAL) */}
+          <TouchableOpacity
+            onPress={() => setIsAthleteGalleryOpen(!isAthleteGalleryOpen)}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: 14,
+              backgroundColor: '#FFFFFF',
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: '#E2E8F0',
+              marginBottom: 20,
+              marginTop: 12
+            }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: '700', color: '#1E3A8A' }}>🖼️ Galeria de Fotos do Atleta</Text>
+            <Text style={{ fontSize: 12, color: '#64748B', fontWeight: 'bold' }}>{isAthleteGalleryOpen ? '▲ RECOLHER' : '▼ EXPANDIR'}</Text>
+          </TouchableOpacity>
+
+          {isAthleteGalleryOpen && (
+            <View style={{ marginBottom: 20 }}>
+              <AthleteGallery 
+                isOpen={isAthleteGalleryOpen} 
+                setIsOpen={setIsAthleteGalleryOpen} 
+              />
+            </View>
+          )}
+
+
       {/* MODAL WINDOW: EDITAR PERFIL DO ATLETA */}
       <Modal visible={isEditModalOpen} animationType="slide" transparent={false}>
         <View style={styles.modalFullWrapper}>
