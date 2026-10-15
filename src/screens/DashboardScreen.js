@@ -267,6 +267,12 @@ export default function DashboardScreen({
         </TouchableOpacity>
       </View>
 
+          {/* 🎯 ABA COLAPSÁVEL: METAS PESSOAIS DO ATLETA */}
+          <AthleteGoals 
+            isOpen={isAthleteGoalsOpen} 
+            setIsOpen={setIsAthleteGoalsOpen} 
+          />
+
       {/* JANELA FLUTUANTE QUE SOBREPÕE TODOS OS ITENS DA TELA */}
       <Modal visible={isLeaguePickerOpen} transparent={true} animationType="fade">
         <TouchableOpacity 
@@ -393,12 +399,6 @@ export default function DashboardScreen({
               </TouchableOpacity>
             </View>
           </View>
-
-          {/* 🎯 ABA COLAPSÁVEL: METAS PESSOAIS DO ATLETA */}
-          <AthleteGoals 
-            isOpen={isAthleteGoalsOpen} 
-            setIsOpen={setIsAthleteGoalsOpen} 
-          />
 
       {/* MODAL WINDOW: EDITAR PERFIL DO ATLETA */}
       <Modal visible={isEditModalOpen} animationType="slide" transparent={false}>
