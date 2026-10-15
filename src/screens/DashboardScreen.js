@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput,
 import { supabase } from '../../supabaseClient';
 import CustomPicker from '../components/CustomPicker';
 import AthleteGoals from '../components/AthleteGoals';
+import AthleteGallery from '../components/AthleteGallery';
 
 export default function DashboardScreen({
   currentUser,
@@ -18,8 +19,11 @@ export default function DashboardScreen({
   setWeightHistoryList,
   setWeightMetaInput
 }) {
-  
-   //  Metas Pessoais
+
+  // Controle de Galeria do Atleta
+    const [isAthleteGalleryOpen, setIsAthleteGalleryOpen] = useState(false);
+
+   //  Controle de Metas Pessoais
   const [isAthleteGoalsOpen, setIsAthleteGoalsOpen] = useState(false);
 
   //  Controle do modal de edição de perfil
