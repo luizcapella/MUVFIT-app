@@ -5,6 +5,7 @@ import useModalidadesFiltro from '../hooks/useModalidadesFiltro';
 
 export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = [], temporadasLiga = [] }) {
   
+  // Consome a inteligência centralizada do gancho lógico (PARTE 2A)
   const {
     anoAtual,
     tipoFiltroAtivo, setTipoFiltroAtivo,
@@ -17,17 +18,29 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
 
   if (!isOpen) return null;
 
+  // Correção crucial: Passando a propriedade correta 'temporadasLiga' sem erros de digitação
   const opcoesTemporadas = obterOpcoesTemporadas(temporadasLiga);
 
   return (
+    /* 🔴 BLINDAGEM WEB MESTRE: AGE DIRETAMENTE POR CIMA DAS BORDAS AZUIS DA TELA */
     <div style={{
-      position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-      backgroundColor: 'rgba(0, 0, 0, 0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center',
-      zIndex: 2147483647, padding: '16px', boxSizing: 'border-box'
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 2147483647,
+      padding: '16px',
+      boxSizing: 'border-box'
     }}>
+      {/* CORPO DO MODAL FLUTUANTE */}
       <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, width: '100%', maxWidth: 420, padding: 16, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 20 }}>
         
-        {/* CABEÇALHO */}
+        {/* CABEÇALHO COM BOTÃO FECHAR X */}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1E3A8A', padding: 12, borderRadius: 8, marginBottom: 14 }}>
           <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>📊 Resumo de Exercícios</Text>
           <TouchableOpacity onPress={onClose} style={{ padding: 4 }}>
@@ -35,9 +48,12 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
           </TouchableOpacity>
         </View>
 
-        {/* 🔘 FILTRO 1: POR MÊS / ANO PERSONALIZADO */}
+        {/* 🔘 FILTRO 1: POR MÊS / ANO COM CHECKBOX REDONDO EXCLUSIVO */}
         <View style={{ backgroundColor: '#F8FAFC', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: tipoFiltroAtivo === 'meses' ? '#F97316' : '#E2E8F0', marginBottom: 10, opacity: tipoFiltroAtivo === 'meses' ? 1 : 0.6 }}>
-          <TouchableOpacity onPress={() => setTipoFiltroAtivo('meses')} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+          <TouchableOpacity 
+            onPress={() => setTipoFiltroAtivo('meses')}
+            style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}
+          >
             <View style={{ width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: '#1E3A8A', justifyContent: 'center', alignItems: 'center', marginRight: 8, backgroundColor: '#FFFFFF' }}>
               {tipoFiltroAtivo === 'meses' && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#F97316' }} />}
             </View>
@@ -58,9 +74,12 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
           </View>
         </View>
 
-        {/* 🔘 FILTRO 2: POR TEMPORADA DA LIGA */}
+        {/* 🔘 FILTRO 2: POR TEMPORADA DA LIGA COM CHECKBOX REDONDO EXCLUSIVO */}
         <View style={{ backgroundColor: '#F8FAFC', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: tipoFiltroAtivo === 'temporada' ? '#1E3A8A' : '#E2E8F0', marginBottom: 14, opacity: tipoFiltroAtivo === 'temporada' ? 1 : 0.6 }}>
-          <TouchableOpacity onPress={() => setTipoFiltroAtivo('temporada')} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+          <TouchableOpacity 
+            onPress={() => setTipoFiltroAtivo('temporada')}
+            style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}
+          >
             <View style={{ width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: '#1E3A8A', justifyContent: 'center', alignItems: 'center', marginRight: 8, backgroundColor: '#FFFFFF' }}>
               {tipoFiltroAtivo === 'temporada' && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#1E3A8A' }} />}
             </View>
@@ -83,7 +102,7 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
           Distribuição de Práticas
         </Text>
 
-        {/* PIZZA */}
+        {/* 🍕 O GRÁFICO PIZZA (VIRA CÍRCULO NEUTRO SE FOR 0% TOTAL) */}
         <View style={{ alignItems: 'center', marginBottom: 16 }}>
           <div style={{
             width: '160px', height: '160px', borderRadius: '50%',
@@ -92,12 +111,12 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
           }} />
         </View>
 
-        {/* LEGENDAS COLORIDAS */}
+        {/* 📜 LEGENDAS COLORIDAS FIXAS DAS 8 MODALIDADES (SEMPRE EM EXIBIÇÃO) */}
         <ScrollView style={{ maxHeight: 140 }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 4 }}>
             {distribuicaoPraticas.map((fatia, index) => (
               <View key={`leg-${index}`} style={{ flexDirection: 'row', alignItems: 'center', width: '48%', marginBottom: 4 }}>
-                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: fatias.cor || fatia.cor, marginRight: 6 }} />
+                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: fatia.cor, marginRight: 6 }} />
                 <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }} numberOfLines={1}>
                   {fatia.nome} ({fatia.porcentagem}%)
                 </Text>
