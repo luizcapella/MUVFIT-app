@@ -267,12 +267,6 @@ export default function DashboardScreen({
         </TouchableOpacity>
       </View>
 
-          {/* 🎯 ABA COLAPSÁVEL: METAS PESSOAIS DO ATLETA */}
-          <AthleteGoals 
-            isOpen={isAthleteGoalsOpen} 
-            setIsOpen={setIsAthleteGoalsOpen} 
-          />
-
       {/* JANELA FLUTUANTE QUE SOBREPÕE TODOS OS ITENS DA TELA */}
       <Modal visible={isLeaguePickerOpen} transparent={true} animationType="fade">
         <TouchableOpacity 
@@ -314,6 +308,34 @@ export default function DashboardScreen({
         </TouchableOpacity>
       </Modal>
 
+          {/* 🎯 ABA COLAPSÁVEL: METAS PESSOAIS (POSICIONADA ABAIXO DOS GRÁFICOS) */}
+          <TouchableOpacity
+            onPress={() => setIsAthleteGoalsOpen(!isAthleteGoalsOpen)}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: 14,
+              backgroundColor: '#FFFFFF',
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: '#E2E8F0',
+              marginBottom: 16,
+              marginTop: 4
+            }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: '700', color: '#1E3A8A' }}>🎯 Minhas Metas Pessoais</Text>
+            <Text style={{ fontSize: 12, color: '#64748B', fontWeight: 'bold' }}>{isAthleteGoalsOpen ? '▲ RECOLHER' : '▼ EXPANDIR'}</Text>
+          </TouchableOpacity>
+
+          {isAthleteGoalsOpen && (
+            <View style={{ marginBottom: 16 }}>
+              <AthleteGoals 
+                isOpen={isAthleteGoalsOpen} 
+                setIsOpen={setIsAthleteGoalsOpen} 
+              />
+            </View>
+          )}
 
       {/* QUADRO DE MEDALHAS COMPACTO */}
       <View style={styles.squareMedalDisplayCard}>
