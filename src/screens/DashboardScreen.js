@@ -21,9 +21,6 @@ export default function DashboardScreen({
   setWeightMetaInput
 }) {
 
-  // Controle de Gráfico de Modalidade mais Praticada
-    const [modalityRadarModalOpen, setModalityRadarModalOpen] = useState(false);
-
   // Controle de Galeria do Atleta
     const [isAthleteGalleryOpen, setIsAthleteGalleryOpen] = useState(false);
 
@@ -459,10 +456,13 @@ export default function DashboardScreen({
             </View>
           )}
 
-          {/* 📊 INTERFACE DO GRÁFICO DE PIZZA: MODALIDADES MAIS PRATICADAS */}
+                    {/* 📊 INTERFACE DO GRÁFICO DE PIZZA: MODALIDADES MAIS PRATICADAS */}
           <ModalidadesGrafico 
-            isOpen={modalityRadarModalOpen} 
-           onClose={() => typeof setIsModalityRadarModalOpen === 'function' && setIsModalityRadarModalOpen(false)}
+            isOpen={!!modalityRadarModalOpen} 
+            onClose={() => {
+              if (typeof setIsModalityRadarModalOpen === 'function') setIsModalityRadarModalOpen(false);
+              else if (typeof setModalityRadarModalOpen === 'function') setModalityRadarModalOpen(false);
+            }} 
           />
 
       {/* MODAL WINDOW: EDITAR PERFIL DO ATLETA */}
