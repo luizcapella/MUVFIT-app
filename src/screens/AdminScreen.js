@@ -7,9 +7,13 @@ import ModalidadeRegrasKM from '../components/ModalidadeRegrasKM';
 import ModalidadeRegrasTempo from '../components/ModalidadeRegrasTempo';
 import ModalidadeRegrasPassos from '../components/ModalidadeRegrasPassos';
 import AdminPontosManuais from '../components/AdminPontosManuais';
+import AdminAprovacaoTreinos from '../components/AdminAprovacaoTreinos';
 
 export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetchDataFromSupabase, challenges, currentUser, profilesData, selectedLeagueFilter }) {
-  
+
+  // Controle Para a Aba de Aprovação de Treinos
+    const [isAdminAprovacaoOpen, setIsAdminAprovacaoOpen] = useState(false);
+
   // 1. ESTADOS PARA CONTROLE VISUAL DA SANFONA E REQUISITOS
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const [leagueRequests, setLeagueRequests] = useState([]);
@@ -456,47 +460,86 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
         <Text style={{ fontSize: 14, color: '#1E3A8A', fontWeight: 'bold' }}>➔</Text>
       </TouchableOpacity>
 
-      {pendingWorkouts.length === 0 ? (
-        <Text style={styles.emptyText}>Não há treinos aguardando validação no momento. Bom descanso!</Text>
-      ) : (
-        pendingWorkouts.map((workout) => {
-          const userProfile = profiles?.find(p => p.id === workout.user_id);
-          return (
-            <View key={workout.id} style={styles.adminCard}>
-              <View style={styles.workoutHeader}>
-                <Text style={styles.userLabel}>Atleta ID:</Text>
-                <Text style={styles.userValue}>
-                  {userProfile?.nickname || workout.user_id.substring(0, 8)}...
-                </Text>
-              </View>
-
-              <Text style={styles.workoutInfo}><Text style={styles.boldText}>Atividade:</Text> {workout.activity}</Text>
-              <Text style={styles.workoutInfo}>
-                <Text style={styles.boldText}>Distância:</Text> {workout.km_distance} Km / <Text style={styles.boldText}>Tempo:</Text> {workout.time_spent ? `${workout.time_spent} min` : 'N/A'}
+              {/* ⚖️ ABA COLAPSÁVEL: CENTRAL DE APROVAÇÃO DE TREINOS */}
+          <View style={{ marginBottom: 16, backgroundColor: '#FFFFFF', borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden' }}>
+            <TouchableOpacity 
+              onPress={() => setIsAdminAprovacaoOpen(!isAdminAprovacaoOpen)}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, backgroundColor: '#F8FAFC', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '700', color: '#1E3A8A' }}>
+                ⚖️ APROVAÇÃO DE TREINOS ({pendingWorkouts.length})
               </Text>
+              <Text style={{ fontSize: 12, color: '#64748B', fontWeight: 'bold' }}>
+                {isAdminAprovacaoOpen ? '▲ RECOLHER' : '▼ EXPANDIR'}
+              </Text>
+            </TouchableOpacity>
 
-              <Text style={styles.labelMandatory}>📸 EVIDÊNCIA DA FOTO OBRIGATÓRIA:</Text>
-              {workout.evidence_image_url ? (
-                <Image source={{ uri: workout.evidence_image_url }} style={styles.evidenceImage} resizeMode="cover" />
-              ) : (
-                <Text style={styles.alertText}>⚠️ Treino enviado sem foto de evidência!</Text>
-              )}
+            {isAdminAprovacaoOpen && (
+              <View style={{ padding: 12, backgroundColor: '#F1F5F9' }}>
+                <ScrollView style={{ maxHeight: 450 }} nestedScrollEnabled={true}>
+                  {pendingWorkouts.length === 0 ? (
+                    <Text style={{ padding: 14, fontSize: 13, color: '#1E3A8A', textAlign: 'center', fontWeight: '700', backgroundColor: '#EFF6FF', borderRadius: 6, borderWidth: 1, borderColor: '#BFDBFE' }}>
+                      Não há treinos aguardando validação no momento. Bom descanso!
+                    </Text>
+                  ) : (
+                    pendingWorkouts.map((workout) => {
+                      const userProfile = profiles?.find(p => p.id === workout.user_id);
+                      return (
+                        <View key={workout.id} style={{ backgroundColor: '#FFFFFF', borderRadius: 8, borderWidth: 1, borderColor: '#CBD5E1', padding: 14, marginBottom: 12 }}>
+                          
+                          {/* 1. PERFIL DO ATLETA */}
+                          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, borderBottomWidth: 0.5, borderBottomColor: '#E2E8F0', paddingBottom: 8 }}>
+                            <Image source={{ uri: userProfile?.avatar_url || 'https://picsum.photos' }} style={{ width: 36, height: 36, borderRadius: 18, marginRight: 10, backgroundColor: '#CBD5E1' }} />
+                            <Text style={{ fontSize: 14, fontWeight: '800', color: '#1E3A8A' }}>{userProfile?.nickname || workout.user_id.substring(0, 8)}</Text>
+                          </View>
 
-              <Text style={styles.pointsEarned}><Text style={styles.boldText}>🔥 Pontos:</Text> {workout.points_computed || 0} pts</Text>
+                          {/* 2. DADOS DO TREINO EFETUADO */}
+                          <View style={{ gap: 4, marginBottom: 12 }}>
+                            <Text style={{ fontSize: 13, color: '#334155', fontWeight: '600' }}>🔹 Treino efetuado: <Text style={{ fontWeight: 'normal' }}>{workout.activity}</Text></Text>
+                            <Text style={{ fontSize: 13, color: '#334155', fontWeight: '600' }}>📅 Data de registro do treino: <Text style={{ fontWeight: 'normal' }}>{workout.date || 'Não informada'}</Text></Text>
+                            <Text style={{ fontSize: 13, color: '#334155', fontWeight: '600' }}>⏱️ Tempo de registro do treino: <Text style={{ fontWeight: 'normal' }}>{workout.duration || 0} minutos</Text></Text>
+                            {workout.km_distance && (
+                              <Text style={{ fontSize: 13, color: '#334155', fontWeight: '600' }}>📏 Distância Percorrida registrada: <Text style={{ fontWeight: 'normal' }}>{workout.km_distance} KM</Text></Text>
+                            )}
+                            <Text style={{ fontSize: 13, color: '#1E3A8A', fontWeight: 'bold', marginTop: 4 }}>
+                              🏆 Pontuação que o treino vai valer: {workout.points_computed || 0} pts
+                            </Text>
+                          </View>
 
-              <View style={styles.actionRow}>
-                <TouchableOpacity style={[styles.btn, styles.btnRejectOld]} onPress={() => handleModerateWorkout(workout.id, 'rejected')}>
-                  <Text style={styles.btnText}>❌ Rejeitar Treino</Text>
-                </TouchableOpacity>
+                          {/* 3. FOTOS DE EVIDÊNCIAS REGISTRADAS */}
+                          <Text style={{ fontSize: 12, fontWeight: '700', color: '#475569', marginBottom: 6 }}>📸 Fotos de Evidências:</Text>
+                          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
+                            {workout.evidence_image_url ? (
+                              <Image source={{ uri: workout.evidence_image_url }} style={{ flex: 1, aspectRatio: 1.4, borderRadius: 6, backgroundColor: '#CBD5E1' }} resizeMode="cover" />
+                            ) : (
+                              <Text style={{ fontSize: 12, color: '#EF4444', fontWeight: '600' }}>⚠️ Treino enviado sem foto de evidência!</Text>
+                            )}
+                          </View>
 
-                <TouchableOpacity style={[styles.btn, styles.btnApproveOld]} onPress={() => handleModerateWorkout(workout.id, 'approved')}>
-                  <Text style={styles.btnText}>✅  Treino</Text>
-                </TouchableOpacity>
+                          {/* 4. BOTÕES DE DECISÃO */}
+                          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8, borderTopWidth: 0.5, borderTopColor: '#E2E8F0', paddingTop: 10 }}>
+                            <TouchableOpacity 
+                              onPress={() => handleModerateWorkout(workout.id, 'rejected')}
+                              style={{ backgroundColor: '#FEE2E2', paddingVertical: 7, paddingHorizontal: 16, borderRadius: 6, borderWidth: 1, borderColor: '#FCA5A5' }}
+                            >
+                              <Text style={{ color: '#EF4444', fontSize: 12, fontWeight: '700' }}>Rejeitar Treino</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                              onPress={() => handleModerateWorkout(workout.id, 'approved')}
+                              style={{ backgroundColor: '#DCFCE7', paddingVertical: 7, paddingHorizontal: 16, borderRadius: 6, borderWidth: 1, borderColor: '#86EFAC' }}
+                            >
+                              <Text style={{ color: '#16A34A', fontSize: 12, fontWeight: '700' }}>Aprovar Treino</Text>
+                            </TouchableOpacity>
+                          </View>
+
+                        </View>
+                      );
+                    })
+                  )}
+                </ScrollView>
               </View>
-            </View>
-          );
-        })
-      )}
+            )}
+          </View>
 
    {/* 1º NOVA ABA COLAPSÁVEL: GERENCIAMENTO DA LIGA/DESAFIO DA LIGA */}
       <TouchableOpacity 
