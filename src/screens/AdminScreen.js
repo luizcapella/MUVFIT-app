@@ -470,7 +470,7 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                 ⚖️ APROVAÇÃO DE TREINOS ({pendingWorkouts.length})
               </Text>
               <Text style={{ fontSize: 12, color: '#64748B', fontWeight: 'bold' }}>
-                {isAdminAprovacaoOpen ? '▲ RECOLHER' : '▼ EXPANDIR'}
+                {isAdminAprovacaoOpen ? '▲' : '▼'}
               </Text>
             </TouchableOpacity>
 
