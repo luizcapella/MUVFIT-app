@@ -6,25 +6,22 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
 
   if (!isOpen) return null;
 
-  // 1. GERAÇÃO DINÂMICA DE FILTROS TEMPORAIS (MESES E ANOS REAIS AUTOMÁTICOS)
+  // 1. GERAÇÃO DINÂMICA DE FILTROS TEMPORAIS SEM NENHUM DADO FIXO
   const dataAtual = new Date();
   const anoAtual = dataAtual.getFullYear();
-  const mesAtual = dataAtual.getMonth(); // 0 = Janeiro, 9 = Outubro, etc.
+  const mesAtual = dataAtual.getMonth();
 
   const nomesMeses = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ];
 
-  // Monta a lista de meses dinâmicos do ano atual até o mês presente
   const opcoesMesesDinamicos = [];
   for (let m = 0; m <= mesAtual; m++) {
-    const valorFiltro = `${m + 1}-${anoAtual}`;
-    const LabelFiltro = `📅 ${nomesMeses[m]} / ${anoAtual}`;
-    opcoesMesesDinamicos.push({ valor: valorFiltro, label: LabelFiltro });
+    opcoesMesesDinamicos.push({ valor: `${m + 1}-${anoAtual}`, label: `📅 ${nomesMeses[m]} / ${anoAtual}` });
   }
 
-  // Lista estrita de todas as 8 modalidades oficiais com suas respectivas cores
+  // Lista mestre com as 8 modalidades oficiais e suas respectivas cores
   const mapaModalidadesOficiais = [
     { nome: '💪 Musculação', cor: '#3B82F6' },
     { nome: '🏋️ Crossfit/Funcional', cor: '#22C55E' },
@@ -36,7 +33,7 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
     { nome: '⚽ Esportes Coletivos', cor: '#78350F' }
   ];
 
-  // Filtragem estrita para não computar 'Passos Diários'
+  // Filtragem estrita: retira 'Passos Diários'
   const treinosValidos = dadosSupabase.filter(
     t => t.activity && !t.activity.includes('Passos Diários')
   );
@@ -51,7 +48,7 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
     }
   });
 
-  // Montagem da lista final de exibição garantindo que TODAS as 8 modalidades apareçam (mesmo com 0%)
+  // Garante que todas as 8 modalidades apareçam marcando 0% caso não existam dados
   const distribuicaoPraticas = mapaModalidadesOficiais.map((item) => {
     const qtd = contagemModalidades[item.nome] || 0;
     const porc = totalTreinos > 0 ? Math.round((qtd / totalTreinos) * 100) : 0;
@@ -62,7 +59,6 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
     };
   });
 
-  // Configuração do gradiente da Pizza: Se estiver vazio, exibe o círculo cinza neutro
   let gradientePizza = '#CBD5E1 0% 100%';
   if (totalTreinos > 0) {
     let acumulado = 0;
@@ -76,6 +72,7 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
   }
 
   return (
+    /* 🔴 BLINDAGEM WEB MESTRE: IGNORA FILTROS ANTERIORES E SOBREPÕE AS BORDAS AZUIS */
     <div style={{
       position: 'fixed',
       top: 0,
@@ -86,7 +83,7 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      zIndex: 9999999,
+      zIndex: 999999999, // Elevado ao extremo global
       padding: '16px',
       boxSizing: 'border-box'
     }}>
@@ -132,7 +129,7 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
           Distribuição de Práticas
         </Text>
 
-        {/* 2. GRÁFICO PIZZA REAGE DINAMICAMENTE */}
+        {/* 2. GRÁFICO PIZZA EM BRANCO/CINZA NEUTRO */}
         <View style={{ alignItems: 'center', marginBottom: 20 }}>
           <div style={{
             width: '180px',
@@ -143,13 +140,13 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
           }} />
         </View>
 
-        {/* 3. LEGENDAS COLORIDAS FIXAS COM 0% SE ESTIVER VAZIO */}
+        {/* 3. LEGENDAS COLORIDAS FIXAS COM AS 8 MODALIDADES EXIBINDO 0% */}
         <ScrollView style={{ maxHeight: 160 }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 6 }}>
             {distribuicaoPraticas.map((fatia, index) => (
               <View key={`leg-${index}`} style={{ flexDirection: 'row', alignItems: 'center', width: '48%', marginBottom: 6 }}>
                 <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: fatia.cor, marginRight: 6 }} />
-                <Text style={{ fontSize: 11, color: fatia.porcentagem > 0 ? '#1E3A8A' : '#64748B', fontWeight: '600' }} numberOfLines={1}>
+                <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }} numberOfLines={1}>
                   {fatia.nome} ({fatia.porcentagem}%)
                 </Text>
               </View>
