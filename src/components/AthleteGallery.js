@@ -3,13 +3,8 @@ import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
 
 export default function AthleteGallery({ isOpen, setIsOpen }) {
   // Lista simulada de fotos de treinos aprovados que será conectada ao Supabase futuramente
-  const fotosTreinos = [
-    { id: '1', url: 'https://picsum.photos', data: '12/10', modalidade: '🏃 Corrida' },
-    { id: '2', url: 'https://picsum.photos', data: '13/10', modalidade: '💪 Musculação' },
-    { id: '3', url: 'https://picsum.photos', data: '14/10', modalidade: '🚴 Bike' },
-    { id: '4', url: 'https://picsum.photos', data: '14/10', modalidade: '🔥 Aeróbico' },
-  ];
-
+  const fotosTreinos = [];
+  
   if (!isOpen) return null;
 
   return (
