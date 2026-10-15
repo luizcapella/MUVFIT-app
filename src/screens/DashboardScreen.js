@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, Alert, Image } from 'react-native';
 import { supabase } from '../../supabaseClient';
 import CustomPicker from '../components/CustomPicker';
+import AthleteGoals from '../components/AthleteGoals';
 
 export default function DashboardScreen({
   currentUser,
@@ -17,6 +18,9 @@ export default function DashboardScreen({
   setWeightHistoryList,
   setWeightMetaInput
 }) {
+  
+   //  Metas Pessoais
+  const [isAthleteGoalsOpen, setIsAthleteGoalsOpen] = useState(false);
 
   //  Controle do modal de edição de perfil
   const [isEditPerfilModalOpen, setIsEditPerfilModalOpen] = useState(false);
@@ -389,6 +393,12 @@ export default function DashboardScreen({
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* 🎯 ABA COLAPSÁVEL: METAS PESSOAIS DO ATLETA */}
+          <AthleteGoals 
+            isOpen={isAthleteGoalsOpen} 
+            setIsOpen={setIsAthleteGoalsOpen} 
+          />
 
       {/* MODAL WINDOW: EDITAR PERFIL DO ATLETA */}
       <Modal visible={isEditModalOpen} animationType="slide" transparent={false}>
