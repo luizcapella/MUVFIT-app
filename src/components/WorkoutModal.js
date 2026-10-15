@@ -17,8 +17,6 @@ export default function WorkoutModal({
   setKmInput,
   handleTriggerPhoto,
   photoEvidence,
-  photoEvidence2,
-  photoEvidence3,
   setPhotoEvidence,
   onSubmit,
   submitting
