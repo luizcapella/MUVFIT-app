@@ -462,7 +462,7 @@ export default function DashboardScreen({
           {/* 📊 INTERFACE DO GRÁFICO DE PIZZA: MODALIDADES MAIS PRATICADAS */}
           <ModalidadesGrafico 
             isOpen={modalityRadarModalOpen} 
-            onClose={() => typeof setModalityRadarModalOpen === 'function' && setModalityRadarModalOpen(false)} 
+           onClose={() => typeof setIsModalityRadarModalOpen === 'function' && setIsModalityRadarModalOpen(false)}
           />
 
       {/* MODAL WINDOW: EDITAR PERFIL DO ATLETA */}
