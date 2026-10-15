@@ -52,7 +52,7 @@ export default function AthleteGoals({ isOpen, setIsOpen }) {
         <View style={{ flexDirection: 'row', marginBottom: 12, gap: 8 }}>
           <TextInput
             value={novaMetaTexto}
-            onChangeText={novaMetaTexto}
+            onChangeText={(texto) => setNovaMetaTexto(texto)}
             placeholder="Escreva uma meta pessoal... (Ex: Correr 10km)"
             style={{ flex: 1, height: 38, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 6, paddingHorizontal: 12, fontSize: 13, color: '#334155', backgroundColor: '#FFFFFF' }}
           />
