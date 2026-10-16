@@ -424,16 +424,17 @@ export default function DashboardScreen({
               <Text style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>Distância acumulada</Text>
             </TouchableOpacity>
 
-            {/* ⏱️ BOTÃO DO TEMPORIZADOR DE ATIVIDADE */}
-            <TouchableOpacity
-              style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#E2E8F0' }}
-              onPress={() => typeof setIsKmChartModalOpen === 'function' && setIsKmChartModalOpen(true)}
+                      {/* ⏱️ BOTÃO DO TEMPORIZADOR DE ATIVIDADE */}
+          <TouchableOpacity
+            style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#E2E8F0' }}
+            onPress={() => typeof setIsKmChartModalOpen === 'function' && setIsKmChartModalOpen(true)}
             >
               <Text style={{ fontSize: 20, marginBottom: 4 }}>⏱️</Text>
               <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#1E293B' }}>Tempo de Atividade</Text>
               <Text style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>Minutos em movimento</Text>
             </TouchableOpacity>
           </View>
+        </View>
 
           {/* 🖼️ ABA COLAPSÁVEL: GALERIA DE FOTOS DO ATLETA (ÚLTIMO ITEM DA CENTRAL) */}
           <TouchableOpacity
