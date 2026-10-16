@@ -22,6 +22,9 @@ export default function DashboardScreen({
   setWeightMetaInput
 }) {
 
+  // Controle de Janela de KM Totais
+    const [isKmChartModalOpen, setIsKmChartModalOpen] = useState(false);
+
   // Controle da Janela de Gráfico de Modalidades
     const [modalityRadarModalOpen, setModalityRadarModalOpen] = useState(false);
 
@@ -466,7 +469,7 @@ export default function DashboardScreen({
             onClose={() => setModalityRadarModalOpen(false)} 
           />
 
-                        {/* 🏃 INTERFACE DO GRÁFICO DE BARRAS PARALELAS: KM TOTAL PERCORRIDO */}
+                    {/* 🏃 INTERFACE DO GRÁFICO DE BARRAS PARALELAS: KM TOTAL PERCORRIDO */}
           <KmTotalGrafico 
             isOpen={isKmChartModalOpen} 
             onClose={() => setIsKmChartModalOpen(false)} 
