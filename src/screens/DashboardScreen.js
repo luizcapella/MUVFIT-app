@@ -23,8 +23,8 @@ export default function DashboardScreen({
 }) {
 
   // Controle da Janela de KM Percorridos
-    const [modalKmVisivelLocal, setModalKmVisivelLocal] = useState(false);
-
+      const [modalKmVisivelLocal, setModalKmVisivelLocal] = useState(false);
+   
   // Controle da Janela de Gráfico de Modalidades
     const [modalityRadarModalOpen, setModalityRadarModalOpen] = useState(false);
 
