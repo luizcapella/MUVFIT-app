@@ -469,12 +469,11 @@ export default function DashboardScreen({
             onClose={() => setModalityRadarModalOpen(false)} 
           />
 
-                            {/* 🏃 INTERFACE DO GRÁFICO DE BARRAS PARALELAS: KM TOTAL PERCORRIDO */}
+                           {/* 🏃 INTERFACE DO GRÁFICO DE BARRAS PARALELAS: KM TOTAL PERCORRIDO */}
           <KmTotalGrafico 
             isOpen={modalKmVisivelLocal} 
             onClose={() => setModalKmVisivelLocal(false)} 
           />
-
 
       {/* MODAL WINDOW: EDITAR PERFIL DO ATLETA */}
       <Modal visible={isEditModalOpen} animationType="slide" transparent={false}>
