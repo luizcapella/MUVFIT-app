@@ -31,10 +31,10 @@ export default function KmTotalGrafico({ isOpen, onClose, dadosSupabase = [], te
         setMesAte(String(dataAtual.getMonth() + 1));
       } else if (temporadaSelecionada === 'temp-1') {
         setAnoSelecionado(String(anoAtual));
-        setMesDe('1'); setMesAte('3');
+        setMesDe('1'); setMesAte('3'); // Sincroniza Janeiro a Março
       } else if (temporadaSelecionada === 'temp-2') {
         setAnoSelecionado(String(anoAtual));
-        setMesDe('4'); setMesAte('6');
+        setMesDe('4'); setMesAte('6'); // Sincroniza Abril a Junho
       }
     }
   }, [temporadaSelecionada, tipoFiltroAtivo, anoAtual]);
@@ -42,11 +42,11 @@ export default function KmTotalGrafico({ isOpen, onClose, dadosSupabase = [], te
   if (!isOpen) return null;
 
   const opcoesTemporadas = obterOpcoesTemporadas(temporadasLiga);
-  // Filtragem estrita dos dados reais do Supabase com base no intervalo de tempo
+  // Filtragem estrita dos dados reais do Supabase com base no intervalo de tempo selecionado
   const treinosFiltrados = dadosSupabase.filter((t) => {
     if (!t.activity || !t.date || !t.km_distance) return false;
     
-    // Filtra por modalidade caso o usuário escolha individualizar
+    // Filtra por modalidade caso o usuário escolha individualizar no dropdown
     if (atividadeSelecionada !== 'Todos' && !t.activity.includes(atividadeSelecionada)) return false;
     
     // Garante que apenas Corrida, Caminhada e Bike entrem no somatório de distância
@@ -63,7 +63,6 @@ export default function KmTotalGrafico({ isOpen, onClose, dadosSupabase = [], te
   const totalKmGeral = treinosFiltrados.reduce((acc, t) => acc + (parseFloat(t.km_distance) || 0), 0);
 
   // Mapeamento de dados estruturais das semanas. Começa em 0% (Clean Slate para produção)
-  // Quando dadosSupabase receber os registros, as colunas paralelas vão subir dinamicamente
   const dadosSemanas = [
     { label: 'Sem. 1', corrida: 0, caminhada: 0, bike: 0 },
     { label: 'Sem. 2', corrida: 0, caminhada: 0, bike: 0 },
@@ -83,7 +82,6 @@ export default function KmTotalGrafico({ isOpen, onClose, dadosSupabase = [], te
     if (t.activity.includes('Bike')) dadosSemanas[indexSemana].bike += km;
   });
 
-  // Calcula a maior barra para estipular a proporção da altura das colunas verticais flats
   const obterMaiorKm = () => {
     let maior = 1;
     dadosSemanas.forEach(s => {
@@ -96,10 +94,8 @@ export default function KmTotalGrafico({ isOpen, onClose, dadosSupabase = [], te
   const tetoMaximoKm = obterMaiorKm();
   return (
     <Modal transparent={true} visible={isOpen} onRequestClose={onClose} animationType="fade">
-      <div style={{
-        position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-        backgroundColor: 'rgba(0, 0, 0, 0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center',
-        zIndex: 2147483647, padding: '16px', boxSizing: 'border-box'
+      <View style={{
+        flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.7)', justifyContent: 'center', alignItems: 'center', padding: 16
       }}>
         <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, width: '100%', maxWidth: 420, padding: 16, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 20 }}>
           
@@ -111,7 +107,7 @@ export default function KmTotalGrafico({ isOpen, onClose, dadosSupabase = [], te
             </TouchableOpacity>
           </View>
 
-          {/* 🎛️ SELETOR DE ATIVIDADE MODELO INDIVIDUALIZADO */}
+          {/* 🎛️ SELETOR DE ATIVIDADE INDIVIDUALIZADA */}
           <View style={{ borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 4, marginBottom: 12, backgroundColor: '#FFFFFF' }}>
             <select
               value={atividadeSelecionada}
@@ -162,27 +158,24 @@ export default function KmTotalGrafico({ isOpen, onClose, dadosSupabase = [], te
 
           {/* INDICADOR RESUMO ACUMULADO */}
           <View style={{ backgroundColor: '#FFF7ED', borderWidth: 1, borderColor: '#FFEDD5', padding: 6, borderRadius: 6, alignItems: 'center', marginBottom: 14 }}>
-            <Text style={{ fontSize: 18, color: '#EA580C', fontWeight: '800' }}>{totalKmGeral.toFixed(1)} KM Percorridos</Text>
+            <Text style={{ fontSize: 18, color: '#EA580C', fontWeight: '800' }}>{totalKmGeral.toFixed(1)} KM</Text>
           </View>
 
-          {/* 📊 GRÁFICO DE COLUNAS PARALELAS FLATS WEB */}
-          <View style={{ height: 130, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around', borderBottomWidth: 2, borderBottomColor: '#64748B', paddingBottom: 2, marginBottom: 14 }}>
+          {/* 📊 GRÁFICO DE COLUNAS PARALELAS FLATS NATIVAS */}
+          <View style={{ height: 120, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around', borderBottomWidth: 2, borderBottomColor: '#64748B', paddingBottom: 2, marginBottom: 14 }}>
             {dadosSemanas.map((semana, idx) => (
               <View key={`sem-${idx}`} style={{ alignItems: 'center', width: '22%', height: '100%', justifyContent: 'flex-end' }}>
                 
-                {/* Fileira Tripla de Barras Lado a L Lado */}
-                <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: '85%', width: '100%', justifyContent: 'center' }}>
-                  {/* Corrida (Vermelha) */}
+                {/* Fileira Tripla de Barras Nativas */}
+                <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: '85%', width: '100%', justifyContent: 'center' }}>
                   {(atividadeSelecionada === 'Todos' || atividadeSelecionada === 'Corrida') && (
-                    <div style={{ width: '6px', height: `${semana.corrida > 0 ? (semana.corrida / tetoMaximoKm) * 100 : 4}%`, backgroundColor: '#EF4444', borderRadius: '2px 2px 0 0', transition: 'height 0.3s' }} />
+                    <View style={{ width: 6, height: `${semana.corrida > 0 ? (semana.corrida / tetoMaximoKm) * 100 : 4}%`, backgroundColor: '#EF4444', borderRadius: 2 }} />
                   )}
-                  {/* Caminhada (Laranja) */}
                   {(atividadeSelecionada === 'Todos' || atividadeSelecionada === 'Caminhada') && (
-                    <div style={{ width: '6px', height: `${semana.caminhada > 0 ? (semana.caminhada / tetoMaximoKm) * 100 : 4}%`, backgroundColor: '#F97316', borderRadius: '2px 2px 0 0', transition: 'height 0.3s' }} />
+                    <View style={{ width: 6, height: `${semana.caminhada > 0 ? (semana.caminhada / tetoMaximoKm) * 100 : 4}%`, backgroundColor: '#F97316', borderRadius: 2 }} />
                   )}
-                  {/* Bike (Roxa) */}
-                  {(atividadeSelecionada === 'Todos' || atividadeSelecionada === 'Bike') && (
-                    <div style={{ width: '6px', height: `${semana.bike > 0 ? (semana.bike / tetoMaximoKm) * 100 : 4}%`, backgroundColor: '#A855F7', borderRadius: '2px 2px 0 0', transition: 'height 0.3s' }} />
+                  {(atividadeSelecionada === 'Todos' || activitySeleccionada === 'Bike' || atividadeSelecionada === 'Bike') && (
+                    <View style={{ width: 6, height: `${semana.bike > 0 ? (semana.bike / tetoMaximoKm) * 100 : 4}%`, backgroundColor: '#A855F7', borderRadius: 2 }} />
                   )}
                 </View>
                 
@@ -199,7 +192,7 @@ export default function KmTotalGrafico({ isOpen, onClose, dadosSupabase = [], te
           </View>
 
         </View>
-      </div>
+      </View>
     </Modal>
   );
 }
