@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Modal } from 'react-native';
-import { obterMesesDinamicos, obterOpcoesTemporadas, NOMES_MESES_COMPLETOS } from '../utils/dateHelpers';
 
 export default function TempoAtividadeGrafico({ isOpen, onClose, dadosSupabase = [], temporadasLiga = [] }) {
   const dataAtual = new Date();
@@ -28,22 +27,31 @@ export default function TempoAtividadeGrafico({ isOpen, onClose, dadosSupabase =
         setMesAte(String(dataAtual.getMonth() + 1));
       } else if (temporadaSelecionada === 'temp-1') {
         setAnoSelecionado(String(anoAtual));
-        setMesDe('1'); setMesAte('3');
+        setMesDe('1'); setMesAte('3'); // Sincroniza Janeiro a Março
       } else if (temporadaSelecionada === 'temp-2') {
         setAnoSelecionado(String(anoAtual));
-        setMesDe('4'); setMesAte('6');
+        setMesDe('4'); setMesAte('6'); // Sincroniza Abril a Junho
       }
     }
   }, [temporadaSelecionada, tipoFiltroAtivo, anoAtual]);
 
   if (!isOpen) return null;
 
-  const opcoesTemporadas = obterOpcoesTemporadas(temporadasLiga);
-  // Filtragem estrita dos dados reais do Supabase com base no intervalo de tempo selecionado
+  const NOMES_MESES_COMPLETOS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+  // Geração interna das temporadas para blindar contra erros de importação externa
+  const opcoesTemporadas = [];
+  for (let i = 1; i <= totalTemporadasRegistradas; i++) {
+    if (i === totalTemporadasRegistradas) {
+      opcoesTemporadas.push({ valor: 'atual', label: `🏆 Temporada Atual (${i}ª Temporada)` });
+    } else {
+      opcoesTemporadas.push({ valor: `temp-${i}`, label: `📜 ${i}ª Temporada (Histórico)` });
+    }
+  }
+
+  // Filtragem estrita dos dados reais do Supabase
   const treinosFiltrados = dadosSupabase.filter((t) => {
     if (!t.activity || !t.date || !t.duration) return false;
-    
-    // Filtra todas as atividades válidas (incluindo Passos se houver tempo computado)
     if (t.activity.includes('Passos Diários')) return false;
 
     const [anoTreino, mesTreino] = t.date.split('-');
@@ -52,10 +60,8 @@ export default function TempoAtividadeGrafico({ isOpen, onClose, dadosSupabase =
     return mTreino >= parseInt(mesDe) && mTreino <= parseInt(mesAte);
   });
 
-  // Somatório bruto para o indicador numérico superior do painel (Igual ao seu modelo de 765 minutos)
   const totalMinutosGeral = treinosFiltrados.reduce((acc, t) => acc + (parseInt(t.duration) || 0), 0);
 
-  // Mapeamento estrutural das semanas (Clean Slate para produção, começando zerado)
   const dadosSemanas = [
     { label: 'Sem. 1', minutos: 0, cor: '#3B82F6' },
     { label: 'Sem. 2', minutos: 0, cor: '#22C55E' },
@@ -63,12 +69,10 @@ export default function TempoAtividadeGrafico({ isOpen, onClose, dadosSupabase =
     { label: 'Sem. 4', minutos: 0, cor: '#EF4444' },
   ];
 
-  // Acumula os minutos reais dentro de cada bloco de semana
   treinosFiltrados.forEach((t) => {
     const diaTreino = new Date(t.date).getDate() || 1;
     let indexSemana = Math.floor((diaTreino - 1) / 7);
     if (indexSemana > 3) indexSemana = 3;
-
     dadosSemanas[indexSemana].minutos += parseInt(t.duration) || 0;
   });
 
@@ -121,12 +125,12 @@ export default function TempoAtividadeGrafico({ isOpen, onClose, dadosSupabase =
             </select>
           </View>
 
-          {/* BOX MODELO: INDICADOR RESUMO EM MINUTOS */}
+          {/* BOX RESUMO EM MINUTOS */}
           <View style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE', padding: 8, borderRadius: 8, alignItems: 'center', marginBottom: 14 }}>
             <Text style={{ fontSize: 13, color: '#1E3A8A', fontWeight: '700' }}>Tempo em atividade período atual: {totalMinutosGeral} minutos</Text>
           </View>
 
-          {/* 📊 INTERFACE GRÁFICA: COLUNAS VERTICAIS FLATS MISTAS */}
+          {/* 📊 INTERFACE GRÁFICA */}
           <Text style={{ fontSize: 11, fontWeight: '700', color: '#475569', textAlign: 'center', marginBottom: 6 }}>Progresso Mensal (min)</Text>
           <View style={{ height: 120, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around', borderBottomWidth: 2, borderBottomColor: '#CBD5E1', paddingBottom: 2, marginBottom: 6 }}>
             {dadosSemanas.map((semana, idx) => {
