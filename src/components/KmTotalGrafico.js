@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Modal } from 'react-native';
-import { obterMesesDinamicos, obterOpcoesTemporadas, NOMES_MESES_COMPLETOS } from '../utils/dateHelpers';
 
 export default function KmTotalGrafico({ isOpen, onClose, dadosSupabase = [], temporadasLiga = [] }) {
   const dataAtual = new Date();
@@ -19,8 +18,6 @@ export default function KmTotalGrafico({ isOpen, onClose, dadosSupabase = [], te
   
   // Estado do Seletor de Temporadas
   const [temporadaSelecionada, setTemporadaSelecionada] = useState('atual');
-
-  const totalTemporadasRegistradas = temporadasLiga.length > 0 ? temporadasLiga.length : 3;
 
   // 🔄 GATILHO INTELIGENTE: REAJUSTA OS MESES AUTOMATICAMENTE QUANDO A TEMPORADA MUDA
   useEffect(() => {
@@ -41,15 +38,22 @@ export default function KmTotalGrafico({ isOpen, onClose, dadosSupabase = [], te
 
   if (!isOpen) return null;
 
-  const opcoesTemporadas = obterOpcoesTemporadas(temporadasLiga);
+  const NOMES_MESES_COMPLETOS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+  const totalTemporadas = temporadasLiga.length > 0 ? temporadasLiga.length : 3;
+  const opcoesTemporadas = [];
+  for (let i = 1; i <= totalTemporadas; i++) {
+    if (i === totalTemporadas) {
+      opcoesTemporadas.push({ valor: 'atual', label: `🏆 Temporada Atual (${i}ª Temporada)` });
+    } else {
+      opcoesTemporadas.push({ valor: `temp-${i}`, label: `📜 ${i}ª Temporada (Histórico)` });
+    }
+  }
   // Filtragem estrita dos dados reais do Supabase com base no intervalo de tempo selecionado
   const treinosFiltrados = dadosSupabase.filter((t) => {
     if (!t.activity || !t.date || !t.km_distance) return false;
-    
-    // Filtra por modalidade caso o usuário escolha individualizar no dropdown
     if (atividadeSelecionada !== 'Todos' && !t.activity.includes(atividadeSelecionada)) return false;
     
-    // Garante que apenas Corrida, Caminhada e Bike entrem no somatório de distância
     const eKmValido = t.activity.includes('Corrida') || t.activity.includes('Caminhada') || t.activity.includes('Bike');
     if (!eKmValido) return false;
 
@@ -59,10 +63,8 @@ export default function KmTotalGrafico({ isOpen, onClose, dadosSupabase = [], te
     return mTreino >= parseInt(mesDe) && mTreino <= parseInt(mesAte);
   });
 
-  // Somatório bruto para o indicador numérico do painel
   const totalKmGeral = treinosFiltrados.reduce((acc, t) => acc + (parseFloat(t.km_distance) || 0), 0);
 
-  // Mapeamento de dados estruturais das semanas. Começa em 0% (Clean Slate para produção)
   const dadosSemanas = [
     { label: 'Sem. 1', corrida: 0, caminhada: 0, bike: 0 },
     { label: 'Sem. 2', corrida: 0, caminhada: 0, bike: 0 },
@@ -70,7 +72,6 @@ export default function KmTotalGrafico({ isOpen, onClose, dadosSupabase = [], te
     { label: 'Sem. 4', corrida: 0, caminhada: 0, bike: 0 },
   ];
 
-  // Varre os treinos reais para empilhar os KMs nas colunas paralelas corretas
   treinosFiltrados.forEach((t) => {
     const diaTreino = new Date(t.date).getDate() || 1;
     let indexSemana = Math.floor((diaTreino - 1) / 7);
@@ -94,9 +95,7 @@ export default function KmTotalGrafico({ isOpen, onClose, dadosSupabase = [], te
   const tetoMaximoKm = obterMaiorKm();
   return (
     <Modal transparent={true} visible={isOpen} onRequestClose={onClose} animationType="fade">
-      <View style={{
-        flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.7)', justifyContent: 'center', alignItems: 'center', padding: 16
-      }}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.7)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
         <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, width: '100%', maxWidth: 420, padding: 16, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 20 }}>
           
           {/* CABEÇALHO */}
@@ -161,12 +160,10 @@ export default function KmTotalGrafico({ isOpen, onClose, dadosSupabase = [], te
             <Text style={{ fontSize: 18, color: '#EA580C', fontWeight: '800' }}>{totalKmGeral.toFixed(1)} KM</Text>
           </View>
 
-          {/* 📊 GRÁFICO DE COLUNAS PARALELAS FLATS NATIVAS */}
+          {/* 📊 GRÁFICO DE COLUNAS PARALELAS */}
           <View style={{ height: 120, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around', borderBottomWidth: 2, borderBottomColor: '#64748B', paddingBottom: 2, marginBottom: 14 }}>
             {dadosSemanas.map((semana, idx) => (
               <View key={`sem-${idx}`} style={{ alignItems: 'center', width: '22%', height: '100%', justifyContent: 'flex-end' }}>
-                
-                {/* Fileira Tripla de Barras Nativas */}
                 <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: '85%', width: '100%', justifyContent: 'center' }}>
                   {(atividadeSelecionada === 'Todos' || atividadeSelecionada === 'Corrida') && (
                     <View style={{ width: 6, height: `${semana.corrida > 0 ? (semana.corrida / tetoMaximoKm) * 100 : 4}%`, backgroundColor: '#EF4444', borderRadius: 2 }} />
@@ -174,17 +171,16 @@ export default function KmTotalGrafico({ isOpen, onClose, dadosSupabase = [], te
                   {(atividadeSelecionada === 'Todos' || atividadeSelecionada === 'Caminhada') && (
                     <View style={{ width: 6, height: `${semana.caminhada > 0 ? (semana.caminhada / tetoMaximoKm) * 100 : 4}%`, backgroundColor: '#F97316', borderRadius: 2 }} />
                   )}
-                  {(atividadeSelecionada === 'Todos' || activitySelecionada === 'Bike' || atividadeSelecionada === 'Bike') && (
+                  {(atividadeSelecionada === 'Todos' || atividadeSelecionada === 'Bike') && (
                     <View style={{ width: 6, height: `${semana.bike > 0 ? (semana.bike / tetoMaximoKm) * 100 : 4}%`, backgroundColor: '#A855F7', borderRadius: 2 }} />
                   )}
                 </View>
-                
                 <Text style={{ fontSize: 10, color: '#64748B', fontWeight: '700', marginTop: 4 }}>{semana.label}</Text>
               </View>
             ))}
           </View>
 
-          {/* CAPTION COLOR COMPACTA */}
+          {/* CAPTION COMPACTA */}
           <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}><View style={{ width: 8, height: 8, backgroundColor: '#EF4444', borderRadius: 2, marginRight: 4 }} /><Text style={{ fontSize: 10, fontWeight: '700', color: '#475569' }}>Corrida</Text></View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}><View style={{ width: 8, height: 8, backgroundColor: '#F97316', borderRadius: 2, marginRight: 4 }} /><Text style={{ fontSize: 10, fontWeight: '700', color: '#475569' }}>Caminhada</Text></View>
