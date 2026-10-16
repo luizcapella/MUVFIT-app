@@ -22,6 +22,9 @@ export default function DashboardScreen({
   setWeightMetaInput
 }) {
 
+  // Controle da Janela de KM Percorridos
+    const [modalKmVisivelLocal, setModalKmVisivelLocal] = useState(false);
+
   // Controle da Janela de Gráfico de Modalidades
     const [modalityRadarModalOpen, setModalityRadarModalOpen] = useState(false);
 
@@ -422,7 +425,7 @@ export default function DashboardScreen({
 
               <TouchableOpacity
                 style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#E2E8F0', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3 }}
-                onPress={() => setIsKmChartModalOpen(true)}
+                onPress={() => setModalKmVisivelLocal(true)}
               >
                 <Text style={{ fontSize: 20, marginBottom: 4 }}>⏱️</Text>
                 <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#1E293B' }}>Tempo de Atividade</Text>
@@ -466,10 +469,10 @@ export default function DashboardScreen({
             onClose={() => setModalityRadarModalOpen(false)} 
           />
 
-                    {/* 🏃 INTERFACE DO GRÁFICO DE BARRAS PARALELAS: KM TOTAL PERCORRIDO */}
+                              {/* 🏃 INTERFACE DO GRÁFICO DE BARRAS PARALELAS: KM TOTAL PERCORRIDO */}
           <KmTotalGrafico 
-            isOpen={!!isKmChartModalOpen} 
-            onClose={() => typeof setIsKmChartModalOpen === 'function' && setIsKmChartModalOpen(false)} 
+            isOpen={modalKmVisivelLocal} 
+            onClose={() => setModalKmVisivelLocal(false)} 
           />
 
       {/* MODAL WINDOW: EDITAR PERFIL DO ATLETA */}
