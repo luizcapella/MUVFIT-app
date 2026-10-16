@@ -22,9 +22,6 @@ export default function DashboardScreen({
   setWeightMetaInput
 }) {
 
-  // Controle de Janela de KM Totais
-    const [isKmChartModalOpen, setIsKmChartModalOpen] = useState(false);
-
   // Controle da Janela de Gráfico de Modalidades
     const [modalityRadarModalOpen, setModalityRadarModalOpen] = useState(false);
 
@@ -471,8 +468,8 @@ export default function DashboardScreen({
 
                     {/* 🏃 INTERFACE DO GRÁFICO DE BARRAS PARALELAS: KM TOTAL PERCORRIDO */}
           <KmTotalGrafico 
-            isOpen={isKmChartModalOpen} 
-            onClose={() => setIsKmChartModalOpen(false)} 
+            isOpen={!!isKmChartModalOpen} 
+            onClose={() => typeof setIsKmChartModalOpen === 'function' && setIsKmChartModalOpen(false)} 
           />
 
       {/* MODAL WINDOW: EDITAR PERFIL DO ATLETA */}
