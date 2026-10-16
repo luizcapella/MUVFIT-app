@@ -412,26 +412,27 @@ export default function DashboardScreen({
               </TouchableOpacity>
             </View>
 
-            {/* Segunda Fileira (KM Total e Tempo) */}
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <TouchableOpacity
-                style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#E2E8F0', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3 }}
-                onPress={() => typeof setIsKmChartModalOpen === 'function' && setIsKmChartModalOpen(true)}
-              >
-                <Text style={{ fontSize: 20, marginBottom: 4 }}>🏃‍♂️</Text>
-                <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#1E293B' }}>KM Total Percorrido</Text>
-                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>Distância acumulada</Text>
-              </TouchableOpacity>
+                      {/* Segunda Fileira (KM Total e Tempo) */}
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            {/* 🏃 BOTÃO DO GRÁFICO DE KM TOTAL */}
+            <TouchableOpacity
+              style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#E2E8F0' }}
+              onPress={() => setModalKmVisivelLocal(true)}
+            >
+              <Text style={{ fontSize: 20, marginBottom: 4 }}>🏃</Text>
+              <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#1E293B' }}>KM Total Percorrido</Text>
+              <Text style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>Distância acumulada</Text>
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#E2E8F0', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3 }}
-                onPress={() => setModalKmVisivelLocal(true)}
-              >
-                <Text style={{ fontSize: 20, marginBottom: 4 }}>⏱️</Text>
-                <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#1E293B' }}>Tempo de Atividade</Text>
-                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>Minutos em movimento</Text>
-              </TouchableOpacity>
-            </View>
+            {/* ⏱️ BOTÃO DO TEMPORIZADOR DE ATIVIDADE */}
+            <TouchableOpacity
+              style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#E2E8F0' }}
+              onPress={() => typeof setIsKmChartModalOpen === 'function' && setIsKmChartModalOpen(true)}
+            >
+              <Text style={{ fontSize: 20, marginBottom: 4 }}>⏱️</Text>
+              <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#1E293B' }}>Tempo de Atividade</Text>
+              <Text style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>Minutos em movimento</Text>
+            </TouchableOpacity>
           </View>
 
           {/* 🖼️ ABA COLAPSÁVEL: GALERIA DE FOTOS DO ATLETA (ÚLTIMO ITEM DA CENTRAL) */}
