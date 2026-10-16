@@ -1,46 +1,110 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import { obterMesesDinamicos, obterOpcoesTemporadas, NOMES_MESES_COMPLETOS } from '../utils/dateHelpers';
-import useModalidadesFiltro from '../hooks/useModalidadesFiltro';
 
 export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = [], temporadasLiga = [] }) {
+  const dataAtual = new Date();
+  const anoAtual = dataAtual.getFullYear();
+
+  // 🔘 CONTROLE DOS CHECKBOXES REDONDOS EXCLUSIVOS ('meses' ou 'temporada')
+  const [tipoFiltroAtivo, setTipoFiltroAtivo] = useState('meses');
+
+  // Estados dos Filtros do Período Customizado
+  const [anoSelecionado, setAnoSelecionado] = useState(String(anoAtual));
+  const [mesDe, setMesDe] = useState(String(dataAtual.getMonth() + 1));
+  const [mesAte, setMesAte] = useState(String(dataAtual.getMonth() + 1));
   
-  // Consome a inteligência centralizada do gancho lógico (PARTE 2A)
-  const {
-    anoAtual,
-    tipoFiltroAtivo, setTipoFiltroAtivo,
-    anoSelecionado, setAnoSelecionado,
-    mesDe, setMesDe,
-    mesAte, setMesAte,
-    temporadaSelecionada, setTemporadaSelecionada,
-    distribuicaoPraticas, gradientePizza
-  } = useModalidadesFiltro(dadosSupabase);
+  // Estado do Seletor de Temporadas
+  const [temporadaSelecionada, setTemporadaSelecionada] = useState('atual');
+
+  const totalTemporadasRegistradas = temporadasLiga.length > 0 ? temporadasLiga.length : 3; 
+
+  // 🔄 GATILHO INTELIGENTE: REAJUSTA OS MESES QUANDO A TEMPORADA É ALTERADA
+  useEffect(() => {
+    if (tipoFiltroAtivo === 'temporada') {
+      if (temporadaSelecionada === 'atual') {
+        setAnoSelecionado(String(anoAtual));
+        setMesDe(String(dataAtual.getMonth() + 1));
+        setMesAte(String(dataAtual.getMonth() + 1));
+      } else if (temporadaSelecionada === 'temp-1') {
+        setAnoSelecionado(String(anoAtual));
+        setMesDe('1'); setMesAte('3'); // Sincroniza Janeiro a Março
+      } else if (temporadaSelecionada === 'temp-2') {
+        setAnoSelecionado(String(anoAtual));
+        setMesDe('4'); setMesAte('6'); // Sincroniza Abril a Junho
+      }
+    }
+  }, [temporadaSelecionada, tipoFiltroAtivo, anoAtual]);
 
   if (!isOpen) return null;
 
-  // Correção crucial: Passando a propriedade correta 'temporadasLiga' sem erros de digitação
-  const opcoesTemporadas = obterOpcoesTemporadas(temporadasLiga);
+  const nomesMeses = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
 
+  const opcoesTemporadas = [];
+  for (let i = 1; i <= totalTemporadasRegistradas; i++) {
+    if (i === totalTemporadasRegistradas) {
+      opcoesTemporadas.push({ valor: 'atual', label: `🏆 Temporada Atual (${i}ª Temporada)` });
+    } else {
+      opcoesTemporadas.push({ valor: `temp-${i}`, label: `📜 ${i}ª Temporada (Histórico)` });
+    }
+  }
+  const mapaModalidadesOficiais = [
+    { nome: '💪 Musculação', cor: '#3B82F6' },
+    { nome: '🏋️ Crossfit/Funcional', cor: '#22C55E' },
+    { nome: '🔥 Aeróbico', cor: '#EAB308' },
+    { nome: '🏃 Corrida', cor: '#EF4444' },
+    { nome: '🚶 Caminhada', cor: '#F97316' },
+    { nome: '🚴 Bike', cor: '#A855F7' },
+    { nome: '🥋 Lutas/Individuais', cor: '#0D9488' },
+    { nome: '⚽ Esportes Coletivos', cor: '#78350F' }
+  ];
+
+  const treinosValidos = dadosSupabase.filter((t) => {
+    if (!t.activity || t.activity.includes('Passos Diários') || !t.date) return false;
+    const [anoTreino, mesTreino] = t.date.split('-');
+    if (anoTreino !== anoSelecionado) return false;
+    const mTreino = parseInt(mesTreino);
+    return mTreino >= parseInt(mesDe) && mTreino <= parseInt(mesAte);
+  });
+
+  const totalTreinos = treinosValidos.length;
+  const contagemModalidades = {};
+
+  treinosValidos.forEach((t) => {
+    const nomeModalidade = t.activity ? t.activity.trim() : '';
+    if (nomeModalidade) {
+      contagemModalidades[nomeModalidade] = (contagemModalidades[nomeModalidade] || 0) + 1;
+    }
+  });
+
+  const distribuicaoPraticas = mapaModalidadesOficiais.map((item) => {
+    const qtd = contagemModalidades[item.nome] || 0;
+    const porc = totalTreinos > 0 ? Math.round((qtd / totalTreinos) * 100) : 0;
+    return { nome: item.nome, porcentagem: porc, cor: item.cor };
+  });
+
+  let gradientePizza = '#CBD5E1 0% 100%';
+  if (totalTreinos > 0) {
+    let acumulado = 0;
+    gradientePizza = distribuicaoPraticas
+      .filter(f => f.porcentagem > 0)
+      .map((fatia) => {
+        const inicio = acumulado;
+        acumulado += fatia.porcentagem;
+        return `${fatia.cor} ${inicio}% ${acumulado}%`;
+      }).join(', ');
+  }
   return (
-    /* 🔴 BLINDAGEM WEB MESTRE: AGE DIRETAMENTE POR CIMA DAS BORDAS AZUIS DA TELA */
     <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100vw',
-      height: '100vh',
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 2147483647,
-      padding: '16px',
-      boxSizing: 'border-box'
+      position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+      backgroundColor: 'rgba(0, 0, 0, 0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center',
+      zIndex: 2147483647, padding: '16px', boxSizing: 'border-box'
     }}>
-      {/* CORPO DO MODAL FLUTUANTE */}
       <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, width: '100%', maxWidth: 420, padding: 16, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 20 }}>
         
-        {/* CABEÇALHO COM BOTÃO FECHAR X */}
+        {/* CABEÇALHO */}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1E3A8A', padding: 12, borderRadius: 8, marginBottom: 14 }}>
           <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>📊 Resumo de Exercícios</Text>
           <TouchableOpacity onPress={onClose} style={{ padding: 4 }}>
@@ -48,12 +112,9 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
           </TouchableOpacity>
         </View>
 
-        {/* 🔘 FILTRO 1: POR MÊS / ANO COM CHECKBOX REDONDO EXCLUSIVO */}
+        {/* 🔘 FILTRO 1: POR MÊS / ANO PERSONALIZADO */}
         <View style={{ backgroundColor: '#F8FAFC', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: tipoFiltroAtivo === 'meses' ? '#F97316' : '#E2E8F0', marginBottom: 10, opacity: tipoFiltroAtivo === 'meses' ? 1 : 0.6 }}>
-          <TouchableOpacity 
-            onPress={() => setTipoFiltroAtivo('meses')}
-            style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}
-          >
+          <TouchableOpacity onPress={() => setTipoFiltroAtivo('meses')} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
             <View style={{ width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: '#1E3A8A', justifyContent: 'center', alignItems: 'center', marginRight: 8, backgroundColor: '#FFFFFF' }}>
               {tipoFiltroAtivo === 'meses' && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#F97316' }} />}
             </View>
@@ -66,20 +127,17 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
               <option value={String(anoAtual - 1)}>{anoAtual - 1}</option>
             </select>
             <select disabled={tipoFiltroAtivo !== 'meses'} value={mesDe} onChange={(e) => setMesDe(e.target.value)} style={{ flex: 1.2, height: '30px', borderRadius: '4px', border: '1px solid #CBD5E1', fontSize: '11px', fontWeight: '600', color: '#334155', outline: 'none', backgroundColor: tipoFiltroAtivo === 'meses' ? '#FFFFFF' : '#F1F5F9' }}>
-              {NOMES_MESES_COMPLETOS.map((nome, i) => <option key={`de-${i}`} value={String(i + 1)}>De: {nome}</option>)}
+              {nomesMeses.map((nome, i) => <option key={`de-${i}`} value={String(i + 1)}>De: {nome}</option>)}
             </select>
             <select disabled={tipoFiltroAtivo !== 'meses'} value={mesAte} onChange={(e) => { if (parseInt(e.target.value) >= parseInt(mesDe)) setMesAte(e.target.value); }} style={{ flex: 1.2, height: '30px', borderRadius: '4px', border: '1px solid #CBD5E1', fontSize: '11px', fontWeight: '600', color: '#334155', outline: 'none', backgroundColor: tipoFiltroAtivo === 'meses' ? '#FFFFFF' : '#F1F5F9' }}>
-              {NOMES_MESES_COMPLETOS.map((nome, i) => <option key={`ate-${i}`} value={String(i + 1)} disabled={i + 1 < parseInt(mesDe)}>Até: {nome}</option>)}
+              {nomesMeses.map((nome, i) => <option key={`ate-${i}`} value={String(i + 1)} disabled={i + 1 < parseInt(mesDe)}>Até: {nome}</option>)}
             </select>
           </View>
         </View>
 
-        {/* 🔘 FILTRO 2: POR TEMPORADA DA LIGA COM CHECKBOX REDONDO EXCLUSIVO */}
+        {/* 🔘 FILTRO 2: POR TEMPORADA DA LIGA */}
         <View style={{ backgroundColor: '#F8FAFC', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: tipoFiltroAtivo === 'temporada' ? '#1E3A8A' : '#E2E8F0', marginBottom: 14, opacity: tipoFiltroAtivo === 'temporada' ? 1 : 0.6 }}>
-          <TouchableOpacity 
-            onPress={() => setTipoFiltroAtivo('temporada')}
-            style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}
-          >
+          <TouchableOpacity onPress={() => setTipoFiltroAtivo('temporada')} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
             <View style={{ width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: '#1E3A8A', justifyContent: 'center', alignItems: 'center', marginRight: 8, backgroundColor: '#FFFFFF' }}>
               {tipoFiltroAtivo === 'temporada' && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#1E3A8A' }} />}
             </View>
@@ -102,7 +160,7 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
           Distribuição de Práticas
         </Text>
 
-        {/* 🍕 O GRÁFICO PIZZA (VIRA CÍRCULO NEUTRO SE FOR 0% TOTAL) */}
+        {/* PIZZA */}
         <View style={{ alignItems: 'center', marginBottom: 16 }}>
           <div style={{
             width: '160px', height: '160px', borderRadius: '50%',
@@ -111,7 +169,7 @@ export default function ModalidadesGrafico({ isOpen, onClose, dadosSupabase = []
           }} />
         </View>
 
-        {/* 📜 LEGENDAS COLORIDAS FIXAS DAS 8 MODALIDADES (SEMPRE EM EXIBIÇÃO) */}
+        {/* LEGENDAS COLORIDAS */}
         <ScrollView style={{ maxHeight: 140 }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 4 }}>
             {distribuicaoPraticas.map((fatia, index) => (
