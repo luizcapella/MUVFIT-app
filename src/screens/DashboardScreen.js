@@ -6,6 +6,7 @@ import CustomPicker from '../components/CustomPicker';
 import AthleteGoals from '../components/AthleteGoals';
 import AthleteGallery from '../components/AthleteGallery';
 import ModalidadesGrafico from '../components/ModalidadesGrafico';
+import KmTotalGrafico from '../components/KmTotalGrafico';
 
 export default function DashboardScreen({
   currentUser,
@@ -421,7 +422,7 @@ export default function DashboardScreen({
 
               <TouchableOpacity
                 style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#E2E8F0', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3 }}
-                onPress={() => typeof setIsTimeChartModalOpen === 'function' && setIsTimeChartModalOpen(true)}
+                onPress={() => setIsKmChartModalOpen(true)}
               >
                 <Text style={{ fontSize: 20, marginBottom: 4 }}>⏱️</Text>
                 <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#1E293B' }}>Tempo de Atividade</Text>
@@ -463,6 +464,12 @@ export default function DashboardScreen({
           <ModalidadesGrafico 
             isOpen={modalityRadarModalOpen} 
             onClose={() => setModalityRadarModalOpen(false)} 
+          />
+
+                        {/* 🏃 INTERFACE DO GRÁFICO DE BARRAS PARALELAS: KM TOTAL PERCORRIDO */}
+          <KmTotalGrafico 
+            isOpen={isKmChartModalOpen} 
+            onClose={() => setIsKmChartModalOpen(false)} 
           />
 
       {/* MODAL WINDOW: EDITAR PERFIL DO ATLETA */}
