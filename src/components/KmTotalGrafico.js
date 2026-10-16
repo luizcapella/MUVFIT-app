@@ -174,7 +174,7 @@ export default function KmTotalGrafico({ isOpen, onClose, dadosSupabase = [], te
                   {(atividadeSelecionada === 'Todos' || atividadeSelecionada === 'Caminhada') && (
                     <View style={{ width: 6, height: `${semana.caminhada > 0 ? (semana.caminhada / tetoMaximoKm) * 100 : 4}%`, backgroundColor: '#F97316', borderRadius: 2 }} />
                   )}
-                  {(atividadeSelecionada === 'Todos' || activitySeleccionada === 'Bike' || atividadeSelecionada === 'Bike') && (
+                  {(atividadeSelecionada === 'Todos' || activitySelecionada === 'Bike' || atividadeSelecionada === 'Bike') && (
                     <View style={{ width: 6, height: `${semana.bike > 0 ? (semana.bike / tetoMaximoKm) * 100 : 4}%`, backgroundColor: '#A855F7', borderRadius: 2 }} />
                   )}
                 </View>
