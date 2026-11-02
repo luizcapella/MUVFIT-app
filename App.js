@@ -492,19 +492,22 @@ export default function App() {
     setWorkoutSubmitting(true);
     try {
       const calculatedPoints = calculateWorkoutPoints(selectedActivity, kmInput);
-      const { error } = await supabase.from('pending_workouts').insert([
-        {
-          user_id: currentUser.id,
-          challenge_id: activeChallengeId,
-          activity: selectedActivity,
-          workout_date: workoutDate,
-          caption: workoutCaption,
-          km_distance: kmInput ? parseFloat(kmInput) : 0,
-          evidence_url: photoEvidence,
-          points_computed: calculatedPoints,
-          status: 'pending'
-        }
-      ]);
+                const { error } = await supabase.from('pending_workouts').insert([
+            {
+              user_id: currentUser.id,
+              challenge_id: activeChallengeId,
+              user_name: currentUser.name || 'Atleta',
+              user_nickname: currentUser.nickname || '',
+              user_avatar: currentUser.avatar || 'https://picsum.photos',
+              activity: selectedActivity,
+              workout_date: workoutDate,
+              caption: workoutCaption,
+              km_distance: kmInput ? parseFloat(kmInput) : 0,
+              evidence_url: photoEvidence,
+              points_computed: calculatedPoints,
+              status: 'pending'
+            }
+          ]);
 
       if (error) {
         Alert.alert('Erro ao Salvar', error.message);
