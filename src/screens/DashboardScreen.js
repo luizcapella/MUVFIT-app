@@ -8,6 +8,7 @@ import AthleteGallery from '../components/AthleteGallery';
 import ModalidadesGrafico from '../components/ModalidadesGrafico';
 import KmTotalGrafico from '../components/KmTotalGrafico';
 import TempoAtividadeGrafico from '../components/TempoAtividadeGrafico';
+import TreinoCalendarioModal from '../components/TreinoCalendarioModal';
 
 export default function DashboardScreen({
   currentUser,
@@ -22,6 +23,9 @@ export default function DashboardScreen({
   setWeightHistoryList,
   setWeightMetaInput
 }) {
+
+  // Calendário do Atleta
+    const [modalCalendarioVisivel, setModalCalendarioVisivel] = useState(false);
 
   // Controle da Janela de Tempo em Atividade
   const [modalTempoVisivelLocal, setModalTempoVisivelLocal] = useState(false);
@@ -469,6 +473,15 @@ export default function DashboardScreen({
             </View>
           )}
 
+          {/* 📅 BOTÃO HORIZONTAL: ACESSAR CALENDÁRIO DE TREINOS */}
+          <TouchableOpacity
+            style={{ backgroundColor: '#1E3A8A', borderRadius: 12, padding: 14, marginBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: '#1D4ED8', elevation: 2 }}
+            onPress={() => setModalCalendarioVisivel(true)}
+          >
+            <Text style={{ fontSize: 18 }}>📅</Text>
+            <Text style={{ fontSize: 15, fontWeight: '800', color: '#FFFFFF' }}>Visualizar Calendário de Treinos</Text>
+          </TouchableOpacity>
+
                             {/* 📊 INTERFACE DO GRÁFICO DE PIZZA: MODALIDADES MAIS PRATICADAS */}
           <ModalidadesGrafico 
             isOpen={modalityRadarModalOpen} 
@@ -485,6 +498,12 @@ export default function DashboardScreen({
           <TempoAtividadeGrafico 
             isOpen={modalTempoVisivelLocal} 
             onClose={() => setModalTempoVisivelLocal(false)} 
+          />
+
+                        {/* 📆 INTERFACE DO CALENDÁRIO DINÂMICO DE CONSISTÊNCIA */}
+          <TreinoCalendarioModal 
+            isOpen={modalCalendarioVisivel} 
+            onClose={() => setModalCalendarioVisivel(false)} 
           />
 
       {/* MODAL WINDOW: EDITAR PERFIL DO ATLETA */}
