@@ -509,11 +509,11 @@ export default function AdminScreen({ pendingWorkouts, setPendingWorkouts, fetch
                           {/* 3. FOTOS DE EVIDÊNCIAS REGISTRADAS */}
                           <Text style={{ fontSize: 12, fontWeight: '700', color: '#475569', marginBottom: 6 }}>📸 Fotos de Evidências:</Text>
                           <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
-                            {workout.evidence_image_url ? (
-                              <Image source={{ uri: workout.evidence_image_url }} style={{ flex: 1, aspectRatio: 1.4, borderRadius: 6, backgroundColor: '#CBD5E1' }} resizeMode="cover" />
-                            ) : (
-                              <Text style={{ fontSize: 12, color: '#EF4444', fontWeight: '600' }}>⚠️ Treino enviado sem foto de evidência!</Text>
-                            )}
+                          {workout.evidence_url ? (
+              <Image source={{ uri: workout.evidence_url }} style={{ flex: 1, aspectRatio: 1.4, borderRadius: 6, backgroundColor: '#CBD5E1' }} resizeMode="cover" />
+            ) : (
+              <Text style={{ fontSize: 12, color: '#EF4444', fontWeight: '600' }}>⚠️ Treino enviado sem foto de evidência!</Text>
+            )}
                           </View>
 
                           {/* 4. BOTÕES DE DECISÃO */}
