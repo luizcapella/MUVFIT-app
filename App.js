@@ -485,6 +485,8 @@ export default function App() {
   const [workoutSubmitting, setWorkoutSubmitting] = useState(false);
 
   async function handleSaveWorkout() {
+      // 🟢 DIAGNÓSTICO: Captura qualquer quebra de variável de JavaScript no envio
+  try {
       // 🔬 RASTREADOR SUPREMO DE INÍCIO
   Alert.alert('Dados do Envio', `Atividade: ${selectedActivity}\nFoto: ${photoEvidence ? 'Tem foto' : 'Sem foto'}\nDesafio ID: ${activeChallengeId}`);
     if (!photoEvidence) {
@@ -522,7 +524,9 @@ export default function App() {
       setKmInput('');
       setPhotoEvidence(null);
       setIsWorkoutModalOpen(false);
-                if (typeof fetchDataFromSupabase === 'function') {
+                         if (typeof fetchDados === 'function') {
+            await fetchDados();
+          } else if (typeof fetchDataFromSupabase === 'function') {
             await fetchDataFromSupabase();
           }
     } catch (err) {
