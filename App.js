@@ -500,7 +500,7 @@ export default function App() {
               user_nickname: currentUser.nickname || '',
               user_avatar: currentUser.avatar || 'https://picsum.photos',
               activity: selectedActivity,
-              workout_date: workoutDate,
+              date: workoutDate, // 🟢 Alinhado para o nome real da coluna do seu Supabase
               caption: workoutCaption,
               km_distance: kmInput ? parseFloat(kmInput) : 0,
               evidence_url: photoEvidence,
