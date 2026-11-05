@@ -503,7 +503,7 @@ export default function App() {
               date: workoutDate, // 🟢 Alinhado para o nome real da coluna do seu Supabase
               caption: workoutCaption,
               km_distance: kmInput ? parseFloat(kmInput) : 0,
-              evidence_url: photoEvidence,
+              evidence_url: photoEvidence && typeof photoEvidence === 'string' ? photoEvidence : 'https://picsum.photos',
               points_computed: calculatedPoints,
               status: 'pending'
             }
