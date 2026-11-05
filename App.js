@@ -485,6 +485,8 @@ export default function App() {
   const [workoutSubmitting, setWorkoutSubmitting] = useState(false);
 
   async function handleSaveWorkout() {
+      // 🔬 RASTREADOR SUPREMO DE INÍCIO
+  Alert.alert('Dados do Envio', `Atividade: ${selectedActivity}\nFoto: ${photoEvidence ? 'Tem foto' : 'Sem foto'}\nDesafio ID: ${activeChallengeId}`);
     if (!photoEvidence) {
       Alert.alert('Erro', 'É obrigatório tirar uma foto como evidência do seu exercício!');
       return;
