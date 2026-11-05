@@ -520,7 +520,9 @@ export default function App() {
       setKmInput('');
       setPhotoEvidence(null);
       setIsWorkoutModalOpen(false);
-      await fetchDataFromSupabase();
+                if (typeof fetchDataFromSupabase === 'function') {
+            await fetchDataFromSupabase();
+          }
     } catch (err) {
       Alert.alert('Erro Inesperado', 'Não foi possível salvar o seu exercício.');
     } finally {
