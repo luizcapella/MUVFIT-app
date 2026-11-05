@@ -509,12 +509,13 @@ export default function App() {
             }
           ]);
 
-      if (error) {
-        Alert.alert('Erro ao Salvar', error.message);
-        return;
-      }
+                if (error) {
+            // 🟢 RASTREADOR: Exibe na tela o erro exato devolvido pelo Supabase
+            Alert.alert('Erro no Banco!', error.message || JSON.stringify(error));
+            return;
+          }
 
-      Alert.alert('Sucesso!', `Treino enviado com sucesso! Aguardando validação.`);
+          Alert.alert('Sucesso!', 'Treino enviado com sucesso! Aguardando validação.');
       setWorkoutCaption('');
       setKmInput('');
       setPhotoEvidence(null);
